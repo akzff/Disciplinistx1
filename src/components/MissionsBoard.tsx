@@ -147,7 +147,7 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
     };
 
     const deleteItem = (id: string, type: 'DAILIES' | 'TODOS') => {
-        if (!confirm('Are you sure you want to delete this mission?')) return;
+        if (!confirm('Are you sure you want to delete this?')) return;
 
         if (type === 'DAILIES') {
             const updated = chat.dailies.filter(d => d.id !== id);
@@ -303,7 +303,7 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
                     <div className="task-card add-card" style={{ background: 'rgba(255,255,255,0.03)', border: '2px dashed var(--border)', display: 'flex', flexDirection: 'column', padding: '1.5rem', gap: '1rem' }}>
                         <input
                             className="settings-input"
-                            placeholder={activeTab === 'DAILIES' ? "Add Routine Ritual..." : "Add Tactical To Do..."}
+                            placeholder={activeTab === 'DAILIES' ? "Add a Daily..." : "Add a To-Do..."}
                             value={newText}
                             onChange={(e) => setNewText(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && (activeTab === 'DAILIES' ? addDaily() : addTodo())}
@@ -314,7 +314,7 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.8rem', opacity: 0.8 }}>
                                     <input type="checkbox" checked={isTimed} onChange={(e) => setIsTimed(e.target.checked)} />
-                                    SCHEDULE DEPLOYMENT
+                                    SCHEDULE
                                 </label>
                                 {isTimed && (
                                     <div style={{ display: 'flex', gap: '8px' }}>
@@ -401,7 +401,7 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
                             </div>
                         )}
 
-                        <p style={{ fontSize: '0.7rem', opacity: 0.5 }}>Press Enter to deploy mission</p>
+                        <p style={{ fontSize: '0.7rem', opacity: 0.5 }}>Press Enter to save</p>
                     </div>
 
                     {activeTab === 'DAILIES' ? (

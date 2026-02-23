@@ -50,11 +50,11 @@ export default function MissionChecklist({ todos, dailies, onToggleTodo, onToggl
             gap: '2rem'
         }}>
             <section>
-                <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: '#10b981', letterSpacing: '0.1em', marginBottom: '1rem', textTransform: 'uppercase' }}>Daily Rites</h3>
+                <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: '#10b981', letterSpacing: '0.1em', marginBottom: '1rem', textTransform: 'uppercase' }}>Dailies</h3>
                 <div
                     style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
                 >
-                    {dailies.length === 0 && <p style={{ fontSize: '0.8rem', opacity: 0.3 }}>No rites established.</p>}
+                    {dailies.length === 0 && <p style={{ fontSize: '0.8rem', opacity: 0.3 }}>No dailies established.</p>}
                     {dailies.map((daily, idx) => (
                         <div
                             key={daily.id}
@@ -105,9 +105,9 @@ export default function MissionChecklist({ todos, dailies, onToggleTodo, onToggl
             </section>
 
             <section>
-                <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: 'var(--accent)', letterSpacing: '0.1em', marginBottom: '1rem', textTransform: 'uppercase' }}>Mission Map</h3>
+                <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: 'var(--accent)', letterSpacing: '0.1em', marginBottom: '1rem', textTransform: 'uppercase' }}>To-Do's</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {todos.length === 0 && <p style={{ fontSize: '0.8rem', opacity: 0.3 }}>No missions assigned.</p>}
+                    {todos.length === 0 && <p style={{ fontSize: '0.8rem', opacity: 0.3 }}>No to-do's assigned.</p>}
                     {todos.map((todo, idx) => (
                         <div
                             key={todo.id}

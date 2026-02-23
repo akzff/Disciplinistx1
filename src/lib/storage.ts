@@ -158,5 +158,31 @@ export const storage = {
 
         storage.saveChat(today, newChat);
         return newChat;
+    },
+
+    exportData: () => {
+        const chats = localStorage.getItem(STORAGE_KEYS.CHATS);
+        const prefs = localStorage.getItem(STORAGE_KEYS.PREFERENCES);
+        return JSON.stringify({
+            chats: chats ? JSON.parse(chats) : {},
+            preferences: prefs ? JSON.parse(prefs) : {},
+            exportedAt: new Date().toISOString()
+        }, null, 2);
+    },
+
+    importData: (jsonStr: string) => {
+        try {
+            const data = JSON.parse(jsonStr);
+            if (data.chats) {
+                localStorage.setItem(STORAGE_KEYS.CHATS, JSON.stringify(data.chats));
+            }
+            if (data.preferences) {
+                localStorage.setItem(STORAGE_KEYS.PREFERENCES, JSON.stringify(data.preferences));
+            }
+            return true;
+        } catch (e) {
+            console.error('Import failed', e);
+            return false;
+        }
     }
 };

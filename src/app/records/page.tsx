@@ -123,6 +123,66 @@ export default function RecordsPage() {
                                 </button>
                             ))}
                         </div>
+
+                        <div style={{ marginTop: '2rem', paddingTop: '1rem', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            <h3 style={{ fontSize: '0.7rem', opacity: 0.5, textTransform: 'uppercase' }}>Data Intelligence</h3>
+                            <button
+                                onClick={() => {
+                                    const data = storage.exportData();
+                                    const blob = new Blob([data], { type: 'application/json' });
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = `deciplinist_backup_${new Date().toISOString().split('T')[0]}.json`;
+                                    a.click();
+                                }}
+                                style={{
+                                    padding: '10px',
+                                    borderRadius: '8px',
+                                    background: 'rgba(255,255,255,0.05)',
+                                    border: '1px solid var(--border)',
+                                    color: 'white',
+                                    fontSize: '0.75rem',
+                                    fontWeight: '800',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                📤 EXPORT BACKUP
+                            </button>
+                            <label style={{
+                                padding: '10px',
+                                borderRadius: '8px',
+                                background: 'rgba(255,255,255,0.05)',
+                                border: '1px solid var(--border)',
+                                color: 'white',
+                                fontSize: '0.75rem',
+                                fontWeight: '800',
+                                cursor: 'pointer',
+                                textAlign: 'center'
+                            }}>
+                                📥 IMPORT BACKUP
+                                <input
+                                    type="file"
+                                    accept=".json"
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+                                        const reader = new FileReader();
+                                        reader.onload = (event) => {
+                                            const content = event.target?.result as string;
+                                            if (storage.importData(content)) {
+                                                alert('Data Protocol Restored. Refreshing system...');
+                                                window.location.reload();
+                                            } else {
+                                                alert('Import Failed. Corrupted data signature.');
+                                            }
+                                        };
+                                        reader.readAsText(file);
+                                    }}
+                                    style={{ display: 'none' }}
+                                />
+                            </label>
+                        </div>
                     </div>
 
                     {/* Report Area */}

@@ -118,8 +118,18 @@ export default function ChatPage() {
 
     try {
       // Read live state instead of stale storage call
-      const todoStatus = todos?.map(t => `${t.text} (${t.completed ? 'DONE' : 'PENDING'})`).join(', ') || 'None';
-      const dailyStatus = dailies?.map(d => `${d.text} (${d.completed ? 'DONE' : 'PENDING'})`).join(', ') || 'None';
+      const todoStatus = todos?.map(t => {
+        let status = `${t.text} (${t.completed ? 'DONE' : 'PENDING'})`;
+        if (t.isTimed) status += ` [Sch: ${t.date} ${t.time}]`;
+        return status;
+      }).join(', ') || 'None';
+
+      const dailyStatus = dailies?.map(d => {
+        let status = `${d.text} (${d.completed ? 'DONE' : 'PENDING'})`;
+        if (d.recurringDays) status += ` [Days: ${d.recurringDays.join(', ')}]`;
+        if (d.frequency) status += ` [Freq: ${d.frequency.count}x/${d.frequency.period}]`;
+        return status;
+      }).join(', ') || 'None';
 
       // Token Optimization: Only send last 10 messages for context
       const contextMessages = newMessages.slice(-10);
