@@ -69,8 +69,8 @@ export interface UserPreferences {
 }
 
 const STORAGE_KEYS = {
-    CHATS: 'deciplinist_chats',
-    PREFERENCES: 'deciplinist_preferences',
+    CHATS: 'disciplinist_chats',
+    PREFERENCES: 'disciplinist_preferences',
 };
 
 export const storage = {
