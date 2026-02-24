@@ -10,10 +10,13 @@ interface MissionChecklistProps {
     onToggleDaily: (id: string) => void;
     onReorderTodo: (newTodos: DailyChat['todos']) => void;
     onReorderDaily: (newDailies: DailyChat['dailies']) => void;
+    onStartLiveMission: (name: string) => void;
 }
 
-export default function MissionChecklist({ todos, dailies, onToggleTodo, onToggleDaily, onReorderTodo, onReorderDaily }: MissionChecklistProps) {
+export default function MissionChecklist({ todos, dailies, onToggleTodo, onToggleDaily, onReorderTodo, onReorderDaily, onStartLiveMission }: MissionChecklistProps) {
     const [dragInfo, setDragInfo] = useState<{ index: number; type: 'DAILIES' | 'TODOS' } | null>(null);
+    const [isStartingLive, setIsStartingLive] = useState(false);
+    const [liveInput, setLiveInput] = useState('');
 
     const handleDragStart = (e: React.DragEvent, index: number, type: 'DAILIES' | 'TODOS') => {
         setDragInfo({ index, type });
@@ -47,8 +50,105 @@ export default function MissionChecklist({ todos, dailies, onToggleTodo, onToggl
             flexDirection: 'column',
             padding: '1.5rem',
             overflowY: 'auto',
-            gap: '2rem'
+            gap: '1.5rem'
         }}>
+            <section style={{ marginBottom: '0.5rem' }}>
+                {isStartingLive ? (
+                    <div className="live-input-box" style={{
+                        background: 'rgba(16, 185, 129, 0.1)',
+                        border: '1px solid var(--accent)',
+                        borderRadius: '12px',
+                        padding: '10px',
+                        animation: 'fadeIn 0.2s ease-out'
+                    }}>
+                        <input
+                            autoFocus
+                            placeholder="Current Mission..."
+                            value={liveInput}
+                            onChange={(e) => setLiveInput(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && liveInput.trim()) {
+                                    onStartLiveMission(liveInput);
+                                    setIsStartingLive(false);
+                                    setLiveInput('');
+                                } else if (e.key === 'Escape') {
+                                    setIsStartingLive(false);
+                                }
+                            }}
+                            style={{
+                                background: 'none',
+                                border: 'none',
+                                color: 'white',
+                                width: '100%',
+                                outline: 'none',
+                                fontSize: '0.8rem',
+                                fontWeight: '700',
+                                marginBottom: '8px'
+                            }}
+                        />
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <button
+                                onClick={() => {
+                                    if (liveInput.trim()) {
+                                        onStartLiveMission(liveInput);
+                                        setIsStartingLive(false);
+                                        setLiveInput('');
+                                    }
+                                }}
+                                style={{
+                                    flex: 1,
+                                    background: 'var(--accent)',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    color: 'white',
+                                    padding: '4px',
+                                    fontSize: '0.65rem',
+                                    fontWeight: '900',
+                                    cursor: 'pointer'
+                                }}
+                            >START</button>
+                            <button
+                                onClick={() => setIsStartingLive(false)}
+                                style={{
+                                    background: 'rgba(255,255,255,0.05)',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    color: 'white',
+                                    padding: '4px 8px',
+                                    fontSize: '0.65rem',
+                                    fontWeight: '900',
+                                    cursor: 'pointer'
+                                }}
+                            >×</button>
+                        </div>
+                    </div>
+                ) : (
+                    <button
+                        onClick={() => setIsStartingLive(true)}
+                        className="live-mission-trigger"
+                        style={{
+                            width: '100%',
+                            background: 'var(--accent)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '12px',
+                            padding: '10px',
+                            fontWeight: '900',
+                            fontSize: '0.7rem',
+                            letterSpacing: '0.1em',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)',
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        <span>🔥</span> LIVE MISSION
+                    </button>
+                )}
+            </section>
             <section>
                 <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: '#10b981', letterSpacing: '0.1em', marginBottom: '1rem', textTransform: 'uppercase' }}>Dailies</h3>
                 <div
@@ -163,6 +263,17 @@ export default function MissionChecklist({ todos, dailies, onToggleTodo, onToggl
         }
         .draggable-item:active {
           cursor: grabbing;
+        }
+        .live-mission-trigger:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+        .live-mission-trigger:active {
+          transform: translateY(0);
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-5px); }
+          to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
         </div>

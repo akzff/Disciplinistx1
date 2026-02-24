@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 const GROQ_API_KEY = ['gsk_OwdildpH', 'lYNM6pHORSvJ', 'WGdyb3FYX1oc', 'mEasrbOA5g7v4VuP2LWn'].join('');
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
-const MODEL = 'openai/gpt-oss-120b';
+const MODEL = 'qwen/qwen3-32b';
 
 export async function POST(req: Request) {
     try {

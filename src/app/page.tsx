@@ -35,14 +35,12 @@ export default function ChatPage() {
   const [editValue, setEditValue] = useState('');
   const [botMood, setBotMood] = useState<'NEUTRAL' | 'DISAPPOINTED' | 'HOPEFUL' | 'DOMINATOR'>('NEUTRAL');
   const [completedTasks, setCompletedTasks] = useState<DailyChat['completedTasks']>([]);
-  const [isStartingLiveMission, setIsStartingLiveMission] = useState(false);
-  const [liveMissionInput, setLiveMissionInput] = useState('');
   const [now, setNow] = useState(Date.now());
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const apiConfig = {
-    model: 'openai/gpt-oss-120b',
+    model: 'qwen/qwen3-32b',
     provider: 'Groq',
     temperature: 0.7,
     maxTokens: 2000,
@@ -443,6 +441,7 @@ export default function ChatPage() {
             onToggleDaily={(id) => setDailies(prev => prev.map(d => d.id === id ? { ...d, completed: !d.completed } : d))}
             onReorderTodo={(newTodos) => setTodos(newTodos)}
             onReorderDaily={(newDailies) => setDailies(newDailies)}
+            onStartLiveMission={startManualTask}
           />
 
           {isPreviousDayOpen && (
@@ -677,87 +676,6 @@ export default function ChatPage() {
             </div>
           )}
 
-          <div style={{ position: 'absolute', bottom: '100px', right: '30px', zIndex: 100, display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'flex-end' }}>
-            {isStartingLiveMission ? (
-              <div style={{
-                background: 'rgba(13, 13, 13, 0.95)',
-                backdropFilter: 'blur(10px)',
-                border: '1px solid var(--accent)',
-                borderRadius: '16px',
-                padding: '12px',
-                display: 'flex',
-                gap: '8px',
-                boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
-                animation: 'slideIn 0.2s ease-out'
-              }}>
-                <input
-                  autoFocus
-                  placeholder="What is the mission?"
-                  value={liveMissionInput}
-                  onChange={(e) => setLiveMissionInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      startManualTask(liveMissionInput);
-                      setIsStartingLiveMission(false);
-                      setLiveMissionInput('');
-                    } else if (e.key === 'Escape') {
-                      setIsStartingLiveMission(false);
-                    }
-                  }}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'white',
-                    outline: 'none',
-                    fontSize: '0.85rem',
-                    fontWeight: '700',
-                    width: '200px'
-                  }}
-                />
-                <button
-                  onClick={() => {
-                    startManualTask(liveMissionInput);
-                    setIsStartingLiveMission(false);
-                    setLiveMissionInput('');
-                  }}
-                  style={{
-                    background: 'var(--accent)',
-                    border: 'none',
-                    borderRadius: '8px',
-                    color: 'white',
-                    padding: '4px 12px',
-                    fontSize: '0.65rem',
-                    fontWeight: '900',
-                    cursor: 'pointer'
-                  }}
-                >GO</button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setIsStartingLiveMission(true)}
-                className="live-mission-btn"
-                style={{
-                  background: 'var(--accent)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '50px',
-                  padding: '12px 24px',
-                  fontWeight: '900',
-                  fontSize: '0.75rem',
-                  letterSpacing: '0.1em',
-                  cursor: 'pointer',
-                  boxShadow: '0 8px 25px rgba(16, 185, 129, 0.4)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
-                }}
-              >
-                <span style={{ fontSize: '1.1rem' }}>🔥</span>
-                <span>START LIVE MISSION</span>
-              </button>
-            )}
-          </div>
         </div>
 
         <div className="input-area">

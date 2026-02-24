@@ -45,17 +45,29 @@ export default function RecordsPage() {
                 ambition: preferences.ambition
             };
 
-            const prompt = `Provide a brief, factual summary of the user's day on ${chat.date} based on their chat context and checklist data. 
-            Summarize exactly what was accomplished and what was missed. 
-            Do NOT provide advice, feedback, or coaching. Just the data-driven summary.
-            Context: ${JSON.stringify(context)}`;
+            const prompt = `Provide a comprehensive, factual intelligence report of the user's day on ${chat.date} based on their chat history and checklist data. 
+            
+            EXTRACT and INCLUDE:
+            1. Every specific detail, nuance, and update the user shared in the chat history.
+            2. Contextual notes for each task (e.g., if the user mentioned a specific time, a feeling, a difficulty, or a specific way they did something).
+            3. Qualitative data like user's stated energy, focus, distractions mentioned, or reflections on their discipline.
+            4. Any metadata from chat like specific timings or durations of activities.
+            
+            Structure the report with clear bullet points for tasks. For each task, add parenthetical details if the user mentioned them in chat.
+            
+            CRITICAL: Do NOT skip any details the user provided. If the user mentioned it in chat, it should be reflected here. This is a data-driven summary.
+            
+            Do NOT provide advice, feedback, or coaching.
+            
+            Context Data: ${JSON.stringify({ ...context, messages: undefined })}
+            Chat History: ${JSON.stringify(context.messages)}`;
 
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     messages: [{ role: 'user', content: prompt }],
-                    systemPrompt: "You are a factual data analyzer. Provide a concise summary of the day's events based on the provided data. No advice. No conversational filler."
+                    systemPrompt: "You are a factual data analyzer. Your sole purpose is to extract every relevant piece of information from the provided chat history and checklist data to create a detailed report. Be thorough and capture all qualitative and quantitative details mentioned by the user. Do not summarize away specific details; include them."
                 }),
             });
 
