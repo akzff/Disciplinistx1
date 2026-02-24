@@ -9,7 +9,7 @@ export async function POST(req: Request) {
         const { messages, systemPrompt } = await req.json();
 
         const fullMessages = [
-            { role: 'system', content: systemPrompt || 'You are Guru, a helpful AI.' },
+            { role: 'system', content: systemPrompt || 'You are Disciplinist, a helpful AI.' },
             ...messages
         ];
 

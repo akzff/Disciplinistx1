@@ -8,7 +8,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Guru AI | GPT-OSS 120B",
+  title: "Disciplinist | GPT-OSS 120B",
   description: "Advanced coaching interface powered by Groq",
 };
 

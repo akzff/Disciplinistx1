@@ -38,6 +38,7 @@ export default function RecordsPage() {
                 date: chat.date,
                 todos: chat.todos,
                 dailies: chat.dailies,
+                completedTasks: chat.completedTasks,
                 messages: chat.messages,
                 habits: preferences.habitNotes,
                 vision: preferences.dayVision,
@@ -222,6 +223,23 @@ export default function RecordsPage() {
                                         <p style={{ fontSize: '0.6rem', marginTop: '4px', fontWeight: '800' }}>DISCIPLINE SCORE</p>
                                     </div>
                                 </div>
+
+                                {chat.completedTasks && chat.completedTasks.length > 0 && (
+                                    <div style={{ marginBottom: '3rem' }}>
+                                        <h3 style={{ fontSize: '0.75rem', fontWeight: '900', letterSpacing: '0.2em', opacity: 0.5, marginBottom: '1rem', textTransform: 'uppercase' }}>Live Mission History</h3>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
+                                            {chat.completedTasks.map((task, i) => (
+                                                <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', padding: '15px', borderRadius: '12px' }}>
+                                                    <p style={{ fontSize: '0.6rem', fontWeight: '900', color: 'var(--accent)', marginBottom: '4px' }}>Protcol Complete</p>
+                                                    <p style={{ fontWeight: '800', fontSize: '0.9rem' }}>{task.name}</p>
+                                                    <p style={{ fontSize: '0.7rem', opacity: 0.5, marginTop: '8px' }}>
+                                                        ⏱️ {Math.floor(task.activeTime / 60000)}m {Math.floor((task.activeTime % 60000) / 1000)}s
+                                                    </p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* AI Content */}
                                 <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: '20px', border: '1px solid var(--border)', padding: '2rem' }}>

@@ -54,6 +54,12 @@ export interface DailyChat {
         recurringDays?: string[]; // ['Mon', 'Tue', etc]
         subtasks?: { id: string; text: string; completed: boolean }[]
     }[];
+    completedTasks?: {
+        name: string;
+        activeTime: number;
+        pausedTime: number;
+        finishedAt: number;
+    }[];
     aiSummary?: string;
 }
 

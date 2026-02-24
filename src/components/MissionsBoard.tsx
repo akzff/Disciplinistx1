@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { DailyChat } from '@/lib/storage';
+import TaskEditModal from './TaskEditModal';
 
 interface MissionsBoardProps {
     chat: DailyChat;
@@ -18,6 +19,7 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
     const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
     const [isTimed, setIsTimed] = useState(false);
     const [dragIndex, setDragIndex] = useState<number | null>(null);
+    const [editTarget, setEditTarget] = useState<{ item: any, type: 'DAILIES' | 'TODOS' } | null>(null);
 
     // Daily specific state
     const [dailyScheduleType, setDailyScheduleType] = useState<'EVERYDAY' | 'DAYS' | 'FREQUENCY'>('EVERYDAY');
@@ -112,38 +114,22 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
         const item = items.find(i => i.id === id);
         if (!item) return;
 
-        const newText = prompt('Edit task:', item.text);
-        if (newText === null || newText.trim() === '') return;
+        setEditTarget({ item, type });
+    };
 
-        if (type === 'DAILIES') {
-            const updated = chat.dailies.map(d => d.id === id ? { ...d, text: newText } : d);
+    const handleSaveEdit = (updatedItem: any) => {
+        if (editTarget?.type === 'DAILIES') {
+            const updated = chat.dailies.map(d => d.id === updatedItem.id ? updatedItem : d);
             onUpdate({ dailies: updated });
         } else {
-            const updated = chat.todos.map(t => t.id === id ? { ...t, text: newText } : t);
+            const updated = chat.todos.map(t => t.id === updatedItem.id ? updatedItem : t);
             onUpdate({ todos: updated });
         }
+        setEditTarget(null);
     };
 
     const toggleTodoTime = (id: string) => {
-        const updated = chat.todos.map(t => {
-            if (t.id === id) {
-                const nextIsTimed = !t.isTimed;
-                let nextTime = t.time;
-                let nextDate = t.date;
-
-                if (nextIsTimed) {
-                    if (!nextTime) {
-                        nextTime = prompt('Enter schedule time (e.g. 09:00 AM):') || '';
-                    }
-                    const userDate = prompt('Enter schedule date (DD/MM/YYYY):', t.date || new Date().toLocaleDateString('en-GB'));
-                    if (userDate) nextDate = userDate;
-                }
-
-                return { ...t, isTimed: nextIsTimed, time: nextTime, date: nextDate };
-            }
-            return t;
-        });
-        onUpdate({ todos: updated });
+        editItem(id, 'TODOS');
     };
 
     const deleteItem = (id: string, type: 'DAILIES' | 'TODOS') => {
@@ -159,96 +145,7 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
     };
 
     const addSubtask = (parentId: string, type: 'DAILIES' | 'TODOS') => {
-        const text = prompt('Enter subtask:');
-        if (!text) return;
-
-        if (type === 'TODOS') {
-            const updated = chat.todos.map(t => {
-                if (t.id === parentId) {
-                    return { ...t, subtasks: [...(t.subtasks || []), { id: Date.now().toString(), text, completed: false }] };
-                }
-                return t;
-            });
-            onUpdate({ todos: updated });
-        } else {
-            const updated = chat.dailies.map(d => {
-                if (d.id === parentId) {
-                    return { ...d, subtasks: [...(d.subtasks || []), { id: Date.now().toString(), text, completed: false }] };
-                }
-                return d;
-            });
-            onUpdate({ dailies: updated });
-        }
-    };
-
-    const editSubtask = (parentId: string, subId: string, type: 'DAILIES' | 'TODOS') => {
-        const items = type === 'DAILIES' ? chat.dailies : chat.todos;
-        const parent = items.find(i => i.id === parentId);
-        const sub = parent?.subtasks?.find(s => s.id === subId);
-        if (!sub) return;
-
-        const newText = prompt('Edit subtask:', sub.text);
-        if (newText === null || newText.trim() === '') return;
-
-        if (type === 'DAILIES') {
-            const updated = chat.dailies.map(d => {
-                if (d.id === parentId) {
-                    return { ...d, subtasks: d.subtasks?.map(s => s.id === subId ? { ...s, text: newText } : s) };
-                }
-                return d;
-            });
-            onUpdate({ dailies: updated });
-        } else {
-            const updated = chat.todos.map(t => {
-                if (t.id === parentId) {
-                    return { ...t, subtasks: t.subtasks?.map(s => s.id === subId ? { ...s, text: newText } : s) };
-                }
-                return t;
-            });
-            onUpdate({ todos: updated });
-        }
-    };
-
-    const deleteSubtask = (parentId: string, subId: string, type: 'DAILIES' | 'TODOS') => {
-        if (!confirm('Delete subtask?')) return;
-
-        if (type === 'DAILIES') {
-            const updated = chat.dailies.map(d => {
-                if (d.id === parentId) {
-                    return { ...d, subtasks: d.subtasks?.filter(s => s.id !== subId) };
-                }
-                return d;
-            });
-            onUpdate({ dailies: updated });
-        } else {
-            const updated = chat.todos.map(t => {
-                if (t.id === parentId) {
-                    return { ...t, subtasks: t.subtasks?.filter(s => s.id !== subId) };
-                }
-                return t;
-            });
-            onUpdate({ todos: updated });
-        }
-    };
-
-    const toggleSubtask = (parentId: string, subId: string, type: 'DAILIES' | 'TODOS') => {
-        if (type === 'TODOS') {
-            const updated = chat.todos.map(t => {
-                if (t.id === parentId) {
-                    return { ...t, subtasks: t.subtasks?.map(s => s.id === subId ? { ...s, completed: !s.completed } : s) };
-                }
-                return t;
-            });
-            onUpdate({ todos: updated });
-        } else {
-            const updated = chat.dailies.map(d => {
-                if (d.id === parentId) {
-                    return { ...d, subtasks: d.subtasks?.map(s => s.id === subId ? { ...s, completed: !s.completed } : s) };
-                }
-                return d;
-            });
-            onUpdate({ dailies: updated });
-        }
+        editItem(parentId, type);
     };
 
     const toggleDay = (day: string) => {
@@ -438,19 +335,14 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
                                             </div>
 
                                             {daily.subtasks && daily.subtasks.length > 0 && (
-                                                <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                    {daily.subtasks.map(sub => (
-                                                        <div key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', cursor: 'pointer', flex: 1 }}>
-                                                                <input type="checkbox" checked={sub.completed} onChange={(e) => { e.stopPropagation(); toggleSubtask(daily.id, sub.id, 'DAILIES'); }} />
-                                                                <span style={{ opacity: sub.completed ? 0.5 : 0.8, textDecoration: sub.completed ? 'line-through' : 'none' }}>{sub.text}</span>
-                                                            </label>
-                                                            <div className="sub-actions" style={{ display: 'flex', gap: '8px' }}>
-                                                                <button onClick={() => editSubtask(daily.id, sub.id, 'DAILIES')} style={{ background: 'none', border: 'none', color: 'white', fontSize: '0.6rem', opacity: 0.3, cursor: 'pointer' }}>EDIT</button>
-                                                                <button onClick={() => deleteSubtask(daily.id, sub.id, 'DAILIES')} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.6rem', opacity: 0.3, cursor: 'pointer' }}>DEL</button>
-                                                            </div>
+                                                <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                    {daily.subtasks.slice(0, 3).map(sub => (
+                                                        <div key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem', opacity: 0.6 }}>
+                                                            <span>{sub.completed ? '✅' : '○'}</span>
+                                                            <span style={{ textDecoration: sub.completed ? 'line-through' : 'none' }}>{sub.text}</span>
                                                         </div>
                                                     ))}
+                                                    {daily.subtasks.length > 3 && <span style={{ fontSize: '0.65rem', opacity: 0.4 }}>+{daily.subtasks.length - 3} more sub-missions</span>}
                                                 </div>
                                             )}
                                         </div>
@@ -500,19 +392,14 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
                                             </div>
 
                                             {todo.subtasks && todo.subtasks.length > 0 && (
-                                                <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                    {todo.subtasks.map(sub => (
-                                                        <div key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', cursor: 'pointer', flex: 1 }}>
-                                                                <input type="checkbox" checked={sub.completed} onChange={(e) => { e.stopPropagation(); toggleSubtask(todo.id, sub.id, 'TODOS'); }} />
-                                                                <span style={{ opacity: sub.completed ? 0.5 : 0.8, textDecoration: sub.completed ? 'line-through' : 'none' }}>{sub.text}</span>
-                                                            </label>
-                                                            <div className="sub-actions" style={{ display: 'flex', gap: '8px' }}>
-                                                                <button onClick={() => editSubtask(todo.id, sub.id, 'TODOS')} style={{ background: 'none', border: 'none', color: 'white', fontSize: '0.6rem', opacity: 0.3, cursor: 'pointer' }}>EDIT</button>
-                                                                <button onClick={() => deleteSubtask(todo.id, sub.id, 'TODOS')} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.6rem', opacity: 0.3, cursor: 'pointer' }}>DEL</button>
-                                                            </div>
+                                                <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                    {todo.subtasks.slice(0, 3).map(sub => (
+                                                        <div key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem', opacity: 0.6 }}>
+                                                            <span>{sub.completed ? '✅' : '○'}</span>
+                                                            <span style={{ textDecoration: sub.completed ? 'line-through' : 'none' }}>{sub.text}</span>
                                                         </div>
                                                     ))}
+                                                    {todo.subtasks.length > 3 && <span style={{ fontSize: '0.65rem', opacity: 0.4 }}>+{todo.subtasks.length - 3} more sub-missions</span>}
                                                 </div>
                                             )}
                                         </div>
@@ -535,6 +422,15 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
                         ))
                     )}
                 </div>
+
+                {editTarget && (
+                    <TaskEditModal
+                        item={editTarget.item}
+                        type={editTarget.type}
+                        onSave={handleSaveEdit}
+                        onClose={() => setEditTarget(null)}
+                    />
+                )}
             </div>
             <style jsx>{`
             .mission-card {
