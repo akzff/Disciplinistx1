@@ -6,6 +6,8 @@ import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+declare const puter: any;
+
 export default function RecordsPage() {
     const [selectedDate, setSelectedDate] = useState('');
     const [chat, setChat] = useState<DailyChat | null>(null);
@@ -61,6 +63,8 @@ export default function RecordsPage() {
             BLOCK 3: STRATEGIC REFINEMENT (Very Short)
             - 2-3 bullet points on exactly what could have been improved.
 
+            Also, at the VERY end, provide a single-line image generation prompt (wrapped in [ARTIFACT_PROMPT: ...]) that visually summarizes the 'vibe' of the day in a cinematic, artistic, or abstract way reflecting the user's level of discipline.
+
             Context: ${JSON.stringify({ ...context, messages: undefined })}
             Chat History: ${JSON.stringify(context.messages)}`;
 
@@ -69,16 +73,32 @@ export default function RecordsPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     messages: [{ role: 'user', content: prompt }],
-                    systemPrompt: "You are a tactical intelligence analyzer. Provide the report in the requested three-block format. Use headers for each block. Be detailed in Block 1 and extremely concise/objective in Blocks 2 and 3. No conversational filler."
+                    systemPrompt: "You are a tactical intelligence analyzer. Provide the report in the requested three-block format. Use headers for each block. Be detailed in Block 1 and extremely concise/objective in Blocks 2 and 3. Add the ARTIFACT_PROMPT at the end. No conversational filler."
                 }),
             });
 
             if (!response.ok) throw new Error('Failed to generate report');
             const data = await response.json();
-            const summary = data.choices[0].message.content;
+            const fullContent = data.choices[0].message.content;
 
-            storage.saveChat(selectedDate, { aiSummary: summary });
-            setChat({ ...chat, aiSummary: summary });
+            // Parse artifact prompt and summary
+            const artifactMatch = fullContent.match(/\[ARTIFACT_PROMPT: (.+?)\]/);
+            const artifactPrompt = artifactMatch ? artifactMatch[1] : `A representation of ${selectedDate} mission, cinematic, discipline, focused`;
+            const summary = fullContent.replace(/\[ARTIFACT_PROMPT: .+?\]/g, '').trim();
+
+            let artifactUrl = '';
+            try {
+                // Use Puter.js for image generation
+                const imageElement = await puter.ai.txt2img(artifactPrompt + ", 4k, cinematic lighting, conceptual art", {
+                    model: 'black-forest-labs/FLUX.1-schnell'
+                });
+                artifactUrl = imageElement.src;
+            } catch (imgError) {
+                console.error('Image generation failed:', imgError);
+            }
+
+            storage.saveChat(selectedDate, { aiSummary: summary, artifactUrl });
+            setChat({ ...chat, aiSummary: summary, artifactUrl });
         } catch (error) {
             console.error(error);
             alert('Mission analysis failed. Try again, Disciple.');
@@ -261,6 +281,37 @@ export default function RecordsPage() {
                                         <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🧘</div>
                                         <h3 style={{ fontSize: '1.1rem', fontWeight: '900', letterSpacing: '0.05em' }}>DISCIPLINIST INTELLIGENCE REPORT</h3>
                                     </div>
+
+                                    {chat.artifactUrl && (
+                                        <div className="artifact-container" style={{
+                                            marginBottom: '2rem',
+                                            borderRadius: '16px',
+                                            overflow: 'hidden',
+                                            border: '1px solid var(--border)',
+                                            background: 'var(--surface)',
+                                            position: 'relative'
+                                        }}>
+                                            <img
+                                                src={chat.artifactUrl}
+                                                alt="Mission Artifact"
+                                                style={{ width: '100%', height: 'auto', display: 'block' }}
+                                            />
+                                            <div style={{
+                                                position: 'absolute',
+                                                bottom: 0,
+                                                left: 0,
+                                                right: 0,
+                                                padding: '1rem',
+                                                background: 'linear-gradient(transparent, rgba(0,0,0,0.8))',
+                                                color: 'white',
+                                                fontSize: '0.65rem',
+                                                fontWeight: '800',
+                                                letterSpacing: '0.1em'
+                                            }}>
+                                                MISSION ARTIFACT: {selectedDate}
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {chat.aiSummary ? (
                                         <div className="report-markdown">

@@ -61,6 +61,7 @@ export interface DailyChat {
         finishedAt: number;
     }[];
     aiSummary?: string;
+    artifactUrl?: string;
 }
 
 export interface UserPreferences {

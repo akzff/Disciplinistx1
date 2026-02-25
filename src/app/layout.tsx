@@ -12,6 +12,8 @@ export const metadata: Metadata = {
   description: "Advanced coaching interface powered by Groq",
 };
 
+import Script from "next/script";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -21,6 +23,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.variable}>
         {children}
+        <Script src="https://js.puter.com/v2/" strategy="beforeInteractive" />
       </body>
     </html>
   );
