@@ -63,7 +63,8 @@ export default function RecordsPage() {
             BLOCK 3: STRATEGIC REFINEMENT (Very Short)
             - 2-3 bullet points on exactly what could have been improved.
 
-            Also, at the VERY end, provide a single-line image generation prompt (wrapped in [ARTIFACT_PROMPT: ...]) that visually summarizes the 'vibe' of the day in a cinematic, artistic, or abstract way reflecting the user's level of discipline.
+            Also, at the VERY end, provide a single-line image generation prompt (wrapped in [ARTIFACT_PROMPT: ...]) that visually summarizes the 'vibe' of the day. 
+            The prompt MUST follow this style: "Create a cinematic collage illustration for the following journal. Treat each scene as a separate shot, like film stills placed together in a single frame. The main scene should be the centerpiece — powerful, visually dominant — while the side scenes orbit it like snapshots from the same storyline. Use meaningful background details. Style it mature manhwa sketch style. Double exposure, Midjourney style, merging, blending, overlay double exposure image, Double Exposure style. TRY MAXIMUM TO IMPLEMENT TWO FRAMES AS BACKGROUND as maximum - NEVER CLOUD IT WITH multiply IMAGES. [Themes of the day: ...]"
 
             Context: ${JSON.stringify({ ...context, messages: undefined })}
             Chat History: ${JSON.stringify(context.messages)}`;
@@ -73,7 +74,7 @@ export default function RecordsPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     messages: [{ role: 'user', content: prompt }],
-                    systemPrompt: "You are a tactical intelligence analyzer. Provide the report in the requested three-block format. Use headers for each block. Be detailed in Block 1 and extremely concise/objective in Blocks 2 and 3. Add the ARTIFACT_PROMPT at the end. No conversational filler."
+                    systemPrompt: "You are a tactical intelligence analyzer. Provide the report in the requested three-block format. Add the ARTIFACT_PROMPT at the end following the exact cinematic manhwa collage style requested. No conversational filler."
                 }),
             });
 
@@ -83,13 +84,13 @@ export default function RecordsPage() {
 
             // Parse artifact prompt and summary
             const artifactMatch = fullContent.match(/\[ARTIFACT_PROMPT: (.+?)\]/);
-            const artifactPrompt = artifactMatch ? artifactMatch[1] : `A representation of ${selectedDate} mission, cinematic, discipline, focused`;
+            const artifactPrompt = artifactMatch ? artifactMatch[1] : `Create a cinematic collage illustration of a disciplined mission. Style it mature manhwa sketch style. Double exposure.`;
             const summary = fullContent.replace(/\[ARTIFACT_PROMPT: .+?\]/g, '').trim();
 
             let artifactUrl = '';
             try {
                 // Use Puter.js for image generation
-                const imageElement = await puter.ai.txt2img(artifactPrompt + ", 4k, cinematic lighting, conceptual art", {
+                const imageElement = await puter.ai.txt2img(artifactPrompt, {
                     model: 'black-forest-labs/FLUX.1-schnell'
                 });
                 artifactUrl = imageElement.src;
