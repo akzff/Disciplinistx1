@@ -159,6 +159,8 @@ export default function ChatPage() {
                     TIME: ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
 
                     RULES:
+                    - Use bullet points for all updates/tasks.
+                    - MAX 3 SENTENCES PER RESPONSE. Brutal brevity. 
                     - TASK_REQUEST: 'Activity' (Ask approval for tasks)
                     - LOG_HABIT: 'Issue' (Log distractions)
                     - MOOD: 'HOPEFUL|DISAPPOINTED|DOMINATOR|NEUTRAL' (End every reply with mood)
@@ -353,6 +355,7 @@ export default function ChatPage() {
     setBotMood(todayChat.botMood || 'NEUTRAL');
     setTodos(todayChat.todos || []);
     setDailies(todayChat.dailies || []);
+    setCompletedTasks(todayChat.completedTasks || []);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
