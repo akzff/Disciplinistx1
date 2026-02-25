@@ -5,6 +5,17 @@ import { storage, Message, DailyChat, UserPreferences, ActiveTask } from '@/lib/
 import Link from 'next/link';
 import MissionsBoard from '@/components/MissionsBoard';
 import MissionChecklist from '@/components/MissionChecklist';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+
+// Strip model's internal reasoning tags before displaying
+function cleanBotMessage(text: string): string {
+  return text
+    .replace(/<think>[\s\S]*?<\/think>/gi, '')
+    .replace(/<thinking>[\s\S]*?<\/thinking>/gi, '')
+    .trim();
+}
+
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -512,7 +523,15 @@ export default function ChatPage() {
                       )}
                     </div>
                     <div className={`message ${msg.role}`}>
-                      {msg.content}
+                      {msg.role === 'assistant' ? (
+                        <div className="chat-md">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {cleanBotMessage(msg.content)}
+                          </ReactMarkdown>
+                        </div>
+                      ) : (
+                        msg.content
+                      )}
 
                       {msg.taskRequest?.status === 'PENDING' && (
                         <div className="task-request-inline">
