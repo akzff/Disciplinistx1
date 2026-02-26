@@ -434,6 +434,7 @@ export default function ChatPage() {
               Missions
             </button>
             <Link href="/expenses" className="nav-link">Expenses</Link>
+            <Link href="/analytics" className="nav-link">Analytics</Link>
             <Link href="/records" className="nav-link">Records</Link>
           </nav>
 

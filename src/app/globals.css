@@ -86,9 +86,25 @@ main {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  padding: 2rem;
-  max-width: 1000px;
+  padding: 1.5rem 2rem;
+  max-width: 1400px;
   margin: 0 auto;
+}
+
+.block-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 1.75rem;
+  box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.block-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 45px -5px rgba(0, 0, 0, 0.6);
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 .chat-container {

@@ -133,6 +133,7 @@ export default function ExpensesPage() {
                     <nav style={{ display: 'flex', gap: '0.5rem' }}>
                         <Link href="/" className="nav-link">Chat</Link>
                         <Link href="/expenses" className="nav-link active">Expenses</Link>
+                        <Link href="/analytics" className="nav-link">Analytics</Link>
                         <Link href="/records" className="nav-link">Records</Link>
                     </nav>
                 </header>

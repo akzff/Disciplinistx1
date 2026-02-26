@@ -189,6 +189,7 @@ Recent Chat: ${JSON.stringify(context.messages?.slice(-10))}`;
                     <nav style={{ display: 'flex', gap: '0.5rem' }}>
                         <Link href="/" className="nav-link">Chat</Link>
                         <Link href="/expenses" className="nav-link">Expenses</Link>
+                        <Link href="/analytics" className="nav-link">Analytics</Link>
                         <Link href="/records" className="nav-link active">Records</Link>
                     </nav>
                 </header>
@@ -330,14 +331,17 @@ Recent Chat: ${JSON.stringify(context.messages?.slice(-10))}`;
                                         )}
 
                                         {/* 1st Column (Detailed) vs 2nd Column (Concise) Layout */}
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1.5rem' }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.6fr) minmax(0, 1fr)', gap: '1.5rem', alignItems: 'stretch' }}>
                                             {/* Detailed Execution Log */}
-                                            <div className="block-card detailed" style={{ height: 'fit-content', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: '16px', padding: '1.25rem' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: `1px solid ${blockCards[0].color}30` }}>
-                                                    <span style={{ fontSize: '1.2rem' }}>{blockCards[0].icon}</span>
+                                            <div className="block-card detailed" style={{
+                                                display: 'flex',
+                                                flexDirection: 'column'
+                                            }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: `1px solid ${blockCards[0].color}30` }}>
+                                                    <div style={{ padding: '8px', borderRadius: '12px', background: `${blockCards[0].color}15`, fontSize: '1.4rem' }}>{blockCards[0].icon}</div>
                                                     <div>
-                                                        <p style={{ fontSize: '0.7rem', fontWeight: '900', color: blockCards[0].color, letterSpacing: '0.05em' }}>{blockCards[0].label.toUpperCase()}</p>
-                                                        <p style={{ fontSize: '0.6rem', opacity: 0.4, marginTop: '1px' }}>{blockCards[0].sub}</p>
+                                                        <p style={{ fontSize: '0.75rem', fontWeight: '900', color: blockCards[0].color, letterSpacing: '0.1em' }}>{blockCards[0].label.toUpperCase()}</p>
+                                                        <p style={{ fontSize: '0.65rem', opacity: 0.4, marginTop: '2px' }}>{blockCards[0].sub}</p>
                                                     </div>
                                                 </div>
                                                 {blockCards[0].content ? (
@@ -347,19 +351,25 @@ Recent Chat: ${JSON.stringify(context.messages?.slice(-10))}`;
                                                         </ReactMarkdown>
                                                     </div>
                                                 ) : (
-                                                    <p style={{ opacity: 0.3, fontSize: '0.8rem', fontStyle: 'italic' }}>No data available.</p>
+                                                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.3, padding: '3.5rem 2rem' }}>
+                                                        <p style={{ fontStyle: 'italic', fontSize: '0.85rem' }}>No telemetry data for this cycle.</p>
+                                                    </div>
                                                 )}
                                             </div>
 
                                             {/* Alignment & Refinement Sidebar */}
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                                                 {[1, 2].map((idx) => (
-                                                    <div key={idx} className="block-card concise" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: '16px', padding: '1.25rem', height: 'fit-content' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: `1px solid ${blockCards[idx].color}30` }}>
-                                                            <span style={{ fontSize: '1.2rem' }}>{blockCards[idx].icon}</span>
+                                                    <div key={idx} className="block-card concise" style={{
+                                                        flex: 1,
+                                                        display: 'flex',
+                                                        flexDirection: 'column'
+                                                    }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: `1px solid ${blockCards[idx].color}30` }}>
+                                                            <div style={{ padding: '8px', borderRadius: '12px', background: `${blockCards[idx].color}15`, fontSize: '1.4rem' }}>{blockCards[idx].icon}</div>
                                                             <div>
-                                                                <p style={{ fontSize: '0.7rem', fontWeight: '900', color: blockCards[idx].color, letterSpacing: '0.05em' }}>{blockCards[idx].label.toUpperCase()}</p>
-                                                                <p style={{ fontSize: '0.6rem', opacity: 0.4, marginTop: '1px' }}>{blockCards[idx].sub}</p>
+                                                                <p style={{ fontSize: '0.75rem', fontWeight: '900', color: blockCards[idx].color, letterSpacing: '0.1em' }}>{blockCards[idx].label.toUpperCase()}</p>
+                                                                <p style={{ fontSize: '0.65rem', opacity: 0.4, marginTop: '2px' }}>{blockCards[idx].sub}</p>
                                                             </div>
                                                         </div>
                                                         {blockCards[idx].content ? (
@@ -369,7 +379,9 @@ Recent Chat: ${JSON.stringify(context.messages?.slice(-10))}`;
                                                                 </ReactMarkdown>
                                                             </div>
                                                         ) : (
-                                                            <p style={{ opacity: 0.3, fontSize: '0.8rem', fontStyle: 'italic' }}>No data available.</p>
+                                                            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.2, padding: '1rem' }}>
+                                                                <p style={{ fontStyle: 'italic', fontSize: '0.75rem' }}>Awaiting sync...</p>
+                                                            </div>
                                                         )}
                                                     </div>
                                                 ))}
