@@ -36,7 +36,8 @@ export default function ChatPage() {
     dailyModel: '',
     ambition: '',
     mentorLevel: 1,
-    habitNotes: []
+    habitNotes: [],
+    selectedModel: 'qwen/qwen3-32b'
   });
   const [activeTasks, setActiveTasks] = useState<ActiveTask[]>([]);
   const [distractions, setDistractions] = useState<string[]>([]);
@@ -148,6 +149,7 @@ export default function ChatPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: contextMessages,
+          model: preferences.selectedModel,
           systemPrompt: `You are Disciplinist, a ruthless discipline coach.
                     USER: ${preferences.name}
                     AMBITION: ${preferences.ambition}
@@ -451,13 +453,11 @@ export default function ChatPage() {
           <MissionChecklist
             todos={todos}
             dailies={dailies}
-            expenses={expenses || []}
-            onToggleTodo={(id) => setTodos(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t))}
-            onToggleDaily={(id) => setDailies(prev => prev.map(d => d.id === id ? { ...d, completed: !d.completed } : d))}
-            onReorderTodo={(newTodos) => setTodos(newTodos)}
-            onReorderDaily={(newDailies) => setDailies(newDailies)}
+            onToggleTodo={(id: string) => setTodos(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t))}
+            onToggleDaily={(id: string) => setDailies(prev => prev.map(d => d.id === id ? { ...d, completed: !d.completed } : d))}
+            onReorderTodo={(newTodos: DailyChat['todos']) => setTodos(newTodos)}
+            onReorderDaily={(newDailies: DailyChat['dailies']) => setDailies(newDailies)}
             onStartLiveMission={startManualTask}
-            onAddExpense={(amount, text) => setExpenses(prev => [...(prev || []), { id: Date.now().toString(), amount, text }])}
           />
 
           {isPreviousDayOpen && (
@@ -527,7 +527,19 @@ export default function ChatPage() {
                     <div className={`message ${msg.role}`}>
                       {msg.role === 'assistant' ? (
                         <div className="chat-md">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                              img: ({ node, ...props }) => <img {...props} style={{ maxWidth: '100%', borderRadius: '12px', marginTop: '10px' }} alt="AI generated" />,
+                              a: ({ node, ...props }) => {
+                                const isImage = props.href?.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i);
+                                if (isImage) {
+                                  return <img src={props.href} style={{ maxWidth: '100%', borderRadius: '12px', marginTop: '10px', display: 'block' }} alt="AI generated" />;
+                                }
+                                return <a {...props} target="_blank" rel="noopener noreferrer" />;
+                              }
+                            }}
+                          >
                             {cleanBotMessage(msg.content)}
                           </ReactMarkdown>
                         </div>
@@ -629,6 +641,36 @@ export default function ChatPage() {
                       value={preferences.bio}
                       onChange={(e) => updateProfile({ bio: e.target.value })}
                     />
+                  </div>
+                </div>
+
+                <div className="setting-item">
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--accent)', display: 'block', marginBottom: '8px' }}>CORE MODEL</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {[
+                      { id: 'qwen/qwen3-32b', name: 'LITE-CORE (GROQ)', sub: 'Fast, efficient coaching' },
+                      { id: 'gpt-4o', name: 'PRIME-CORE (POE)', sub: 'High intelligence reasoning' },
+                      { id: 'gpt-image-1.5', name: 'VISION-CORE (POE)', sub: 'Image generation enabled' }
+                    ].map(m => (
+                      <button
+                        key={m.id}
+                        onClick={() => updateProfile({ selectedModel: m.id })}
+                        style={{
+                          width: '100%',
+                          textAlign: 'left',
+                          padding: '10px',
+                          borderRadius: '8px',
+                          border: preferences.selectedModel === m.id ? '1px solid var(--accent)' : '1px solid var(--border)',
+                          background: preferences.selectedModel === m.id ? 'rgba(0,186,124,0.1)' : 'var(--surface)',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          fontFamily: 'inherit'
+                        }}
+                      >
+                        <div style={{ fontSize: '0.75rem', fontWeight: '900', color: preferences.selectedModel === m.id ? 'var(--accent)' : 'white' }}>{m.name}</div>
+                        <div style={{ fontSize: '0.6rem', opacity: 0.5 }}>{m.sub}</div>
+                      </button>
+                    ))}
                   </div>
                 </div>
 

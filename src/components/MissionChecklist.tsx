@@ -2,26 +2,21 @@
 
 import { useState } from 'react';
 import { DailyChat } from '@/lib/storage';
-import Link from 'next/link';
 
 interface MissionChecklistProps {
     todos: DailyChat['todos'];
     dailies: DailyChat['dailies'];
-    expenses: DailyChat['expenses'];
     onToggleTodo: (id: string) => void;
     onToggleDaily: (id: string) => void;
     onReorderTodo: (newTodos: DailyChat['todos']) => void;
     onReorderDaily: (newDailies: DailyChat['dailies']) => void;
     onStartLiveMission: (name: string) => void;
-    onAddExpense: (amount: number, text: string) => void;
 }
 
-export default function MissionChecklist({ todos, dailies, expenses = [], onToggleTodo, onToggleDaily, onReorderTodo, onReorderDaily, onStartLiveMission, onAddExpense }: MissionChecklistProps) {
+export default function MissionChecklist({ todos, dailies, onToggleTodo, onToggleDaily, onReorderTodo, onReorderDaily, onStartLiveMission }: MissionChecklistProps) {
     const [dragInfo, setDragInfo] = useState<{ index: number; type: 'DAILIES' | 'TODOS' } | null>(null);
     const [isStartingLive, setIsStartingLive] = useState(false);
     const [liveInput, setLiveInput] = useState('');
-    const [expenseAmount, setExpenseAmount] = useState('');
-    const [expenseDesc, setExpenseDesc] = useState('');
 
     const handleDragStart = (e: React.DragEvent, index: number, type: 'DAILIES' | 'TODOS') => {
         setDragInfo({ index, type });
@@ -263,54 +258,6 @@ export default function MissionChecklist({ todos, dailies, expenses = [], onTogg
                 </div>
             </section>
 
-            <section style={{ borderTop: '1px solid var(--border)', paddingTop: '1.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: '#f59e0b', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Resources</h3>
-                    <Link href="/expenses" style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--accent)', textDecoration: 'none', opacity: 0.8 }}>MANAGE →</Link>
-                </div>
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '1rem' }}>
-                    <input
-                        type="number"
-                        placeholder="$"
-                        value={expenseAmount}
-                        onChange={e => setExpenseAmount(e.target.value)}
-                        style={{ width: '60px', padding: '8px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', color: 'white', fontSize: '0.75rem', outline: 'none' }}
-                    />
-                    <input
-                        type="text"
-                        placeholder="Log expense..."
-                        value={expenseDesc}
-                        onChange={e => setExpenseDesc(e.target.value)}
-                        onKeyDown={e => {
-                            if (e.key === 'Enter' && expenseAmount && expenseDesc) {
-                                onAddExpense(Number(expenseAmount), expenseDesc);
-                                setExpenseAmount('');
-                                setExpenseDesc('');
-                            }
-                        }}
-                        style={{ flex: 1, padding: '8px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', color: 'white', fontSize: '0.75rem', outline: 'none' }}
-                    />
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    {expenses.length > 0 ? (
-                        <>
-                            {expenses.slice(-3).map((exp) => (
-                                <div key={exp.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                                    <span style={{ fontSize: '0.7rem', fontWeight: '600', opacity: 0.8 }}>{exp.text}</span>
-                                    <span style={{ fontSize: '0.75rem', fontWeight: '900', color: '#f59e0b' }}>${exp.amount.toFixed(2)}</span>
-                                </div>
-                            ))}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 10px', marginTop: '4px' }}>
-                                <span style={{ fontSize: '0.65rem', fontWeight: '900', opacity: 0.4 }}>TOTAL TODAY</span>
-                                <span style={{ fontSize: '0.8rem', fontWeight: '900', color: 'white' }}>${expenses.reduce((sum, e) => sum + e.amount, 0).toFixed(2)}</span>
-                            </div>
-                        </>
-                    ) : (
-                        <p style={{ fontSize: '0.75rem', opacity: 0.3, fontStyle: 'italic', textAlign: 'center' }}>No resource drain today.</p>
-                    )}
-                </div>
-            </section>
 
             <style jsx>{`
         .draggable-item:hover {

@@ -63,6 +63,7 @@ export interface DailyChat {
     aiSummary?: string;
     artifactUrl?: string;
     expenses?: { id: string; amount: number; text: string }[];
+    financialAudit?: string;
 }
 
 export interface UserPreferences {
@@ -74,6 +75,7 @@ export interface UserPreferences {
     ambition: string;
     mentorLevel: 1 | 2 | 3;
     habitNotes: HabitIssue[];
+    selectedModel: string;
 }
 
 const STORAGE_KEYS = {
@@ -126,7 +128,8 @@ export const storage = {
             dailyModel: '',
             ambition: '',
             mentorLevel: 1,
-            habitNotes: []
+            habitNotes: [],
+            selectedModel: 'qwen/qwen3-32b'
         };
         if (typeof window === 'undefined') return defaults;
         const stored = localStorage.getItem(STORAGE_KEYS.PREFERENCES);
