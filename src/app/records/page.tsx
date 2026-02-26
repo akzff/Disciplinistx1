@@ -6,6 +6,7 @@ import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare const puter: any;
 
 interface ReportBlocks {
@@ -124,6 +125,7 @@ Chat: ${JSON.stringify(context.messages?.slice(-10))}`;
         }
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const calculateStats = (items: any[]) => {
         if (!items || items.length === 0) return { total: 0, completed: 0, percent: 0 };
         const completed = items.filter(i => i.completed).length;
@@ -339,7 +341,7 @@ Chat: ${JSON.stringify(context.messages?.slice(-10))}`;
                                     <div style={{ padding: '5rem 0', textAlign: 'center', opacity: 0.3 }}>
                                         <p style={{ fontSize: '3rem', marginBottom: '1rem' }}>🌓</p>
                                         <p style={{ fontWeight: '800', letterSpacing: '0.1em' }}>WAITING FOR END-OF-DAY DEBRIEF</p>
-                                        <p style={{ fontSize: '0.8rem', marginTop: '8px' }}>Generate a report to see the Disciplinist's assessment of your day.</p>
+                                        <p style={{ fontSize: '0.8rem', marginTop: '8px' }}>Generate a report to see the Disciplinist&apos;s assessment of your day.</p>
                                     </div>
                                 )}
                             </div>

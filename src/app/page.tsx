@@ -51,14 +51,6 @@ export default function ChatPage() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const apiConfig = {
-    model: 'qwen/qwen3-32b',
-    provider: 'Groq',
-    temperature: 0.7,
-    maxTokens: 2000,
-    endpoint: 'https://api.groq.com/openai/v1/chat/completions'
-  };
-
   useEffect(() => {
     const today = storage.getCurrentDate();
     const prev = storage.getPreviousDay(today);
@@ -197,7 +189,7 @@ export default function ChatPage() {
 
       const moodMatch = aiContent.match(/MOOD: ['"](DISAPPOINTED|HOPEFUL|DOMINATOR|NEUTRAL)['"]/i);
       if (moodMatch) {
-        setBotMood(moodMatch[1].toUpperCase() as any);
+        setBotMood(moodMatch[1].toUpperCase() as 'NEUTRAL' | 'DISAPPOINTED' | 'HOPEFUL' | 'DOMINATOR');
       }
 
       const aiMessage: Message = {
@@ -233,7 +225,7 @@ export default function ChatPage() {
           setExpenses(prev => [...(prev || []), { id: Date.now().toString(), amount, text }]);
         }
       }
-
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error('Chat Error:', error);
       setMessages((prev) => [...prev, { role: 'assistant', content: `⚠️ Error: ${error.message}` }]);
@@ -387,10 +379,6 @@ export default function ChatPage() {
     }
   };
 
-  const savePreferences = (val: string) => {
-    updateProfile({ dayVision: val });
-  };
-
   const updateProfile = (updates: Partial<UserPreferences>) => {
     const newPrefs = { ...preferences, ...updates };
     setPreferences(newPrefs);
@@ -431,7 +419,7 @@ export default function ChatPage() {
                 {botMood}
               </span>
             </h1>
-            <p style={{ fontSize: '0.75rem', opacity: 0.6, fontWeight: '500' }}>{activeDay === currentDate ? 'TODAY' : 'YESTERDAY'}'S SESSION</p>
+            <p style={{ fontSize: '0.75rem', opacity: 0.6, fontWeight: '500' }}>{activeDay === currentDate ? 'TODAY' : 'YESTERDAY'}&apos;S SESSION</p>
           </div>
 
           <nav style={{ display: 'flex', gap: '0.5rem', marginRight: '1rem' }}>
@@ -470,7 +458,6 @@ export default function ChatPage() {
             onReorderDaily={(newDailies) => setDailies(newDailies)}
             onStartLiveMission={startManualTask}
             onAddExpense={(amount, text) => setExpenses(prev => [...(prev || []), { id: Date.now().toString(), amount, text }])}
-            onRemoveExpense={(id) => setExpenses(prev => (prev || []).filter(e => e.id !== id))}
           />
 
           {isPreviousDayOpen && (
@@ -478,11 +465,11 @@ export default function ChatPage() {
               <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⏳</div>
               <h2 style={{ marginBottom: '1rem' }}>Unfinished Business</h2>
               <p style={{ maxWidth: '400px', opacity: 0.8, marginBottom: '2rem' }}>
-                You haven't told the bot how you spent the end of <b>{previousDate}</b>.
+                You haven&apos;t told the bot how you spent the end of <b>{previousDate}</b>.
                 Complete the details before starting today.
               </p>
               <button className="start-day-btn" style={{ fontSize: '1rem', padding: '1rem 2rem' }} onClick={closePreviousDay}>
-                I've Told Everything
+                I&apos;ve Told Everything
               </button>
             </div>
           )}
@@ -651,7 +638,7 @@ export default function ChatPage() {
                     {[1, 2, 3].map(lvl => (
                       <button
                         key={lvl}
-                        onClick={() => updateProfile({ mentorLevel: lvl as any })}
+                        onClick={() => updateProfile({ mentorLevel: lvl as 1 | 2 | 3 })}
                         style={{
                           flex: 1,
                           padding: '10px',

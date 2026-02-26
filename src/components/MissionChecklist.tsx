@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { storage, DailyChat } from '@/lib/storage';
+import { DailyChat } from '@/lib/storage';
 import Link from 'next/link';
 
 interface MissionChecklistProps {
@@ -14,10 +14,9 @@ interface MissionChecklistProps {
     onReorderDaily: (newDailies: DailyChat['dailies']) => void;
     onStartLiveMission: (name: string) => void;
     onAddExpense: (amount: number, text: string) => void;
-    onRemoveExpense: (id: string) => void;
 }
 
-export default function MissionChecklist({ todos, dailies, expenses = [], onToggleTodo, onToggleDaily, onReorderTodo, onReorderDaily, onStartLiveMission, onAddExpense, onRemoveExpense }: MissionChecklistProps) {
+export default function MissionChecklist({ todos, dailies, expenses = [], onToggleTodo, onToggleDaily, onReorderTodo, onReorderDaily, onStartLiveMission, onAddExpense }: MissionChecklistProps) {
     const [dragInfo, setDragInfo] = useState<{ index: number; type: 'DAILIES' | 'TODOS' } | null>(null);
     const [isStartingLive, setIsStartingLive] = useState(false);
     const [liveInput, setLiveInput] = useState('');
@@ -212,9 +211,9 @@ export default function MissionChecklist({ todos, dailies, expenses = [], onTogg
             </section>
 
             <section>
-                <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: 'var(--accent)', letterSpacing: '0.1em', marginBottom: '1rem', textTransform: 'uppercase' }}>To-Do's</h3>
+                <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: 'var(--accent)', letterSpacing: '0.1em', marginBottom: '1rem', textTransform: 'uppercase' }}>To-Do&apos;s</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {todos.length === 0 && <p style={{ fontSize: '0.8rem', opacity: 0.3 }}>No to-do's assigned.</p>}
+                    {todos.length === 0 && <p style={{ fontSize: '0.8rem', opacity: 0.3 }}>No to-do&apos;s assigned.</p>}
                     {todos.map((todo, idx) => (
                         <div
                             key={todo.id}

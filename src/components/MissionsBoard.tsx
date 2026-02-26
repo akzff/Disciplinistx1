@@ -19,6 +19,7 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
     const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
     const [isTimed, setIsTimed] = useState(false);
     const [dragIndex, setDragIndex] = useState<number | null>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [editTarget, setEditTarget] = useState<{ item: any, type: 'DAILIES' | 'TODOS' } | null>(null);
 
     // Daily specific state
@@ -56,7 +57,7 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
         if (!newText.trim()) return;
         const colors = ['#10b981', '#ef4444', '#3b82f6', '#f59e0b'];
         const randomColor = colors[Math.floor(Math.random() * colors.length)];
-
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const newItem: any = {
             id: Date.now().toString(),
             text: newText,
@@ -116,7 +117,7 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
 
         setEditTarget({ item, type });
     };
-
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleSaveEdit = (updatedItem: any) => {
         if (editTarget?.type === 'DAILIES') {
             const updated = chat.dailies.map(d => d.id === updatedItem.id ? updatedItem : d);
@@ -189,7 +190,7 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
                             onClick={() => setActiveTab('TODOS')}
                             style={{ background: 'none', border: 'none', color: activeTab === 'TODOS' ? 'var(--accent)' : 'white', fontWeight: '900', fontSize: '1.2rem', cursor: 'pointer', opacity: activeTab === 'TODOS' ? 1 : 0.5 }}
                         >
-                            TO-DO'S <span style={{ fontSize: '0.8rem', verticalAlign: 'middle', padding: '2px 8px', background: 'var(--accent)', borderRadius: '20px', color: 'white', marginLeft: '8px' }}>{chat.todos?.length || 0}</span>
+                            TO-DO&apos;S <span style={{ fontSize: '0.8rem', verticalAlign: 'middle', padding: '2px 8px', background: 'var(--accent)', borderRadius: '20px', color: 'white', marginLeft: '8px' }}>{chat.todos?.length || 0}</span>
                         </button>
                     </div>
                     <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer' }}>×</button>
@@ -236,7 +237,7 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
                                     {['EVERYDAY', 'DAYS', 'FREQUENCY'].map(type => (
                                         <button
                                             key={type}
-                                            onClick={() => setDailyScheduleType(type as any)}
+                                            onClick={() => setDailyScheduleType(type as 'EVERYDAY' | 'DAYS' | 'FREQUENCY')}
                                             style={{
                                                 background: dailyScheduleType === type ? 'var(--accent)' : 'rgba(255,255,255,0.05)',
                                                 border: 'none',
@@ -287,7 +288,7 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
                                         <span>times /</span>
                                         <select
                                             value={freqPeriod}
-                                            onChange={(e) => setFreqPeriod(e.target.value as any)}
+                                            onChange={(e) => setFreqPeriod(e.target.value as 'WEEK' | 'MONTH')}
                                             style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: 'white', padding: '2px 4px', borderRadius: '4px' }}
                                         >
                                             <option value="WEEK">WEEK</option>

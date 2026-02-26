@@ -3,8 +3,10 @@
 import { useState } from 'react';
 
 interface TaskEditModalProps {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     item: any;
     type: 'DAILIES' | 'TODOS';
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onSave: (updatedItem: any) => void;
     onClose: () => void;
 }
@@ -151,7 +153,7 @@ export default function TaskEditModal({ item, type, onSave, onClose }: TaskEditM
                                         <button
                                             key={t}
                                             className={dailyScheduleType === t ? 'active' : ''}
-                                            onClick={() => setDailyScheduleType(t as any)}
+                                            onClick={() => setDailyScheduleType(t as 'EVERYDAY' | 'DAYS' | 'FREQUENCY')}
                                         >
                                             {t}
                                         </button>
@@ -183,7 +185,7 @@ export default function TaskEditModal({ item, type, onSave, onClose }: TaskEditM
                                         <span>times /</span>
                                         <select
                                             value={freqPeriod}
-                                            onChange={(e) => setFreqPeriod(e.target.value as any)}
+                                            onChange={(e) => setFreqPeriod(e.target.value as 'WEEK' | 'MONTH')}
                                         >
                                             <option value="WEEK">WEEK</option>
                                             <option value="MONTH">MONTH</option>
