@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { DailyChat } from '@/lib/storage';
+import { storage, DailyChat } from '@/lib/storage';
+import Link from 'next/link';
 
 interface MissionChecklistProps {
     todos: DailyChat['todos'];
@@ -47,7 +48,7 @@ export default function MissionChecklist({ todos, dailies, expenses = [], onTogg
     };
 
     return (
-        <div className="mission-checklist" style={{
+        <div className="mission-checklist no-scrollbar" style={{
             width: '300px',
             borderRight: '1px solid var(--border)',
             background: 'rgba(255,255,255,0.02)',
@@ -55,6 +56,7 @@ export default function MissionChecklist({ todos, dailies, expenses = [], onTogg
             flexDirection: 'column',
             padding: '1.5rem',
             overflowY: 'auto',
+            overflowX: 'hidden',
             gap: '1.5rem'
         }}>
             <section style={{ marginBottom: '0.5rem' }}>
@@ -263,18 +265,21 @@ export default function MissionChecklist({ todos, dailies, expenses = [], onTogg
             </section>
 
             <section style={{ borderTop: '1px solid var(--border)', paddingTop: '1.5rem' }}>
-                <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: '#f59e0b', letterSpacing: '0.1em', marginBottom: '1rem', textTransform: 'uppercase' }}>Expense Tracker</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: '#f59e0b', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Resources</h3>
+                    <Link href="/expenses" style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--accent)', textDecoration: 'none', opacity: 0.8 }}>MANAGE →</Link>
+                </div>
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '1rem' }}>
                     <input
                         type="number"
                         placeholder="$"
                         value={expenseAmount}
                         onChange={e => setExpenseAmount(e.target.value)}
-                        style={{ width: '60px', padding: '6px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: 'white', fontSize: '0.75rem' }}
+                        style={{ width: '60px', padding: '8px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', color: 'white', fontSize: '0.75rem', outline: 'none' }}
                     />
                     <input
                         type="text"
-                        placeholder="What did you buy?"
+                        placeholder="Log expense..."
                         value={expenseDesc}
                         onChange={e => setExpenseDesc(e.target.value)}
                         onKeyDown={e => {
@@ -284,36 +289,26 @@ export default function MissionChecklist({ todos, dailies, expenses = [], onTogg
                                 setExpenseDesc('');
                             }
                         }}
-                        style={{ flex: 1, padding: '6px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: 'white', fontSize: '0.75rem' }}
+                        style={{ flex: 1, padding: '8px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', color: 'white', fontSize: '0.75rem', outline: 'none' }}
                     />
-                    <button
-                        onClick={() => {
-                            if (expenseAmount && expenseDesc) {
-                                onAddExpense(Number(expenseAmount), expenseDesc);
-                                setExpenseAmount('');
-                                setExpenseDesc('');
-                            }
-                        }}
-                        style={{ background: '#f59e0b', color: 'black', border: 'none', borderRadius: '6px', padding: '0 10px', cursor: 'pointer', fontWeight: 'bold' }}
-                    >+</button>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {expenses.length === 0 && <p style={{ fontSize: '0.8rem', opacity: 0.3 }}>No expenses today.</p>}
-                    {expenses.map((exp) => (
-                        <div key={exp.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(245, 158, 11, 0.05)', padding: '6px 10px', borderRadius: '6px', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
-                            <span style={{ fontSize: '0.75rem', fontWeight: '600' }}>{exp.text}</span>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <span style={{ fontSize: '0.8rem', fontWeight: '900', color: '#f59e0b' }}>${exp.amount.toFixed(2)}</span>
-                                <button onClick={() => onRemoveExpense(exp.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', opacity: 0.6, fontSize: '0.8rem' }}>×</button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {expenses.length > 0 ? (
+                        <>
+                            {expenses.slice(-3).map((exp) => (
+                                <div key={exp.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                                    <span style={{ fontSize: '0.7rem', fontWeight: '600', opacity: 0.8 }}>{exp.text}</span>
+                                    <span style={{ fontSize: '0.75rem', fontWeight: '900', color: '#f59e0b' }}>${exp.amount.toFixed(2)}</span>
+                                </div>
+                            ))}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 10px', marginTop: '4px' }}>
+                                <span style={{ fontSize: '0.65rem', fontWeight: '900', opacity: 0.4 }}>TOTAL TODAY</span>
+                                <span style={{ fontSize: '0.8rem', fontWeight: '900', color: 'white' }}>${expenses.reduce((sum, e) => sum + e.amount, 0).toFixed(2)}</span>
                             </div>
-                        </div>
-                    ))}
-                    {expenses.length > 0 && (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 10px', background: 'rgba(255,255,255,0.05)', borderRadius: '6px', marginTop: '4px' }}>
-                            <span style={{ fontSize: '0.7rem', fontWeight: '800', opacity: 0.7 }}>TOTAL</span>
-                            <span style={{ fontSize: '0.8rem', fontWeight: '900' }}>${expenses.reduce((sum, e) => sum + e.amount, 0).toFixed(2)}</span>
-                        </div>
+                        </>
+                    ) : (
+                        <p style={{ fontSize: '0.75rem', opacity: 0.3, fontStyle: 'italic', textAlign: 'center' }}>No resource drain today.</p>
                     )}
                 </div>
             </section>

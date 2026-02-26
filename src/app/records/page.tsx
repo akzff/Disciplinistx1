@@ -170,6 +170,7 @@ Chat: ${JSON.stringify(context.messages?.slice(-10))}`;
                     </div>
                     <nav style={{ display: 'flex', gap: '0.5rem' }}>
                         <Link href="/" className="nav-link">Chat</Link>
+                        <Link href="/expenses" className="nav-link">Expenses</Link>
                         <Link href="/records" className="nav-link active">Records</Link>
                     </nav>
                 </header>

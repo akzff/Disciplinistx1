@@ -195,7 +195,7 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
                     <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer' }}>×</button>
                 </header>
 
-                <div style={{ flex: 1, overflowY: 'auto', padding: '2rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem', alignContent: 'start' }}>
+                <div className="no-scrollbar" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '2rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem', alignContent: 'start' }}>
                     {/* Add Input Card */}
                     <div className="task-card add-card" style={{ background: 'rgba(255,255,255,0.03)', border: '2px dashed var(--border)', display: 'flex', flexDirection: 'column', padding: '1.5rem', gap: '1rem' }}>
                         <input
