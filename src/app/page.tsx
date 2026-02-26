@@ -174,7 +174,9 @@ export default function ChatPage() {
                     - INTENSITY: ${preferences.mentorLevel === 1 ? 'Novice/Supportive' : preferences.mentorLevel === 2 ? 'Elite/Strict' : 'Beast/Ruthless'}.
                     - Level 3 (Beast) requirement: Minimum words, maximum pressure, no mercy.
                     - Bullet points only. Max 3 sentences. 
-                    - MOOD: 'HOPEFUL|DISAPPOINTED|DOMINATOR|NEUTRAL' (End with mood)`
+                    - TRACK_EXPENSE: amount | description (Use if user mentions spending money)
+                    - MOOD: 'HOPEFUL|DISAPPOINTED|DOMINATOR|NEUTRAL' (End with mood)
+                    - Level: ${preferences.mentorLevel} (1=Mid, 2=High, 3=Max)`
         }),
       });
 
@@ -204,6 +206,7 @@ export default function ChatPage() {
           .replace(/TASK_REQUEST: ['"].+?['"]/gi, '')
           .replace(/MOOD: ['"].+?['"]/gi, '')
           .replace(/LOG_HABIT: ['"].+?['"]/gi, '')
+          .replace(/TRACK_EXPENSE: .+? \| .+?/gi, '')
           .trim(),
         taskRequest: taskReqData
       };
@@ -219,6 +222,15 @@ export default function ChatPage() {
           setPreferences(newPrefs);
           storage.saveUserPreferences(newPrefs);
           setDistractions([issue, ...distractions]);
+        }
+      }
+
+      const expenseMatch = aiContent.match(/TRACK_EXPENSE: ([\d.]+) \| (.+)/i);
+      if (expenseMatch) {
+        const amount = parseFloat(expenseMatch[1]);
+        const text = expenseMatch[2].trim();
+        if (!isNaN(amount)) {
+          setExpenses(prev => [...(prev || []), { id: Date.now().toString(), amount, text }]);
         }
       }
 
