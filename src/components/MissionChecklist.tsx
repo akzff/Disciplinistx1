@@ -6,17 +6,22 @@ import { DailyChat } from '@/lib/storage';
 interface MissionChecklistProps {
     todos: DailyChat['todos'];
     dailies: DailyChat['dailies'];
+    expenses: DailyChat['expenses'];
     onToggleTodo: (id: string) => void;
     onToggleDaily: (id: string) => void;
     onReorderTodo: (newTodos: DailyChat['todos']) => void;
     onReorderDaily: (newDailies: DailyChat['dailies']) => void;
     onStartLiveMission: (name: string) => void;
+    onAddExpense: (amount: number, text: string) => void;
+    onRemoveExpense: (id: string) => void;
 }
 
-export default function MissionChecklist({ todos, dailies, onToggleTodo, onToggleDaily, onReorderTodo, onReorderDaily, onStartLiveMission }: MissionChecklistProps) {
+export default function MissionChecklist({ todos, dailies, expenses = [], onToggleTodo, onToggleDaily, onReorderTodo, onReorderDaily, onStartLiveMission, onAddExpense, onRemoveExpense }: MissionChecklistProps) {
     const [dragInfo, setDragInfo] = useState<{ index: number; type: 'DAILIES' | 'TODOS' } | null>(null);
     const [isStartingLive, setIsStartingLive] = useState(false);
     const [liveInput, setLiveInput] = useState('');
+    const [expenseAmount, setExpenseAmount] = useState('');
+    const [expenseDesc, setExpenseDesc] = useState('');
 
     const handleDragStart = (e: React.DragEvent, index: number, type: 'DAILIES' | 'TODOS') => {
         setDragInfo({ index, type });
@@ -254,6 +259,62 @@ export default function MissionChecklist({ todos, dailies, onToggleTodo, onToggl
                             </label>
                         </div>
                     ))}
+                </div>
+            </section>
+
+            <section style={{ borderTop: '1px solid var(--border)', paddingTop: '1.5rem' }}>
+                <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: '#f59e0b', letterSpacing: '0.1em', marginBottom: '1rem', textTransform: 'uppercase' }}>Expense Tracker</h3>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '1rem' }}>
+                    <input
+                        type="number"
+                        placeholder="$"
+                        value={expenseAmount}
+                        onChange={e => setExpenseAmount(e.target.value)}
+                        style={{ width: '60px', padding: '6px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: 'white', fontSize: '0.75rem' }}
+                    />
+                    <input
+                        type="text"
+                        placeholder="What did you buy?"
+                        value={expenseDesc}
+                        onChange={e => setExpenseDesc(e.target.value)}
+                        onKeyDown={e => {
+                            if (e.key === 'Enter' && expenseAmount && expenseDesc) {
+                                onAddExpense(Number(expenseAmount), expenseDesc);
+                                setExpenseAmount('');
+                                setExpenseDesc('');
+                            }
+                        }}
+                        style={{ flex: 1, padding: '6px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: 'white', fontSize: '0.75rem' }}
+                    />
+                    <button
+                        onClick={() => {
+                            if (expenseAmount && expenseDesc) {
+                                onAddExpense(Number(expenseAmount), expenseDesc);
+                                setExpenseAmount('');
+                                setExpenseDesc('');
+                            }
+                        }}
+                        style={{ background: '#f59e0b', color: 'black', border: 'none', borderRadius: '6px', padding: '0 10px', cursor: 'pointer', fontWeight: 'bold' }}
+                    >+</button>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {expenses.length === 0 && <p style={{ fontSize: '0.8rem', opacity: 0.3 }}>No expenses today.</p>}
+                    {expenses.map((exp) => (
+                        <div key={exp.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(245, 158, 11, 0.05)', padding: '6px 10px', borderRadius: '6px', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
+                            <span style={{ fontSize: '0.75rem', fontWeight: '600' }}>{exp.text}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '0.8rem', fontWeight: '900', color: '#f59e0b' }}>${exp.amount.toFixed(2)}</span>
+                                <button onClick={() => onRemoveExpense(exp.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', opacity: 0.6, fontSize: '0.8rem' }}>×</button>
+                            </div>
+                        </div>
+                    ))}
+                    {expenses.length > 0 && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 10px', background: 'rgba(255,255,255,0.05)', borderRadius: '6px', marginTop: '4px' }}>
+                            <span style={{ fontSize: '0.7rem', fontWeight: '800', opacity: 0.7 }}>TOTAL</span>
+                            <span style={{ fontSize: '0.8rem', fontWeight: '900' }}>${expenses.reduce((sum, e) => sum + e.amount, 0).toFixed(2)}</span>
+                        </div>
+                    )}
                 </div>
             </section>
 

@@ -42,6 +42,7 @@ export default function ChatPage() {
   const [distractions, setDistractions] = useState<string[]>([]);
   const [todos, setTodos] = useState<DailyChat['todos']>([]);
   const [dailies, setDailies] = useState<DailyChat['dailies']>([]);
+  const [expenses, setExpenses] = useState<DailyChat['expenses']>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editValue, setEditValue] = useState('');
   const [botMood, setBotMood] = useState<'NEUTRAL' | 'DISAPPOINTED' | 'HOPEFUL' | 'DOMINATOR'>('NEUTRAL');
@@ -80,6 +81,7 @@ export default function ChatPage() {
       setTodos(prevChat.todos || []);
       setDailies(prevChat.dailies || []);
       setCompletedTasks(prevChat.completedTasks || []);
+      setExpenses(prevChat.expenses || []);
     } else {
       setActiveDay(today);
       const chatToLoad = todayChat || storage.initializeNewDay(today);
@@ -91,14 +93,15 @@ export default function ChatPage() {
       setTodos(chatToLoad.todos || []);
       setDailies(chatToLoad.dailies || []);
       setCompletedTasks(chatToLoad.completedTasks || []);
+      setExpenses(chatToLoad.expenses || []);
     }
   }, []);
 
   useEffect(() => {
     if (activeDay) {
-      storage.saveChat(activeDay, { messages, status: chatStatus, activeTasks, distractions, botMood, todos, dailies, completedTasks });
+      storage.saveChat(activeDay, { messages, status: chatStatus, activeTasks, distractions, botMood, todos, dailies, completedTasks, expenses });
     }
-  }, [messages, chatStatus, activeDay, activeTasks, distractions, botMood, todos, dailies, completedTasks]);
+  }, [messages, chatStatus, activeDay, activeTasks, distractions, botMood, todos, dailies, completedTasks, expenses]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -131,52 +134,47 @@ export default function ChatPage() {
     setIsLoading(true);
 
     try {
-      // Read live state instead of stale storage call
-      const todoStatus = todos?.map(t => {
-        let status = `${t.text} (${t.completed ? 'DONE' : 'PENDING'})`;
-        if (t.isTimed) status += ` [Sch: ${t.date} ${t.time}]`;
-        return status;
-      }).join(', ') || 'None';
+      // Compressed State for Token Optimization
+      const completed = [
+        ...(todos?.filter(t => t.completed).map(t => t.text) || []),
+        ...(dailies?.filter(d => d.completed).map(d => d.text) || [])
+      ].join(', ') || 'None';
 
-      const dailyStatus = dailies?.map(d => {
-        let status = `${d.text} (${d.completed ? 'DONE' : 'PENDING'})`;
-        if (d.recurringDays) status += ` [Days: ${d.recurringDays.join(', ')}]`;
-        if (d.frequency) status += ` [Freq: ${d.frequency.count}x/${d.frequency.period}]`;
-        return status;
-      }).join(', ') || 'None';
+      const pending = [
+        ...(todos?.filter(t => !t.completed).map(t => t.text) || []),
+        ...(dailies?.filter(d => !d.completed).map(d => d.text) || [])
+      ].join(', ') || 'None';
 
-      // Token Optimization: Only send last 10 messages for context
-      const contextMessages = newMessages.slice(-10);
+      // Token Optimization: Last 8 messages for balance of context vs cost
+      const contextMessages = newMessages.slice(-8);
 
-      // Token Optimization: Only send last 5 habit notes
-      const habitSummary = preferences.habitNotes.slice(0, 5).map(h => `${h.date}: ${h.issue}`).join('; ');
+      // Only send Bio on start or if habits are few to save tokens
+      const habitSummary = preferences.habitNotes.slice(0, 3).map(h => h.issue).join(', ');
 
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: contextMessages,
-          systemPrompt: `You are Disciplinist, a discipline coach. 
-                    USER: ${preferences.name} | BIO: ${preferences.bio}
-                    LEVEL: ${preferences.mentorLevel} (1=Supportive, 2=Strict, 3=Ruthless)
-                    MODEL: ${preferences.dailyModel}
+          systemPrompt: `You are Disciplinist, a ruthless discipline coach.
+                    USER: ${preferences.name}
                     AMBITION: ${preferences.ambition}
-                    VISION: ${preferences.dayVision}
-                    TODOS: ${todoStatus}
-                    DAILIES: ${dailyStatus}
-                    ACTIVE_MISSIONS: ${activeTasks.length > 0 ? activeTasks.map(t => `${t.name} (Started: ${new Date(t.startTime).toLocaleTimeString()})`).join(', ') : 'None'}
-                    COMPLETED_LIVE_MISSIONS: ${completedTasks?.length ? completedTasks.map(t => `${t.name} (${Math.floor(t.activeTime / 60000)}m active)`).join(', ') : 'None'}
-                    HABITS: ${habitSummary || 'None yet'}
+                    VISION: ${preferences.dailyModel}
+                    STATUS_REPORT: 
+                    - COMPLETED: ${completed}
+                    - PENDING: ${pending}
+                    - ACTIVE: ${activeTasks.length > 0 ? activeTasks.map(t => t.name).join(', ') : 'None'}
+                    HABITS_LOG: ${habitSummary || 'None'}
                     TIME: ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
 
-                    RULES:
-                    - Use bullet points for all updates/tasks.
-                    - MAX 3 SENTENCES PER RESPONSE. Brutal brevity. 
-                    - TASK_REQUEST: 'Activity' (Ask approval for tasks)
-                    - LOG_HABIT: 'Issue' (Log distractions)
-                    - MOOD: 'HOPEFUL|DISAPPOINTED|DOMINATOR|NEUTRAL' (End every reply with mood)
-                    - Level 1: Gentle/Kind. Level 2: Firm/Consistent. Level 3: Ruthless/Beast.
-                    - Be extremely concise. Tight feedback loops only.`
+                    CORE RULES:
+                    - NEVER suggest fixing a task in COMPLETED.
+                    - Precision: LATENESS is a failure, but EARLY is excellent. Never critique early arrival.
+                    - NO fake math/percentages.
+                    - INTENSITY: ${preferences.mentorLevel === 1 ? 'Novice/Supportive' : preferences.mentorLevel === 2 ? 'Elite/Strict' : 'Beast/Ruthless'}.
+                    - Level 3 (Beast) requirement: Minimum words, maximum pressure, no mercy.
+                    - Bullet points only. Max 3 sentences. 
+                    - MOOD: 'HOPEFUL|DISAPPOINTED|DOMINATOR|NEUTRAL' (End with mood)`
         }),
       });
 
@@ -367,6 +365,7 @@ export default function ChatPage() {
     setTodos(todayChat.todos || []);
     setDailies(todayChat.dailies || []);
     setCompletedTasks(todayChat.completedTasks || []);
+    setExpenses(todayChat.expenses || []);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -451,11 +450,14 @@ export default function ChatPage() {
           <MissionChecklist
             todos={todos}
             dailies={dailies}
+            expenses={expenses || []}
             onToggleTodo={(id) => setTodos(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t))}
             onToggleDaily={(id) => setDailies(prev => prev.map(d => d.id === id ? { ...d, completed: !d.completed } : d))}
             onReorderTodo={(newTodos) => setTodos(newTodos)}
             onReorderDaily={(newDailies) => setDailies(newDailies)}
             onStartLiveMission={startManualTask}
+            onAddExpense={(amount, text) => setExpenses(prev => [...(prev || []), { id: Date.now().toString(), amount, text }])}
+            onRemoveExpense={(id) => setExpenses(prev => (prev || []).filter(e => e.id !== id))}
           />
 
           {isPreviousDayOpen && (

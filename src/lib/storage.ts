@@ -62,6 +62,7 @@ export interface DailyChat {
     }[];
     aiSummary?: string;
     artifactUrl?: string;
+    expenses?: { id: string; amount: number; text: string }[];
 }
 
 export interface UserPreferences {
@@ -98,7 +99,8 @@ export const storage = {
             activeTasks: [],
             distractions: [],
             todos: [],
-            dailies: []
+            dailies: [],
+            expenses: []
         };
 
         return { ...defaults, ...chat } as DailyChat;
