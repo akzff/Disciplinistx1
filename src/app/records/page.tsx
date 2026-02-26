@@ -83,15 +83,15 @@ export default function RecordsPage() {
             const prompt = `Generate a structured intelligence report for ${chat.date}. You MUST use the exact XML tags specified below. Output ONLY bullet points inside the blocks. No conversational text, no intro, no outro, no thinking text.
 
 <block1>
-(DAY EXECUTION LOG: Bullet points only. Each bullet = one distinct moment/activity/feeling from the day. Max 8 bullets.)
+(DAY EXECUTION LOG: Comprehensive, detailed bullet points. Pull from EVERY available source: todos, dailies, completed missions, and especially the chat history. Include timestamps (e.g., 7:00 AM) and specific details like what you ate, thought, or felt. Be exhaustive but keep it in points. Max 15 bullets.)
 </block1>
 
 <block2>
-(BEHAVIORAL ALIGNMENT: RIGHT (✅) what aligned with goal (Ambition: ${preferences.ambition}). WRONG (❌) what were distractions. Max 3 bullets each.)
+(BEHAVIORAL ALIGNMENT: 1-2 bullets for RIGHT (✅) and 1-2 bullets for WRONG (❌). Be extremely concise.)
 </block2>
 
 <block3>
-(STRATEGIC REFINEMENT: Max 3 bullets. Exactly what to do differently tomorrow.)
+(STRATEGIC REFINEMENT: 2-3 short bullets. Tomorrow's pivot.)
 </block3>
 
 <artifact>
@@ -329,28 +329,51 @@ Recent Chat: ${JSON.stringify(context.messages?.slice(-10))}`;
                                             </div>
                                         )}
 
-                                        {/* 3 Column Block Cards */}
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
-                                            {blockCards.map((block, i) => (
-                                                <div key={i} className="block-card">
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: `1px solid ${block.color}30` }}>
-                                                        <span style={{ fontSize: '1.2rem' }}>{block.icon}</span>
-                                                        <div>
-                                                            <p style={{ fontSize: '0.7rem', fontWeight: '900', color: block.color, letterSpacing: '0.05em' }}>{block.label.toUpperCase()}</p>
-                                                            <p style={{ fontSize: '0.6rem', opacity: 0.4, marginTop: '1px' }}>{block.sub}</p>
-                                                        </div>
+                                        {/* 1st Column (Detailed) vs 2nd Column (Concise) Layout */}
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1.5rem' }}>
+                                            {/* Detailed Execution Log */}
+                                            <div className="block-card detailed" style={{ height: 'fit-content', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: '16px', padding: '1.25rem' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: `1px solid ${blockCards[0].color}30` }}>
+                                                    <span style={{ fontSize: '1.2rem' }}>{blockCards[0].icon}</span>
+                                                    <div>
+                                                        <p style={{ fontSize: '0.7rem', fontWeight: '900', color: blockCards[0].color, letterSpacing: '0.05em' }}>{blockCards[0].label.toUpperCase()}</p>
+                                                        <p style={{ fontSize: '0.6rem', opacity: 0.4, marginTop: '1px' }}>{blockCards[0].sub}</p>
                                                     </div>
-                                                    {block.content ? (
-                                                        <div className="block-markdown">
-                                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                                                {block.content}
-                                                            </ReactMarkdown>
-                                                        </div>
-                                                    ) : (
-                                                        <p style={{ opacity: 0.3, fontSize: '0.8rem', fontStyle: 'italic' }}>No data for this block.</p>
-                                                    )}
                                                 </div>
-                                            ))}
+                                                {blockCards[0].content ? (
+                                                    <div className="block-markdown detailed-markdown">
+                                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                                            {blockCards[0].content}
+                                                        </ReactMarkdown>
+                                                    </div>
+                                                ) : (
+                                                    <p style={{ opacity: 0.3, fontSize: '0.8rem', fontStyle: 'italic' }}>No data available.</p>
+                                                )}
+                                            </div>
+
+                                            {/* Alignment & Refinement Sidebar */}
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                                {[1, 2].map((idx) => (
+                                                    <div key={idx} className="block-card concise" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: '16px', padding: '1.25rem', height: 'fit-content' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: `1px solid ${blockCards[idx].color}30` }}>
+                                                            <span style={{ fontSize: '1.2rem' }}>{blockCards[idx].icon}</span>
+                                                            <div>
+                                                                <p style={{ fontSize: '0.7rem', fontWeight: '900', color: blockCards[idx].color, letterSpacing: '0.05em' }}>{blockCards[idx].label.toUpperCase()}</p>
+                                                                <p style={{ fontSize: '0.6rem', opacity: 0.4, marginTop: '1px' }}>{blockCards[idx].sub}</p>
+                                                            </div>
+                                                        </div>
+                                                        {blockCards[idx].content ? (
+                                                            <div className="block-markdown">
+                                                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                                                    {blockCards[idx].content}
+                                                                </ReactMarkdown>
+                                                            </div>
+                                                        ) : (
+                                                            <p style={{ opacity: 0.3, fontSize: '0.8rem', fontStyle: 'italic' }}>No data available.</p>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
                                 ) : (
@@ -397,6 +420,14 @@ Recent Chat: ${JSON.stringify(context.messages?.slice(-10))}`;
                     font-size: 0.82rem;
                     line-height: 1.7;
                     flex: 1;
+                }
+                .detailed-markdown {
+                    font-size: 0.88rem;
+                }
+                .detailed-markdown :global(li) {
+                    margin-bottom: 0.8rem !important;
+                    font-weight: 500;
+                    color: rgba(255,255,255,0.9);
                 }
                 .block-markdown p {
                     opacity: 0.75;
