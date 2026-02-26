@@ -153,7 +153,7 @@ export default function ExpensesPage() {
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                                 {stats.sortedDays.length === 0 && (
-                                    <div style={{ textAlign: 'center', py: '5rem', opacity: 0.3 }}>
+                                    <div style={{ textAlign: 'center', padding: '5rem 0', opacity: 0.3 }}>
                                         <p style={{ fontSize: '3rem' }}>💸</p>
                                         <p style={{ fontWeight: '800', marginTop: '1rem' }}>NO FINANCIAL DATA YET</p>
                                     </div>
