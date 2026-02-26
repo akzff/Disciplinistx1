@@ -16,14 +16,29 @@ interface ReportBlocks {
 }
 
 function parseBlocks(summary: string): ReportBlocks {
-    const b1Match = summary.match(/BLOCK 1[\s\S]*?(?=BLOCK 2|$)/i);
-    const b2Match = summary.match(/BLOCK 2[\s\S]*?(?=BLOCK 3|$)/i);
-    const b3Match = summary.match(/BLOCK 3[\s\S]*/i);
-    return {
-        execution: b1Match ? b1Match[0].replace(/BLOCK 1[^\n]*\n?/i, '').trim() : summary,
-        alignment: b2Match ? b2Match[0].replace(/BLOCK 2[^\n]*\n?/i, '').trim() : '',
-        refinement: b3Match ? b3Match[0].replace(/BLOCK 3[^\n]*\n?/i, '').trim() : '',
+    const extract = (tag: string) => {
+        const regex = new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, 'i');
+        const match = summary.match(regex);
+        return match ? match[1].trim() : '';
     };
+
+    const b1 = extract('block1');
+    const b2 = extract('block2');
+    const b3 = extract('block3');
+
+    if (!b1 && !b2 && !b3) {
+        // Fallback for older formats
+        const b1Match = summary.match(/BLOCK 1[\s\S]*?(?=BLOCK 2|$)/i);
+        const b2Match = summary.match(/BLOCK 2[\s\S]*?(?=BLOCK 3|$)/i);
+        const b3Match = summary.match(/BLOCK 3[\s\S]*/i);
+        return {
+            execution: b1Match ? b1Match[0].replace(/BLOCK 1[^\n]*\n?/i, '').replace(/\[ARTIFACT_PROMPT[\s\S]*/i, '').trim() : summary.replace(/\[ARTIFACT_PROMPT[\s\S]*/i, '').trim(),
+            alignment: b2Match ? b2Match[0].replace(/BLOCK 2[^\n]*\n?/i, '').replace(/\[ARTIFACT_PROMPT[\s\S]*/i, '').trim() : '',
+            refinement: b3Match ? b3Match[0].replace(/BLOCK 3[^\n]*\n?/i, '').replace(/\[ARTIFACT_PROMPT[\s\S]*/i, '').trim() : '',
+        };
+    }
+
+    return { execution: b1, alignment: b2, refinement: b3 };
 }
 
 export default function RecordsPage() {
@@ -65,33 +80,33 @@ export default function RecordsPage() {
                 ambition: preferences.ambition
             };
 
-            const prompt = `Generate a structured intelligence report for ${chat.date} in exactly three clearly separated blocks. ALL CONTENT MUST BE IN SHORT BULLET POINTS — no long paragraphs.
+            const prompt = `Generate a structured intelligence report for ${chat.date}. You MUST use the exact XML tags specified below. Output ONLY bullet points inside the blocks. No conversational text, no intro, no outro, no thinking text.
 
-BLOCK 1: DAY EXECUTION LOG
-- Bullet points only. Each bullet = one distinct moment/activity/feeling from the day.
-- Pull from todos, dailies, and chat history. Include rough times if mentioned.
-- Max 8 bullets.
+<block1>
+(DAY EXECUTION LOG: Bullet points only. Each bullet = one distinct moment/activity/feeling from the day. Max 8 bullets.)
+</block1>
 
-BLOCK 2: BEHAVIORAL ALIGNMENT
-- RIGHT: ✅ Bullet list — what was aligned with their goal (Ambition: ${preferences.ambition}).
-- WRONG: ❌ Bullet list — specific distractions, deviations from Day Vision.
-- Max 3 bullets each side.
+<block2>
+(BEHAVIORAL ALIGNMENT: RIGHT (✅) what aligned with goal (Ambition: ${preferences.ambition}). WRONG (❌) what were distractions. Max 3 bullets each.)
+</block2>
 
-BLOCK 3: STRATEGIC REFINEMENT
-- Max 3 bullets. Exactly what to do differently tomorrow.
+<block3>
+(STRATEGIC REFINEMENT: Max 3 bullets. Exactly what to do differently tomorrow.)
+</block3>
 
-After the three blocks, add at the VERY END an image prompt wrapped in [ARTIFACT_PROMPT: ...]:
-The image prompt MUST describe a CINEMATIC PORTRAIT COLLAGE in manhwa sketch style — a young Indian man with curly hair and gold aviator glasses as the large, powerful CENTERPIECE FACE, with 2 small film-still scenes from today's key moments overlaid/blended around him using double exposure. Dark moody background. Like a movie poster. Describe the specific scenes from today's activities.
+<artifact>
+(IMAGE PROMPT: Describe a CINEMATIC PORTRAIT COLLAGE in manhwa sketch style — young Indian man with curly hair and gold aviator glasses as centerpiece face, with 2 small film-still scenes from today's key moments overlaid via double exposure. Dark moody background. Movie poster aesthetics.)
+</artifact>
 
 Context: ${JSON.stringify({ ...context, messages: undefined })}
-Chat: ${JSON.stringify(context.messages?.slice(-10))}`;
+Recent Chat: ${JSON.stringify(context.messages?.slice(-10))}`;
 
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     messages: [{ role: 'user', content: prompt }],
-                    systemPrompt: "You are a tactical intelligence analyzer. Output ONLY bullet points — no paragraphs, no fluff. Three blocks separated by their headers. Add ARTIFACT_PROMPT at end. Be extremely brief."
+                    systemPrompt: "You are a tactical intelligence analyzer. Output exact XML tags as requested. Output ONLY bullet points. Add nothing else. Be extremely brief."
                 }),
             });
 
@@ -99,11 +114,12 @@ Chat: ${JSON.stringify(context.messages?.slice(-10))}`;
             const data = await response.json();
             const fullContent = data.choices[0].message.content;
 
-            const artifactMatch = fullContent.match(/\[ARTIFACT_PROMPT: ([\s\S]+?)\]/);
+            const artifactMatch = fullContent.match(/<artifact>([\s\S]+?)<\/artifact>/i) || fullContent.match(/\[ARTIFACT_PROMPT:?([\s\S]+?)\]/i);
             const artifactPrompt = artifactMatch
                 ? artifactMatch[1].trim()
                 : `Cinematic portrait collage: young Indian man with curly hair and gold aviator glasses as large centerpiece face, manhwa sketch style, dark moody double exposure, two film stills of disciplined work overlaid around him, movie poster composition.`;
-            const summary = fullContent.replace(/\[ARTIFACT_PROMPT: [\s\S]+?\]/g, '').trim();
+
+            const summary = fullContent.replace(/<artifact>([\s\S]+?)<\/artifact>/gi, '').replace(/\[ARTIFACT_PROMPT:?([\s\S]+?)\]/gi, '').trim();
 
             let artifactUrl = '';
             try {
