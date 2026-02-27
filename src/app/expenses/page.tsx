@@ -131,16 +131,16 @@ export default function ExpensesPage() {
                         <h1 style={{ fontSize: '1.2rem', fontWeight: '900', letterSpacing: '0.1em', color: '#f59e0b' }}>RESOURCES & FLOW</h1>
                         <p style={{ fontSize: '0.7rem', opacity: 0.6 }}>FINANCIAL DISCIPLINE & EXPENDITURE LOG</p>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                    <div className="header-controls" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
                         <NavigationBar />
                     </div>
                 </header>
 
-                <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+                <div className="sidebar-layout" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
                     {/* Sidebar: Date History */}
-                    <div className="no-scrollbar" style={{ width: '220px', borderRight: '1px solid var(--border)', overflowY: 'auto', padding: '1rem', flexShrink: 0 }}>
+                    <div className="no-scrollbar sidebar-panel" style={{ width: '220px', borderRight: '1px solid var(--border)', overflowY: 'auto', padding: '1rem', flexShrink: 0 }}>
                         <h3 style={{ fontSize: '0.65rem', opacity: 0.5, marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Cycle History</h3>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div className="sidebar-panel-content" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             {allDates.map(date => (
                                 <button
                                     key={date}

@@ -147,7 +147,7 @@ export default function AnalyticsPage() {
                             </div>
 
                             {stats && (
-                                <div style={{ display: 'flex', gap: '1.5rem' }}>
+                                <div className="mobile-col" style={{ display: 'flex', gap: '1.5rem' }}>
                                     <div className="stat-card-deep" style={{ borderLeft: '4px solid #10b981' }}>
                                         <p style={{ fontSize: '0.65rem', fontWeight: '900', color: '#10b981', opacity: 0.8 }}>SUCCESS PROBABILITY</p>
                                         <h2 style={{ fontSize: '3.2rem', fontWeight: '900', color: 'white' }}>{stats.successRate}%</h2>
@@ -167,7 +167,7 @@ export default function AnalyticsPage() {
                         {/* Main Chart Section */}
                         {stats && (
                             <div className="block-card" style={{ padding: '3rem' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
+                                <div className="mobile-col" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '3rem' }}>
                                     <div>
                                         <h3 style={{ fontSize: '1rem', fontWeight: '900', letterSpacing: '0.1em' }}>CONSISTENCY TIMELINE</h3>
                                         <p style={{ fontSize: '0.75rem', opacity: 0.4 }}>Execution density across last 14 active cycles</p>
@@ -179,7 +179,7 @@ export default function AnalyticsPage() {
                                     </div>
                                 </div>
 
-                                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '14px', height: '220px', paddingBottom: '2.5rem' }}>
+                                <div className="mobile-scroll-x chart-area" style={{ display: 'flex', alignItems: 'flex-end', gap: '14px', height: '220px', paddingBottom: '2.5rem' }}>
                                     {stats.history.map((day, i) => (
                                         <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center', height: '100%' }}>
                                             <div style={{ flex: 1, width: '100%', display: 'flex', alignItems: 'flex-end' }}>

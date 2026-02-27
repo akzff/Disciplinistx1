@@ -425,7 +425,7 @@ export default function ChatPage() {
             <p style={{ fontSize: '0.75rem', opacity: 0.6, fontWeight: '500' }}>{activeDay === currentDate ? 'TODAY' : 'YESTERDAY'}&apos;S SESSION</p>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+          <div className="header-controls" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
             <NavigationBar />
 
             <div style={{ display: 'flex', gap: '8px' }}>

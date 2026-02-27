@@ -187,16 +187,16 @@ Recent Chat: ${JSON.stringify(context.messages?.slice(-10))}`;
                         <h1 style={{ fontSize: '1.2rem', fontWeight: '900', letterSpacing: '0.1em', color: 'var(--accent)' }}>THE ARCHIVES</h1>
                         <p style={{ fontSize: '0.7rem', opacity: 0.6 }}>PREVIOUS MISSIONS & AI INTELLIGENCE</p>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                    <div className="header-controls" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
                         <NavigationBar />
                     </div>
                 </header>
 
-                <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+                <div className="sidebar-layout" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
                     {/* Sidebar */}
-                    <div style={{ width: '220px', borderRight: '1px solid var(--border)', overflowY: 'auto', padding: '1rem', flexShrink: 0 }}>
+                    <div className="sidebar-panel" style={{ width: '220px', borderRight: '1px solid var(--border)', overflowY: 'auto', padding: '1rem', flexShrink: 0 }}>
                         <h3 style={{ fontSize: '0.65rem', opacity: 0.5, marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Mission History</h3>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                        <div className="sidebar-panel-content" style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                             {allDates.map(date => (
                                 <button
                                     key={date}
@@ -329,7 +329,7 @@ Recent Chat: ${JSON.stringify(context.messages?.slice(-10))}`;
                                         )}
 
                                         {/* 1st Column (Detailed) vs 2nd Column (Concise) Layout */}
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.6fr) minmax(0, 1fr)', gap: '1.5rem', alignItems: 'stretch' }}>
+                                        <div className="records-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.6fr) minmax(0, 1fr)', gap: '1.5rem', alignItems: 'stretch' }}>
                                             {/* Detailed Execution Log */}
                                             <div className="block-card detailed" style={{
                                                 display: 'flex',

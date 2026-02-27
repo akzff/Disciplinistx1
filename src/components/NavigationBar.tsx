@@ -14,7 +14,7 @@ export function NavigationBar() {
     ];
 
     return (
-        <nav style={{
+        <nav className="mobile-scroll-x" style={{
             display: 'flex',
             gap: '4px',
             background: 'rgba(0,0,0,0.3)',
@@ -22,7 +22,8 @@ export function NavigationBar() {
             borderRadius: '100px',
             border: '1px solid var(--border)',
             backdropFilter: 'blur(10px)',
-            boxShadow: 'inset 0 0 10px rgba(0,0,0,0.5)'
+            boxShadow: 'inset 0 0 10px rgba(0,0,0,0.5)',
+            flexShrink: 0
         }}>
             {menu.map((item) => {
                 const active = pathname === item.href;
