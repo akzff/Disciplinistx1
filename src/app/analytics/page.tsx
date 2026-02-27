@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { storage, DailyChat } from '@/lib/storage';
 import Link from 'next/link';
+import { NavigationBar } from '@/components/NavigationBar';
 
 export default function AnalyticsPage() {
     const [allChats, setAllChats] = useState<Record<string, DailyChat>>({});
@@ -86,12 +87,9 @@ export default function AnalyticsPage() {
                         <h1 style={{ fontSize: '1.2rem', fontWeight: '900', letterSpacing: '0.1em', color: '#10b981' }}>STRATEGIC ANALYTICS</h1>
                         <p style={{ fontSize: '0.7rem', opacity: 0.6 }}>LONG-TERM PERFORMANCE & CONSISTENCY METER</p>
                     </div>
-                    <nav style={{ display: 'flex', gap: '0.5rem' }}>
-                        <Link href="/" className="nav-link">Chat</Link>
-                        <Link href="/expenses" className="nav-link">Expenses</Link>
-                        <Link href="/analytics" className="nav-link active">Analytics</Link>
-                        <Link href="/records" className="nav-link">Records</Link>
-                    </nav>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                        <NavigationBar />
+                    </div>
                 </header>
 
                 <div style={{ flex: 1, padding: '2.5rem', overflowY: 'auto' }}>

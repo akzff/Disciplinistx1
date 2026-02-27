@@ -5,6 +5,7 @@ import { storage, DailyChat } from '@/lib/storage';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { NavigationBar } from '@/components/NavigationBar';
 
 export default function ExpensesPage() {
     const [allChats, setAllChats] = useState<Record<string, DailyChat>>({});
@@ -130,12 +131,9 @@ export default function ExpensesPage() {
                         <h1 style={{ fontSize: '1.2rem', fontWeight: '900', letterSpacing: '0.1em', color: '#f59e0b' }}>RESOURCES & FLOW</h1>
                         <p style={{ fontSize: '0.7rem', opacity: 0.6 }}>FINANCIAL DISCIPLINE & EXPENDITURE LOG</p>
                     </div>
-                    <nav style={{ display: 'flex', gap: '0.5rem' }}>
-                        <Link href="/" className="nav-link">Chat</Link>
-                        <Link href="/expenses" className="nav-link active">Expenses</Link>
-                        <Link href="/analytics" className="nav-link">Analytics</Link>
-                        <Link href="/records" className="nav-link">Records</Link>
-                    </nav>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                        <NavigationBar />
+                    </div>
                 </header>
 
                 <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>

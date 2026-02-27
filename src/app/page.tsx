@@ -7,6 +7,7 @@ import MissionsBoard from '@/components/MissionsBoard';
 import MissionChecklist from '@/components/MissionChecklist';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { NavigationBar } from '@/components/NavigationBar';
 
 // Strip model's internal reasoning tags before displaying
 function cleanBotMessage(text: string): string {
@@ -424,29 +425,41 @@ export default function ChatPage() {
             <p style={{ fontSize: '0.75rem', opacity: 0.6, fontWeight: '500' }}>{activeDay === currentDate ? 'TODAY' : 'YESTERDAY'}&apos;S SESSION</p>
           </div>
 
-          <nav style={{ display: 'flex', gap: '0.5rem', marginRight: '1rem' }}>
-            <Link href="/" className="nav-link active">Chat</Link>
-            <button
-              onClick={() => setShowMissions(true)}
-              className="nav-link"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
-            >
-              Missions
-            </button>
-            <Link href="/expenses" className="nav-link">Expenses</Link>
-            <Link href="/analytics" className="nav-link">Analytics</Link>
-            <Link href="/records" className="nav-link">Records</Link>
-          </nav>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+            <NavigationBar />
 
-          <button
-            onClick={() => setShowSettings(!showSettings)}
-            style={{ background: 'var(--surface)', border: 'none', color: 'white', padding: '8px', borderRadius: '8px', cursor: 'pointer' }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="3"></circle>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-            </svg>
-          </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={() => setShowMissions(true)}
+                style={{
+                  background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.1))',
+                  border: '1px solid rgba(139, 92, 246, 0.4)',
+                  color: '#d8b4fe',
+                  padding: '8px 16px',
+                  borderRadius: '100px',
+                  cursor: 'pointer',
+                  fontSize: '0.7rem',
+                  fontWeight: '900',
+                  letterSpacing: '0.05em',
+                  boxShadow: '0 4px 15px rgba(139, 92, 246, 0.1)',
+                  transition: 'all 0.2s',
+                  textTransform: 'uppercase'
+                }}
+              >
+                Missions
+              </button>
+
+              <button
+                onClick={() => setShowSettings(!showSettings)}
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'white', padding: '8px', borderRadius: '100px', cursor: 'pointer', display: 'flex', alignItems: 'center', transition: 'all 0.2s' }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
         </header>
 
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative' }}>

@@ -5,6 +5,7 @@ import { storage, DailyChat, UserPreferences } from '@/lib/storage';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { NavigationBar } from '@/components/NavigationBar';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare const puter: any;
@@ -186,12 +187,9 @@ Recent Chat: ${JSON.stringify(context.messages?.slice(-10))}`;
                         <h1 style={{ fontSize: '1.2rem', fontWeight: '900', letterSpacing: '0.1em', color: 'var(--accent)' }}>THE ARCHIVES</h1>
                         <p style={{ fontSize: '0.7rem', opacity: 0.6 }}>PREVIOUS MISSIONS & AI INTELLIGENCE</p>
                     </div>
-                    <nav style={{ display: 'flex', gap: '0.5rem' }}>
-                        <Link href="/" className="nav-link">Chat</Link>
-                        <Link href="/expenses" className="nav-link">Expenses</Link>
-                        <Link href="/analytics" className="nav-link">Analytics</Link>
-                        <Link href="/records" className="nav-link active">Records</Link>
-                    </nav>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                        <NavigationBar />
+                    </div>
                 </header>
 
                 <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
