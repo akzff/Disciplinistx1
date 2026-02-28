@@ -4,14 +4,16 @@ import { useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 
 export default function AuthScreen() {
-    const { signInWithEmail, signUpWithEmail, sendMagicLink } = useAuth();
+    const { signInWithEmail, signUpWithEmail, signInAsGuest } = useAuth();
 
-    const [mode, setMode] = useState<'login' | 'signup' | 'magic'>('login');
+    const [mode, setMode] = useState<'login' | 'signup'>('login');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [info, setInfo] = useState('');
     const [loading, setLoading] = useState(false);
+    const [guestLoading, setGuestLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -21,18 +23,37 @@ export default function AuthScreen() {
 
         let errMsg: string | null = null;
 
-        if (mode === 'magic') {
-            errMsg = await sendMagicLink(email);
-            if (!errMsg) setInfo('Magic link sent — check your email inbox.');
-        } else if (mode === 'signup') {
+        if (mode === 'signup') {
             errMsg = await signUpWithEmail(email, password);
-            if (!errMsg) setInfo('Account created. Check your email to confirm, then log in.');
+            // No message needed — auto-login takes user directly into the app
         } else {
             errMsg = await signInWithEmail(email, password);
         }
 
         if (errMsg) setError(errMsg);
         setLoading(false);
+    };
+
+    const handleGuest = async () => {
+        setError('');
+        setGuestLoading(true);
+        const errMsg = await signInAsGuest();
+        if (errMsg) setError(errMsg);
+        setGuestLoading(false);
+    };
+
+    const inputStyle: React.CSSProperties = {
+        width: '100%',
+        padding: '14px 16px',
+        background: 'rgba(255,255,255,0.04)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: '14px',
+        color: 'white',
+        fontSize: '0.9rem',
+        fontFamily: 'inherit',
+        outline: 'none',
+        transition: 'border-color 0.2s',
+        boxSizing: 'border-box',
     };
 
     return (
@@ -63,7 +84,6 @@ export default function AuthScreen() {
                     {[
                         { id: 'login', label: 'LOG IN' },
                         { id: 'signup', label: 'SIGN UP' },
-                        { id: 'magic', label: '✉ MAGIC' },
                     ].map((tab) => (
                         <button
                             key={tab.id}
@@ -89,7 +109,7 @@ export default function AuthScreen() {
                 </div>
 
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    {/* Email field */}
+                    {/* Email */}
                     <div>
                         <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: '800', opacity: 0.4, marginBottom: '8px', letterSpacing: '0.1em' }}>EMAIL ADDRESS</label>
                         <input
@@ -98,54 +118,53 @@ export default function AuthScreen() {
                             onChange={(e) => setEmail(e.target.value)}
                             required
                             placeholder="you@example.com"
-                            style={{
-                                width: '100%',
-                                padding: '14px 16px',
-                                background: 'rgba(255,255,255,0.04)',
-                                border: '1px solid rgba(255,255,255,0.1)',
-                                borderRadius: '14px',
-                                color: 'white',
-                                fontSize: '0.9rem',
-                                fontFamily: 'inherit',
-                                outline: 'none',
-                                transition: 'border-color 0.2s',
-                                boxSizing: 'border-box',
-                            }}
+                            style={inputStyle}
                             onFocus={(e) => e.currentTarget.style.borderColor = 'rgba(139,92,246,0.5)'}
                             onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}
                         />
                     </div>
 
-                    {/* Password field (not for magic link) */}
-                    {mode !== 'magic' && (
-                        <div>
-                            <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: '800', opacity: 0.4, marginBottom: '8px', letterSpacing: '0.1em' }}>PASSWORD</label>
+                    {/* Password with eye toggle */}
+                    <div>
+                        <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: '800', opacity: 0.4, marginBottom: '8px', letterSpacing: '0.1em' }}>PASSWORD</label>
+                        <div style={{ position: 'relative' }}>
                             <input
-                                type="password"
+                                type={showPassword ? 'text' : 'password'}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
                                 placeholder="••••••••"
-                                style={{
-                                    width: '100%',
-                                    padding: '14px 16px',
-                                    background: 'rgba(255,255,255,0.04)',
-                                    border: '1px solid rgba(255,255,255,0.1)',
-                                    borderRadius: '14px',
-                                    color: 'white',
-                                    fontSize: '0.9rem',
-                                    fontFamily: 'inherit',
-                                    outline: 'none',
-                                    transition: 'border-color 0.2s',
-                                    boxSizing: 'border-box',
-                                }}
+                                style={{ ...inputStyle, paddingRight: '48px' }}
                                 onFocus={(e) => e.currentTarget.style.borderColor = 'rgba(139,92,246,0.5)'}
                                 onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}
                             />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(v => !v)}
+                                style={{
+                                    position: 'absolute',
+                                    right: '14px',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    color: 'rgba(255,255,255,0.35)',
+                                    fontSize: '1rem',
+                                    padding: '4px',
+                                    lineHeight: 1,
+                                    transition: 'color 0.2s',
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.color = 'rgba(255,255,255,0.8)'}
+                                onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255,255,255,0.35)'}
+                                title={showPassword ? 'Hide password' : 'Show password'}
+                            >
+                                {showPassword ? '🙈' : '👁'}
+                            </button>
                         </div>
-                    )}
+                    </div>
 
-                    {/* Error / Info messages */}
+                    {/* Error / Info */}
                     {error && (
                         <div style={{ padding: '12px 16px', borderRadius: '12px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5', fontSize: '0.78rem' }}>
                             {error}
@@ -157,7 +176,7 @@ export default function AuthScreen() {
                         </div>
                     )}
 
-                    {/* Submit button */}
+                    {/* Primary action */}
                     <button
                         type="submit"
                         disabled={loading}
@@ -177,12 +196,43 @@ export default function AuthScreen() {
                             marginTop: '0.5rem'
                         }}
                     >
-                        {loading ? '...' : mode === 'login' ? 'ENTER THE SYSTEM' : mode === 'signup' ? 'CREATE ACCOUNT' : 'SEND MAGIC LINK'}
+                        {loading ? '...' : mode === 'login' ? 'ENTER THE SYSTEM' : 'CREATE ACCOUNT'}
                     </button>
                 </form>
 
-                <p style={{ textAlign: 'center', marginTop: '2rem', fontSize: '0.65rem', opacity: 0.25, letterSpacing: '0.05em' }}>
-                    Your data is stored securely and linked to your account.
+                {/* Divider */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '1.5rem 0' }}>
+                    <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
+                    <span style={{ fontSize: '0.6rem', opacity: 0.3, letterSpacing: '0.08em' }}>OR</span>
+                    <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
+                </div>
+
+                {/* Guest Login */}
+                <button
+                    onClick={handleGuest}
+                    disabled={guestLoading}
+                    style={{
+                        width: '100%',
+                        padding: '14px',
+                        background: 'rgba(255,255,255,0.04)',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: '14px',
+                        color: 'rgba(255,255,255,0.6)',
+                        fontSize: '0.82rem',
+                        fontWeight: '800',
+                        letterSpacing: '0.08em',
+                        cursor: guestLoading ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.25s',
+                        textTransform: 'uppercase',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'white'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; }}
+                >
+                    {guestLoading ? '...' : '👤 CONTINUE AS GUEST'}
+                </button>
+
+                <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.6rem', opacity: 0.2, letterSpacing: '0.05em' }}>
+                    Guest data is saved to your session. Link an account later to keep it permanently.
                 </p>
             </div>
         </main>
