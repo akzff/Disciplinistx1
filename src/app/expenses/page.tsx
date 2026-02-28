@@ -6,6 +6,7 @@ import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { NavigationBar } from '@/components/NavigationBar';
+import { cloudStorage } from '@/lib/cloudStorage';
 
 export default function ExpensesPage() {
     const [allChats, setAllChats] = useState<Record<string, DailyChat>>({});
@@ -15,10 +16,13 @@ export default function ExpensesPage() {
     const [isGenerating, setIsGenerating] = useState(false);
 
     useEffect(() => {
-        const chats = storage.getChats();
-        setAllChats(chats);
-        const today = storage.getCurrentDate();
-        setSelectedDate(today);
+        const init = async () => {
+            const chats = await cloudStorage.getAllChats();
+            setAllChats(chats);
+            const today = storage.getCurrentDate();
+            setSelectedDate(today);
+        };
+        init();
     }, []);
 
     const allDates = useMemo(() => {
@@ -41,34 +45,32 @@ export default function ExpensesPage() {
         return { total, dayTotal };
     }, [allChats, activeChat]);
 
-    const handleAddExpense = () => {
+    const handleAddExpense = async () => {
         if (!expenseAmount || !expenseDesc) return;
         const amount = parseFloat(expenseAmount);
         if (isNaN(amount)) return;
 
-        const chat = storage.getChat(selectedDate) || storage.initializeNewDay(selectedDate);
-        const newExpense = {
-            id: Date.now().toString(),
-            amount,
-            text: expenseDesc
-        };
+        const existing = await cloudStorage.getChat(selectedDate);
+        const updatedExpenses = [
+            ...((existing?.expenses) || []),
+            { id: Date.now().toString(), amount, text: expenseDesc }
+        ];
+        await cloudStorage.saveChat(selectedDate, { expenses: updatedExpenses });
 
-        const updatedExpenses = [...(chat.expenses || []), newExpense];
-        storage.saveChat(selectedDate, { expenses: updatedExpenses });
-
-        // Refresh local state
-        setAllChats(storage.getChats());
+        const chats = await cloudStorage.getAllChats();
+        setAllChats(chats);
         setExpenseAmount('');
         setExpenseDesc('');
     };
 
-    const removeExpense = (id: string) => {
+    const removeExpense = async (id: string) => {
         if (!confirm('Delete this expense record?')) return;
-        const chat = storage.getChat(selectedDate);
+        const chat = await cloudStorage.getChat(selectedDate);
         if (chat && chat.expenses) {
             const updated = chat.expenses.filter(e => e.id !== id);
-            storage.saveChat(selectedDate, { expenses: updated });
-            setAllChats(storage.getChats());
+            await cloudStorage.saveChat(selectedDate, { expenses: updated });
+            const chats = await cloudStorage.getAllChats();
+            setAllChats(chats);
         }
     };
 
@@ -111,8 +113,9 @@ export default function ExpensesPage() {
             const data = await response.json();
             const audit = data.choices[0].message.content;
 
-            storage.saveChat(selectedDate, { financialAudit: audit });
-            setAllChats(storage.getChats());
+            await cloudStorage.saveChat(selectedDate, { financialAudit: audit });
+            const chats = await cloudStorage.getAllChats();
+            setAllChats(chats);
         } catch (error) {
             console.error(error);
             alert('Financial audit failed.');

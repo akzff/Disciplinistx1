@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { storage, DailyChat } from '@/lib/storage';
 import Link from 'next/link';
 import { NavigationBar } from '@/components/NavigationBar';
+import { cloudStorage } from '@/lib/cloudStorage';
 
 export default function AnalyticsPage() {
     const [allChats, setAllChats] = useState<Record<string, DailyChat>>({});
@@ -11,14 +12,15 @@ export default function AnalyticsPage() {
     const [strategyType, setStrategyType] = useState<'todo' | 'daily'>('daily');
 
     useEffect(() => {
-        const chats = storage.getChats();
-        setAllChats(chats);
-
-        // Pick a default strategy if none selected
-        const allStrategies = getAllUniqueStrategies(chats, strategyType);
-        if (allStrategies.length > 0 && !selectedStrategy) {
-            setSelectedStrategy(allStrategies[0]);
-        }
+        const init = async () => {
+            const chats = await cloudStorage.getAllChats();
+            setAllChats(chats);
+            const allStrategies = getAllUniqueStrategies(chats, strategyType);
+            if (allStrategies.length > 0 && !selectedStrategy) {
+                setSelectedStrategy(allStrategies[0]);
+            }
+        };
+        init();
     }, [strategyType]);
 
     function getAllUniqueStrategies(chats: Record<string, DailyChat>, type: 'todo' | 'daily') {

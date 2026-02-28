@@ -719,3 +719,75 @@ textarea {
   padding: 1px 5px;
   font-size: 0.85em;
 }
+
+/* ─── Mobile Responsive ─── */
+@media (max-width: 768px) {
+  main {
+    padding: 0.5rem;
+  }
+
+  .chat-container {
+    border-radius: 16px;
+  }
+
+  .chat-header {
+    padding: 0.75rem 1rem;
+  }
+
+  .chat-messages {
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  /* Sidebar becomes a slide-over drawer on mobile */
+  .mission-checklist {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 85vw !important;
+    max-width: 320px !important;
+    height: 100dvh !important;
+    z-index: 1000 !important;
+    border-right: 1px solid var(--border) !important;
+    background: rgba(10, 10, 15, 0.98) !important;
+    backdrop-filter: blur(20px) !important;
+    transform: translateX(-110%) !important;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: none !important;
+  }
+
+  .mission-checklist.sidebar-open {
+    transform: translateX(0) !important;
+    box-shadow: 8px 0 40px rgba(0, 0, 0, 0.6) !important;
+  }
+
+  /* Backdrop overlay when sidebar is open */
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    backdrop-filter: blur(2px);
+  }
+
+  /* Push sidebar toggle button */
+  .sidebar-toggle-btn {
+    display: flex !important;
+  }
+
+  .input-area {
+    padding: 0.75rem 1rem;
+  }
+}
+
+/* On desktop, hide sidebar toggle and backdrop */
+@media (min-width: 769px) {
+  .sidebar-toggle-btn {
+    display: none !important;
+  }
+
+  .sidebar-backdrop {
+    display: none !important;
+  }
+}

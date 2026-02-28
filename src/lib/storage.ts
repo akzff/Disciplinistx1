@@ -5,6 +5,13 @@ export interface Message {
         name: string;
         status: 'PENDING' | 'APPROVED' | 'IGNORED';
     };
+    completedMission?: {
+        name: string;
+        startTime: number;
+        endTime: number;
+        activeTime: number;
+        pausedTime: number;
+    };
 }
 
 export interface ActiveTask {

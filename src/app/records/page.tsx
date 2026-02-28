@@ -6,6 +6,7 @@ import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { NavigationBar } from '@/components/NavigationBar';
+import { cloudStorage } from '@/lib/cloudStorage';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare const puter: any;
@@ -50,18 +51,22 @@ export default function RecordsPage() {
     const [preferences, setPreferences] = useState<UserPreferences | null>(null);
 
     useEffect(() => {
-        const chats = storage.getChats();
-        const dates = Object.keys(chats).sort().reverse();
-        setAllDates(dates);
-        const today = storage.getCurrentDate();
-        setSelectedDate(today);
-        setChat(storage.getChat(today));
-        setPreferences(storage.getUserPreferences());
+        const init = async () => {
+            const chats = await cloudStorage.getAllChats();
+            const dates = Object.keys(chats).sort().reverse();
+            setAllDates(dates);
+            const today = storage.getCurrentDate();
+            setSelectedDate(today);
+            setChat(chats[today] || null);
+            const prefs = await cloudStorage.getPreferences();
+            setPreferences(prefs || storage.getUserPreferences());
+        };
+        init();
     }, []);
 
     useEffect(() => {
         if (selectedDate) {
-            setChat(storage.getChat(selectedDate));
+            cloudStorage.getChat(selectedDate).then(setChat);
         }
     }, [selectedDate]);
 
@@ -132,7 +137,7 @@ Recent Chat: ${JSON.stringify(context.messages?.slice(-10))}`;
                 console.error('Image generation failed:', imgError);
             }
 
-            storage.saveChat(selectedDate, { aiSummary: summary, artifactUrl });
+            await cloudStorage.saveChat(selectedDate, { aiSummary: summary, artifactUrl });
             setChat({ ...chat, aiSummary: summary, artifactUrl });
         } catch (error) {
             console.error(error);

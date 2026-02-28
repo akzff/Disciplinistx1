@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import Script from "next/script";
+import { AuthProvider } from "@/lib/AuthContext";
+import AuthGate from "@/components/AuthGate";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -8,11 +11,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Disciplinist | GPT-OSS 120B",
-  description: "Advanced coaching interface powered by Groq",
+  title: "Disciplinist | Discipline Engine",
+  description: "Advanced coaching interface powered by AI",
 };
-
-import Script from "next/script";
 
 export default function RootLayout({
   children,
@@ -22,7 +23,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.variable}>
-        {children}
+        <AuthProvider>
+          <AuthGate>
+            {children}
+          </AuthGate>
+        </AuthProvider>
         <Script src="https://js.puter.com/v2/" strategy="beforeInteractive" />
       </body>
     </html>

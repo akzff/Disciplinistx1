@@ -8,6 +8,8 @@ import MissionChecklist from '@/components/MissionChecklist';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { NavigationBar } from '@/components/NavigationBar';
+import { cloudStorage } from '@/lib/cloudStorage';
+import { useAuth } from '@/lib/AuthContext';
 
 // Strip model's internal reasoning tags before displaying
 function cleanBotMessage(text: string): string {
@@ -51,51 +53,76 @@ export default function ChatPage() {
   const [botMood, setBotMood] = useState<'NEUTRAL' | 'DISAPPOINTED' | 'HOPEFUL' | 'DOMINATOR'>('NEUTRAL');
   const [completedTasks, setCompletedTasks] = useState<DailyChat['completedTasks']>([]);
   const [now, setNow] = useState(Date.now());
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { user, signOut } = useAuth();
+  const saveDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    const today = storage.getCurrentDate();
-    const prev = storage.getPreviousDay(today);
-    const prevChat = storage.getChat(prev);
-    const todayChat = storage.getChat(today);
-    const savedPrefs = storage.getUserPreferences();
+    const init = async () => {
+      const today = storage.getCurrentDate();
+      const prev = storage.getPreviousDay(today);
 
-    setCurrentDate(today);
-    setPreviousDate(prev);
-    setPreferences(savedPrefs);
+      setCurrentDate(today);
+      setPreviousDate(prev);
 
-    if (prevChat && prevChat.status === 'OPEN') {
-      setIsPreviousDayOpen(true);
-      setActiveDay(prev);
-      setMessages(prevChat.messages);
-      setChatStatus('OPEN');
-      setBotMood(prevChat.botMood || 'NEUTRAL');
-      setActiveTasks(prevChat.activeTasks || []);
-      setDistractions(prevChat.distractions || []);
-      setTodos(prevChat.todos || []);
-      setDailies(prevChat.dailies || []);
-      setCompletedTasks(prevChat.completedTasks || []);
-      setExpenses(prevChat.expenses || []);
-    } else {
-      setActiveDay(today);
-      const chatToLoad = todayChat || storage.initializeNewDay(today);
-      setMessages(chatToLoad.messages);
-      setChatStatus(chatToLoad.status);
-      setBotMood(chatToLoad.botMood || 'NEUTRAL');
-      setActiveTasks(chatToLoad.activeTasks || []);
-      setDistractions(chatToLoad.distractions || []);
-      setTodos(chatToLoad.todos || []);
-      setDailies(chatToLoad.dailies || []);
-      setCompletedTasks(chatToLoad.completedTasks || []);
-      setExpenses(chatToLoad.expenses || []);
-    }
+      // Load preferences from cloud, fall back to localStorage
+      const cloudPrefs = await cloudStorage.getPreferences();
+      const savedPrefs = cloudPrefs || storage.getUserPreferences();
+      setPreferences(savedPrefs);
+
+      // Load chats from cloud
+      const prevChat = await cloudStorage.getChat(prev);
+      const todayChat = await cloudStorage.getChat(today);
+
+      if (prevChat && prevChat.status === 'OPEN') {
+        setIsPreviousDayOpen(true);
+        setActiveDay(prev);
+        setMessages(prevChat.messages);
+        setChatStatus('OPEN');
+        setBotMood(prevChat.botMood || 'NEUTRAL');
+        setActiveTasks(prevChat.activeTasks || []);
+        setDistractions(prevChat.distractions || []);
+        setTodos(prevChat.todos || []);
+        setDailies(prevChat.dailies || []);
+        setCompletedTasks(prevChat.completedTasks || []);
+        setExpenses(prevChat.expenses || []);
+      } else {
+        setActiveDay(today);
+        const defaults = {
+          date: today, messages: [], status: 'OPEN' as const,
+          activeTasks: [], distractions: [], todos: [], dailies: [], expenses: []
+        };
+        // If today doesn't exist in cloud but yesterday did, carry over undone todos/dailies
+        const base = todayChat || (prevChat ? {
+          ...defaults,
+          todos: prevChat.todos?.filter(t => !t.completed) || [],
+          dailies: prevChat.dailies?.map(d => ({ ...d, completed: false })) || []
+        } : defaults);
+        setMessages(base.messages);
+        setChatStatus(base.status);
+        setBotMood((base as typeof todayChat & { botMood?: string })?.botMood as typeof botMood || 'NEUTRAL');
+        setActiveTasks(base.activeTasks || []);
+        setDistractions(base.distractions || []);
+        setTodos(base.todos || []);
+        setDailies(base.dailies || []);
+        setCompletedTasks((base as typeof todayChat)?.completedTasks || []);
+        setExpenses(base.expenses || []);
+        if (!todayChat) await cloudStorage.saveChat(today, base);
+      }
+    };
+    init();
   }, []);
 
+  // Debounced cloud save (500ms) to avoid hammering Supabase on every keystroke
   useEffect(() => {
-    if (activeDay) {
-      storage.saveChat(activeDay, { messages, status: chatStatus, activeTasks, distractions, botMood, todos, dailies, completedTasks, expenses });
-    }
+    if (!activeDay) return;
+    if (saveDebounce.current) clearTimeout(saveDebounce.current);
+    saveDebounce.current = setTimeout(() => {
+      cloudStorage.saveChat(activeDay, { messages, status: chatStatus, activeTasks, distractions, botMood, todos, dailies, completedTasks, expenses });
+    }, 500);
+    return () => { if (saveDebounce.current) clearTimeout(saveDebounce.current); };
   }, [messages, chatStatus, activeDay, activeTasks, distractions, botMood, todos, dailies, completedTasks, expenses]);
 
   useEffect(() => {
@@ -330,12 +357,18 @@ export default function ChatPage() {
         ? (task.totalPausedTime || 0) + Math.max(0, timestamp - (task.lastPausedAt || task.startTime || timestamp))
         : (task.totalPausedTime || 0);
 
-      const durationMin = Math.floor(finalActiveTime / 60000);
-      const durationSec = Math.floor((finalActiveTime % 60000) / 1000);
-      const pausedMin = Math.floor(finalPausedTime / 60000);
-
-      const closeMsg = `✅ Mission complete: "${task.name}". Active: ${durationMin}m ${durationSec}s | Paused: ${pausedMin}m. How did it go?`;
-      setMessages(prevMsgs => [...prevMsgs, { role: 'assistant', content: closeMsg }]);
+      // Emit a rich completedMission card instead of plain text
+      setMessages(prevMsgs => [...prevMsgs, {
+        role: 'assistant',
+        content: `How did "${task.name}" go? Share your reflection.`,
+        completedMission: {
+          name: task.name,
+          startTime: task.startTime,
+          endTime: timestamp,
+          activeTime: finalActiveTime,
+          pausedTime: finalPausedTime,
+        }
+      }]);
 
       setCompletedTasks(prevCompleted => [
         ...(prevCompleted || []),
@@ -358,22 +391,26 @@ export default function ChatPage() {
     setChatStatus('OPEN');
   };
 
-  const closePreviousDay = () => {
-    storage.closeChat(activeDay);
+  const closePreviousDay = async () => {
+    await cloudStorage.closeChat(activeDay);
     setIsPreviousDayOpen(false);
     const today = storage.getCurrentDate();
     setActiveDay(today);
-    const todayChat = storage.getChat(today) || storage.initializeNewDay(today);
 
-    setMessages(todayChat.messages);
-    setChatStatus(todayChat.status);
-    setActiveTasks(todayChat.activeTasks || []);
-    setDistractions(todayChat.distractions || []);
-    setBotMood(todayChat.botMood || 'NEUTRAL');
-    setTodos(todayChat.todos || []);
-    setDailies(todayChat.dailies || []);
-    setCompletedTasks(todayChat.completedTasks || []);
-    setExpenses(todayChat.expenses || []);
+    // Load today from cloud
+    const todayChat = await cloudStorage.getChat(today);
+    const base = todayChat || { date: today, messages: [], status: 'OPEN' as const, activeTasks: [], distractions: [], todos: [], dailies: [], expenses: [] };
+
+    setMessages(base.messages);
+    setChatStatus(base.status);
+    setActiveTasks(base.activeTasks || []);
+    setDistractions(base.distractions || []);
+    setBotMood((base as typeof todayChat & { botMood?: string })?.botMood as typeof botMood || 'NEUTRAL');
+    setTodos(base.todos || []);
+    setDailies(base.dailies || []);
+    setCompletedTasks((base as typeof todayChat)?.completedTasks || []);
+    setExpenses(base.expenses || []);
+    if (!todayChat) await cloudStorage.saveChat(today, base);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -386,7 +423,7 @@ export default function ChatPage() {
   const updateProfile = (updates: Partial<UserPreferences>) => {
     const newPrefs = { ...preferences, ...updates };
     setPreferences(newPrefs);
-    storage.saveUserPreferences(newPrefs);
+    cloudStorage.savePreferences(newPrefs);
   };
 
   const handlePfpUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -409,6 +446,19 @@ export default function ChatPage() {
             background: botMood === 'DISAPPOINTED' ? '#ef4444' : botMood === 'HOPEFUL' ? '#10b981' : botMood === 'DOMINATOR' ? '#8b5cf6' : '#6b7280',
             boxShadow: `0 0 10px ${botMood === 'DISAPPOINTED' ? '#ef4444' : botMood === 'HOPEFUL' ? '#10b981' : botMood === 'DOMINATOR' ? '#8b5cf6' : '#6b7280'}`
           }}></div>
+          {/* Mobile sidebar toggle — hidden on desktop via CSS */}
+          <button
+            className="sidebar-toggle-btn"
+            onClick={() => setSidebarOpen(v => !v)}
+            style={{ display: 'none', background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: '4px', flexShrink: 0 }}
+            aria-label="Open mission panel"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
           <div style={{ flex: 1 }}>
             <h1 style={{ fontSize: '1.1rem', fontWeight: '800', letterSpacing: '0.05em', color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '8px' }}>
               DISCIPLINIST
@@ -468,15 +518,37 @@ export default function ChatPage() {
                   <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
                 </svg>
               </button>
+
+              {/* User badge + sign out */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 12px', borderRadius: '100px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'linear-gradient(135deg, #8b5cf6, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: '900' }}>
+                  {user?.email?.charAt(0).toUpperCase()}
+                </div>
+                <span style={{ fontSize: '0.6rem', opacity: 0.5, maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.email}</span>
+                <button
+                  onClick={signOut}
+                  title="Sign Out"
+                  style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '0.6rem', padding: '2px 4px', borderRadius: '4px' }}
+                >
+                  ⏻
+                </button>
+              </div>
             </div>
           </div>
         </header>
 
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative' }}>
 
+          {/* Mobile backdrop — closes sidebar when tapped */}
+          {sidebarOpen && (
+            <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />
+          )}
+
           <MissionChecklist
             todos={todos}
             dailies={dailies}
+            sidebarOpen={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
             onToggleTodo={(id: string) => setTodos(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t))}
             onToggleDaily={(id: string) => setDailies(prev => prev.map(d => d.id === id ? { ...d, completed: !d.completed } : d))}
             onReorderTodo={(newTodos: DailyChat['todos']) => setTodos(newTodos)}
@@ -554,7 +626,40 @@ export default function ChatPage() {
                       )}
                     </div>
                     <div className={`message ${msg.role}`}>
-                      {msg.role === 'assistant' ? (
+                      {msg.completedMission ? (
+                        <div className="mission-complete-card">
+                          <div className="mc-header">
+                            <span className="mc-icon">✅</span>
+                            <div>
+                              <p className="mc-label">MISSION COMPLETE</p>
+                              <p className="mc-title">{msg.completedMission.name}</p>
+                            </div>
+                          </div>
+                          <div className="mc-grid">
+                            <div className="mc-stat">
+                              <span className="mc-stat-label">START TIME</span>
+                              <span className="mc-stat-value">{new Date(msg.completedMission.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                            </div>
+                            <div className="mc-stat">
+                              <span className="mc-stat-label">END TIME</span>
+                              <span className="mc-stat-value">{new Date(msg.completedMission.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                            </div>
+                            <div className="mc-stat mc-accent">
+                              <span className="mc-stat-label">⚡ ACTIVE TIME</span>
+                              <span className="mc-stat-value">{Math.floor(msg.completedMission.activeTime / 60000)}m {Math.floor((msg.completedMission.activeTime % 60000) / 1000)}s</span>
+                            </div>
+                            <div className="mc-stat">
+                              <span className="mc-stat-label">⏸ PAUSED TIME</span>
+                              <span className="mc-stat-value">{Math.floor(msg.completedMission.pausedTime / 60000)}m {Math.floor((msg.completedMission.pausedTime % 60000) / 1000)}s</span>
+                            </div>
+                            <div className="mc-stat mc-wide">
+                              <span className="mc-stat-label">⏱ TOTAL DURATION</span>
+                              <span className="mc-stat-value">{Math.floor((msg.completedMission.endTime - msg.completedMission.startTime) / 60000)}m {Math.floor(((msg.completedMission.endTime - msg.completedMission.startTime) % 60000) / 1000)}s</span>
+                            </div>
+                          </div>
+                          <p className="mc-prompt">{msg.content}</p>
+                        </div>
+                      ) : msg.role === 'assistant' ? (
                         <div className="chat-md">
                           <ReactMarkdown
                             remarkPlugins={[remarkGfm]}

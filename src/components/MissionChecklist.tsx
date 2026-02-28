@@ -6,14 +6,20 @@ import { DailyChat } from '@/lib/storage';
 interface MissionChecklistProps {
     todos: DailyChat['todos'];
     dailies: DailyChat['dailies'];
+    expenses?: DailyChat['expenses'];
+    sidebarOpen?: boolean;
+    onClose?: () => void;
     onToggleTodo: (id: string) => void;
     onToggleDaily: (id: string) => void;
     onReorderTodo: (newTodos: DailyChat['todos']) => void;
     onReorderDaily: (newDailies: DailyChat['dailies']) => void;
     onStartLiveMission: (name: string) => void;
+    onAddExpense?: (amount: number, text: string) => void;
+    onRemoveExpense?: (id: string) => void;
 }
 
-export default function MissionChecklist({ todos, dailies, onToggleTodo, onToggleDaily, onReorderTodo, onReorderDaily, onStartLiveMission }: MissionChecklistProps) {
+export default function MissionChecklist({ todos, dailies, expenses = [], sidebarOpen, onClose, onToggleTodo, onToggleDaily, onReorderTodo, onReorderDaily, onStartLiveMission, onAddExpense, onRemoveExpense }: MissionChecklistProps) {
+
     const [dragInfo, setDragInfo] = useState<{ index: number; type: 'DAILIES' | 'TODOS' } | null>(null);
     const [isStartingLive, setIsStartingLive] = useState(false);
     const [liveInput, setLiveInput] = useState('');
@@ -42,7 +48,7 @@ export default function MissionChecklist({ todos, dailies, onToggleTodo, onToggl
     };
 
     return (
-        <div className="mission-checklist no-scrollbar" style={{
+        <div className={`mission-checklist no-scrollbar${sidebarOpen ? ' sidebar-open' : ''}`} style={{
             width: '300px',
             borderRight: '1px solid var(--border)',
             background: 'rgba(255,255,255,0.02)',
@@ -53,6 +59,17 @@ export default function MissionChecklist({ todos, dailies, onToggleTodo, onToggl
             overflowX: 'hidden',
             gap: '1.5rem'
         }}>
+            {/* Mobile close button */}
+            {onClose && (
+                <button
+                    className="sidebar-toggle-btn"
+                    onClick={onClose}
+                    style={{ display: 'none', alignSelf: 'flex-end', background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', marginBottom: '-1rem' }}
+                    aria-label="Close"
+                >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            )}
             <section style={{ marginBottom: '0.5rem' }}>
                 {isStartingLive ? (
                     <div className="live-input-box" style={{
