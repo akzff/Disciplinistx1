@@ -120,12 +120,35 @@ main {
 }
 
 .chat-header {
-  padding: 1.5rem 2rem;
+  padding: 1.25rem 1.75rem;
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   position: relative;
   justify-content: space-between;
+  background:
+    radial-gradient(900px 160px at 18% 35%, rgba(139, 92, 246, 0.16), transparent 60%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+}
+
+.chat-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(139, 92, 246, 0.14), transparent 35%, transparent 65%, rgba(139, 92, 246, 0.10));
+  opacity: 0.25;
+}
+
+.chat-header__left {
+  min-width: 0;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
 }
 
 @media (min-width: 769px) {
@@ -140,9 +163,91 @@ main {
 .status-indicator {
   width: 10px;
   height: 10px;
-  background: #10b981;
+  background: var(--mood-color, #10b981);
   border-radius: 50%;
-  box-shadow: 0 0 10px #10b981;
+  box-shadow: 0 0 12px var(--mood-color, #10b981);
+  flex: 0 0 auto;
+}
+
+.sidebar-toggle-btn {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 6px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  transition: background 0.2s ease, opacity 0.2s ease;
+  opacity: 0.8;
+}
+
+.sidebar-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  opacity: 1;
+}
+
+.app-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.app-title__brand {
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  text-shadow: 0 0 18px rgba(139, 92, 246, 0.25);
+}
+
+.mood-pill {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(10px);
+}
+
+.chat-header__subtitleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+.session-subtitle {
+  font-size: 0.75rem;
+  opacity: 0.65;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+.close-prev-btn {
+  font-size: 0.65rem;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(139, 92, 246, 0.55);
+  background: rgba(139, 92, 246, 0.10);
+  color: #e9d5ff;
+  cursor: pointer;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  transition: transform 0.15s ease, filter 0.15s ease, background 0.15s ease;
+}
+
+.close-prev-btn:hover {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+  background: rgba(139, 92, 246, 0.14);
 }
 
 .chat-messages {

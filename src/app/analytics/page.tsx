@@ -3,25 +3,20 @@
 import { useState, useEffect, useMemo } from 'react';
 import { DailyChat } from '@/lib/storage';
 import { NavigationBar } from '@/components/NavigationBar';
-import { cloudStorage } from '@/lib/cloudStorage';
+import { useData } from '@/lib/DataContext';
 
 export default function AnalyticsPage() {
-    const [allChats, setAllChats] = useState<Record<string, DailyChat>>({});
+    const { allChats } = useData();
     const [selectedStrategy, setSelectedStrategy] = useState<string>('');
     const [strategyType, setStrategyType] = useState<'todo' | 'daily'>('daily');
 
     useEffect(() => {
-        const init = async () => {
-            const chats = await cloudStorage.getAllChats();
-            setAllChats(chats);
-            const allStrategies = getAllUniqueStrategies(chats, strategyType);
-            if (allStrategies.length > 0 && !selectedStrategy) {
-                setSelectedStrategy(allStrategies[0]);
-            }
-        };
-        init();
+        const allStrategies = getAllUniqueStrategies(allChats, strategyType);
+        if (allStrategies.length > 0 && !selectedStrategy) {
+            setSelectedStrategy(allStrategies[0]);
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [strategyType]);
+    }, [strategyType, allChats]);
 
     function getAllUniqueStrategies(chats: Record<string, DailyChat>, type: 'todo' | 'daily') {
         const names = new Set<string>();

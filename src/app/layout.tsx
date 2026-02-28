@@ -4,6 +4,7 @@ import "./globals.css";
 import Script from "next/script";
 import { AuthProvider } from "@/lib/AuthContext";
 import AuthGate from "@/components/AuthGate";
+import { DataProvider } from "@/lib/DataContext";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -25,7 +26,9 @@ export default function RootLayout({
       <body className={inter.variable}>
         <AuthProvider>
           <AuthGate>
-            {children}
+            <DataProvider>
+              {children}
+            </DataProvider>
           </AuthGate>
         </AuthProvider>
         <Script src="https://js.puter.com/v2/" strategy="beforeInteractive" />

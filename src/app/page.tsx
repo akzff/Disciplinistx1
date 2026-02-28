@@ -10,6 +10,7 @@ import remarkGfm from 'remark-gfm';
 import { NavigationBar } from '@/components/NavigationBar';
 import { cloudStorage } from '@/lib/cloudStorage';
 import { useAuth } from '@/lib/AuthContext';
+import { useData } from '@/lib/DataContext';
 
 // Strip model's internal reasoning tags before displaying
 function cleanBotMessage(text: string): string {
@@ -67,24 +68,22 @@ export default function ChatPage() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const { user, signOut } = useAuth();
+  const { allChats, preferences: globalPrefs, updatePreferences: updateContextPrefs, setLocalChat } = useData();
   const saveDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const init = async () => {
+      if (!globalPrefs) return;
+      setPreferences(globalPrefs);
+
       const today = storage.getCurrentDate();
       const prev = storage.getPreviousDay(today);
 
       setCurrentDate(today);
       setPreviousDate(prev);
 
-      // Load preferences from cloud, fall back to localStorage
-      const cloudPrefs = await cloudStorage.getPreferences();
-      const savedPrefs = cloudPrefs || storage.getUserPreferences();
-      setPreferences(savedPrefs);
-
-      // Load chats from cloud
-      const prevChat = await cloudStorage.getChat(prev);
-      const todayChat = await cloudStorage.getChat(today);
+      const prevChat = allChats[prev];
+      const todayChat = allChats[today];
 
       if (prevChat && prevChat.status === 'OPEN') {
         setIsPreviousDayOpen(true);
@@ -104,7 +103,6 @@ export default function ChatPage() {
           date: today, messages: [], status: 'OPEN' as const,
           activeTasks: [], distractions: [], todos: [], dailies: [], expenses: []
         };
-        // If today doesn't exist in cloud but yesterday did, carry over undone todos/dailies
         const base = todayChat || (prevChat ? {
           ...defaults,
           todos: prevChat.todos?.filter(t => !t.completed) || [],
@@ -119,22 +117,29 @@ export default function ChatPage() {
         setDailies(base.dailies || []);
         setCompletedTasks((base as typeof todayChat)?.completedTasks || []);
         setExpenses(base.expenses || []);
-        if (!todayChat) await cloudStorage.saveChat(today, base);
+        if (!todayChat) {
+          cloudStorage.saveChat(today, base);
+          setLocalChat(today, base as DailyChat);
+        }
       }
       setIsInitialized(true);
     };
     init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Debounced cloud save (500ms) to avoid hammering Supabase on every keystroke
   useEffect(() => {
-    if (!activeDay) return;
+    if (!activeDay || !isInitialized) return;
     if (saveDebounce.current) clearTimeout(saveDebounce.current);
     saveDebounce.current = setTimeout(() => {
-      cloudStorage.saveChat(activeDay, { messages, status: chatStatus, activeTasks, distractions, botMood, todos, dailies, completedTasks, expenses });
+      const chatD = { messages, status: chatStatus, activeTasks, distractions, botMood, todos, dailies, completedTasks, expenses };
+      cloudStorage.saveChat(activeDay, chatD);
+      setLocalChat(activeDay, chatD as DailyChat);
     }, 500);
     return () => { if (saveDebounce.current) clearTimeout(saveDebounce.current); };
-  }, [messages, chatStatus, activeDay, activeTasks, distractions, botMood, todos, dailies, completedTasks, expenses]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, chatStatus, activeDay, activeTasks, distractions, botMood, todos, dailies, completedTasks, expenses, isInitialized]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -435,7 +440,7 @@ export default function ChatPage() {
   const updateProfile = (updates: Partial<UserPreferences>) => {
     const newPrefs = { ...preferences, ...updates };
     setPreferences(newPrefs);
-    cloudStorage.savePreferences(newPrefs);
+    updateContextPrefs(updates);
   };
 
   const handlePfpUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -454,15 +459,16 @@ export default function ChatPage() {
 
       <div className="chat-container">
         <header className="chat-header">
-          <div className="status-indicator" style={{
-            background: botMood === 'DISAPPOINTED' ? '#ef4444' : botMood === 'HOPEFUL' ? '#10b981' : botMood === 'DOMINATOR' ? '#8b5cf6' : '#6b7280',
-            boxShadow: `0 0 10px ${botMood === 'DISAPPOINTED' ? '#ef4444' : botMood === 'HOPEFUL' ? '#10b981' : botMood === 'DOMINATOR' ? '#8b5cf6' : '#6b7280'}`
-          }}></div>
-          {/* Mobile sidebar toggle — hidden on desktop via CSS */}
+          <div
+            className="status-indicator"
+            style={{
+              '--mood-color': botMood === 'DISAPPOINTED' ? '#ef4444' : botMood === 'HOPEFUL' ? '#10b981' : botMood === 'DOMINATOR' ? '#8b5cf6' : '#6b7280'
+            } as React.CSSProperties}
+          ></div>
+
           <button
             className="sidebar-toggle-btn"
             onClick={() => setSidebarOpen(v => !v)}
-            style={{ display: 'none', background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: '4px', flexShrink: 0 }}
             aria-label="Open mission panel"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -471,33 +477,23 @@ export default function ChatPage() {
               <line x1="3" y1="18" x2="21" y2="18"></line>
             </svg>
           </button>
-          <div style={{ flex: 1 }}>
-            <h1 style={{ fontSize: '1.1rem', fontWeight: '800', letterSpacing: '0.05em', color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              DISCIPLINIST
-              <span style={{
-                fontSize: '0.6rem',
-                padding: '2px 6px',
-                borderRadius: '4px',
-                background: 'rgba(255,255,255,0.1)',
-                opacity: 0.6,
-                fontWeight: '600'
-              }}>
-                {botMood}
-              </span>
+
+          <div className="chat-header__left" style={{ flex: 1 }}>
+            <h1 className="app-title">
+              <span className="app-title__brand">DISCIPLINIST</span>
+              <span className="mood-pill">{botMood}</span>
             </h1>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              <p style={{ fontSize: '0.75rem', opacity: 0.6, fontWeight: '500', margin: 0 }}>{activeDay === currentDate ? 'TODAY' : 'YESTERDAY'}&apos;S SESSION</p>
+            <div className="chat-header__subtitleRow">
+              <p className="session-subtitle">{activeDay === currentDate ? 'TODAY' : 'YESTERDAY'}&apos;S SESSION</p>
               {isPreviousDayOpen && hideOverlay && (
-                <button
-                  onClick={closePreviousDay}
-                  style={{ fontSize: '0.65rem', padding: '4px 12px', borderRadius: '100px', border: '1px solid var(--accent)', background: 'rgba(139, 92, 246, 0.1)', color: 'var(--accent)', cursor: 'pointer', fontWeight: '800' }}>
+                <button onClick={closePreviousDay} className="close-prev-btn">
                   CLOSE YESTERDAY
                 </button>
               )}
             </div>
           </div>
 
-          <div className="header-controls" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+          <div className="header-controls">
             <div className="nav-center-wrapper">
               <NavigationBar />
             </div>
@@ -533,7 +529,6 @@ export default function ChatPage() {
                 </svg>
               </button>
 
-              {/* User badge + sign out */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 12px', borderRadius: '100px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
                 <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'linear-gradient(135deg, #8b5cf6, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: '900' }}>
                   {user?.email?.charAt(0).toUpperCase()}

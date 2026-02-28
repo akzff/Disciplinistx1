@@ -7,6 +7,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { NavigationBar } from '@/components/NavigationBar';
 import { cloudStorage } from '@/lib/cloudStorage';
+import { useData } from '@/lib/DataContext';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare const puter: any;
@@ -44,31 +45,23 @@ function parseBlocks(summary: string): ReportBlocks {
 }
 
 export default function RecordsPage() {
+    const { allChats, preferences, setLocalChat } = useData();
     const [selectedDate, setSelectedDate] = useState('');
     const [chat, setChat] = useState<DailyChat | null>(null);
-    const [allDates, setAllDates] = useState<string[]>([]);
     const [isGenerating, setIsGenerating] = useState(false);
-    const [preferences, setPreferences] = useState<UserPreferences | null>(null);
 
     useEffect(() => {
-        const init = async () => {
-            const chats = await cloudStorage.getAllChats();
-            const dates = Object.keys(chats).sort().reverse();
-            setAllDates(dates);
-            const today = storage.getCurrentDate();
-            setSelectedDate(today);
-            setChat(chats[today] || null);
-            const prefs = await cloudStorage.getPreferences();
-            setPreferences(prefs || storage.getUserPreferences());
-        };
-        init();
+        const today = storage.getCurrentDate();
+        setSelectedDate(today);
     }, []);
 
     useEffect(() => {
         if (selectedDate) {
-            cloudStorage.getChat(selectedDate).then(setChat);
+            setChat(allChats[selectedDate] || null);
         }
-    }, [selectedDate]);
+    }, [selectedDate, allChats]);
+
+    const allDates = Object.keys(allChats).sort().reverse();
 
     const generateReport = async () => {
         if (!chat || !preferences) return;
@@ -147,8 +140,9 @@ Recent Chat: ${JSON.stringify(context.messages?.slice(-15))}`;
                 console.error('Image generation failed:', imgError);
             }
 
-            await cloudStorage.saveChat(selectedDate, { aiSummary: summary, artifactUrl });
-            setChat({ ...chat, aiSummary: summary, artifactUrl });
+            setLocalChat(selectedDate, { aiSummary: summary, artifactUrl });
+            cloudStorage.saveChat(selectedDate, { aiSummary: summary, artifactUrl });
+            setChat(prev => prev ? { ...prev, aiSummary: summary, artifactUrl } : null);
         } catch (error) {
             console.error(error);
             alert('Mission analysis failed. Try again, Disciple.');

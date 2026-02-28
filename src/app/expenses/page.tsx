@@ -7,6 +7,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { NavigationBar } from '@/components/NavigationBar';
 import { cloudStorage } from '@/lib/cloudStorage';
+import { useData } from '@/lib/DataContext';
 
 // Strip model's internal reasoning tags before displaying
 function cleanBotMessage(text: string): string {
@@ -21,20 +22,15 @@ function cleanBotMessage(text: string): string {
 }
 
 export default function ExpensesPage() {
-    const [allChats, setAllChats] = useState<Record<string, DailyChat>>({});
+    const { allChats, setLocalChat } = useData();
     const [selectedDate, setSelectedDate] = useState('');
     const [expenseAmount, setExpenseAmount] = useState('');
     const [expenseDesc, setExpenseDesc] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
 
     useEffect(() => {
-        const init = async () => {
-            const chats = await cloudStorage.getAllChats();
-            setAllChats(chats);
-            const today = storage.getCurrentDate();
-            setSelectedDate(today);
-        };
-        init();
+        const today = storage.getCurrentDate();
+        setSelectedDate(today);
     }, []);
 
     const allDates = useMemo(() => {
@@ -62,27 +58,24 @@ export default function ExpensesPage() {
         const amount = parseFloat(expenseAmount);
         if (isNaN(amount)) return;
 
-        const existing = await cloudStorage.getChat(selectedDate);
         const updatedExpenses = [
-            ...((existing?.expenses) || []),
+            ...((activeChat?.expenses) || []),
             { id: Date.now().toString(), amount, text: expenseDesc }
         ];
-        await cloudStorage.saveChat(selectedDate, { expenses: updatedExpenses });
 
-        const chats = await cloudStorage.getAllChats();
-        setAllChats(chats);
+        setLocalChat(selectedDate, { expenses: updatedExpenses });
+        cloudStorage.saveChat(selectedDate, { expenses: updatedExpenses });
+
         setExpenseAmount('');
         setExpenseDesc('');
     };
 
     const removeExpense = async (id: string) => {
         if (!confirm('Delete this expense record?')) return;
-        const chat = await cloudStorage.getChat(selectedDate);
-        if (chat && chat.expenses) {
-            const updated = chat.expenses.filter(e => e.id !== id);
-            await cloudStorage.saveChat(selectedDate, { expenses: updated });
-            const chats = await cloudStorage.getAllChats();
-            setAllChats(chats);
+        if (activeChat && activeChat.expenses) {
+            const updated = activeChat.expenses.filter(e => e.id !== id);
+            setLocalChat(selectedDate, { expenses: updated });
+            cloudStorage.saveChat(selectedDate, { expenses: updated });
         }
     };
 
@@ -122,9 +115,8 @@ export default function ExpensesPage() {
             const data = await response.json();
             const audit = data.choices[0].message.content;
 
-            await cloudStorage.saveChat(selectedDate, { financialAudit: audit });
-            const chats = await cloudStorage.getAllChats();
-            setAllChats(chats);
+            setLocalChat(selectedDate, { financialAudit: audit });
+            cloudStorage.saveChat(selectedDate, { financialAudit: audit });
         } catch (error) {
             console.error(error);
             alert('Financial audit failed.');
