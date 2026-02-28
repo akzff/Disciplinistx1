@@ -13,10 +13,19 @@ import { useAuth } from '@/lib/AuthContext';
 
 // Strip model's internal reasoning tags before displaying
 function cleanBotMessage(text: string): string {
-  return text
+  let cleaned = text
     .replace(/<think>[\s\S]*?<\/think>/gi, '')
-    .replace(/<thinking>[\s\S]*?<\/thinking>/gi, '')
-    .trim();
+    .replace(/<thinking>[\s\S]*?<\/thinking>/gi, '');
+
+  // Handle unclosed tags (e.g., if model is still streaming or got cut off)
+  if (cleaned.includes('<think>')) {
+    cleaned = cleaned.split('<think>')[0];
+  }
+  if (cleaned.includes('<thinking>')) {
+    cleaned = cleaned.split('<thinking>')[0];
+  }
+
+  return cleaned.trim();
 }
 
 
