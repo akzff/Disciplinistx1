@@ -203,6 +203,7 @@ export default function ChatPage() {
                     - NEVER suggest fixing a task in COMPLETED.
                     - Precision: LATENESS is a failure, but EARLY is excellent. Never critique early arrival.
                     - NO fake math/percentages.
+                    - If user sends [Protocol Started], acknowledge it intensely and briefly (e.g., "Proceed.", "Do not fail.", "Acknowledged."). Do NOT say failed.
                     - INTENSITY: ${preferences.mentorLevel === 1 ? 'Novice/Supportive' : preferences.mentorLevel === 2 ? 'Elite/Strict' : 'Beast/Ruthless'}.
                     - Level 3 (Beast) requirement: Minimum words, maximum pressure, no mercy.
                     - Bullet points only. Max 3 sentences. 
