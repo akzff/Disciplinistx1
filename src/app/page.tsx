@@ -26,6 +26,7 @@ export default function ChatPage() {
   const [currentDate, setCurrentDate] = useState('');
   const [chatStatus, setChatStatus] = useState<'OPEN' | 'CLOSED'>('OPEN');
   const [isPreviousDayOpen, setIsPreviousDayOpen] = useState(false);
+  const [hideOverlay, setHideOverlay] = useState(false);
   const [showMissions, setShowMissions] = useState(false);
   const [previousDate, setPreviousDate] = useState('');
   const [activeDay, setActiveDay] = useState('');
@@ -422,7 +423,16 @@ export default function ChatPage() {
                 {botMood}
               </span>
             </h1>
-            <p style={{ fontSize: '0.75rem', opacity: 0.6, fontWeight: '500' }}>{activeDay === currentDate ? 'TODAY' : 'YESTERDAY'}&apos;S SESSION</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <p style={{ fontSize: '0.75rem', opacity: 0.6, fontWeight: '500', margin: 0 }}>{activeDay === currentDate ? 'TODAY' : 'YESTERDAY'}&apos;S SESSION</p>
+              {isPreviousDayOpen && hideOverlay && (
+                <button
+                  onClick={closePreviousDay}
+                  style={{ fontSize: '0.65rem', padding: '4px 12px', borderRadius: '100px', border: '1px solid var(--accent)', background: 'rgba(139, 92, 246, 0.1)', color: 'var(--accent)', cursor: 'pointer', fontWeight: '800' }}>
+                  FINISH YESTERDAY
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="header-controls" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
@@ -474,7 +484,7 @@ export default function ChatPage() {
             onStartLiveMission={startManualTask}
           />
 
-          {isPreviousDayOpen && (
+          {isPreviousDayOpen && !hideOverlay && (
             <div className="overlay">
               <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⏳</div>
               <h2 style={{ marginBottom: '1rem' }}>Unfinished Business</h2>
@@ -482,9 +492,14 @@ export default function ChatPage() {
                 You haven&apos;t told the bot how you spent the end of <b>{previousDate}</b>.
                 Complete the details before starting today.
               </p>
-              <button className="start-day-btn" style={{ fontSize: '1rem', padding: '1rem 2rem' }} onClick={closePreviousDay}>
-                I&apos;ve Told Everything
-              </button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%', maxWidth: '300px' }}>
+                <button className="start-day-btn" style={{ fontSize: '0.9rem', padding: '1rem' }} onClick={closePreviousDay}>
+                  I&apos;ve Told Everything
+                </button>
+                <button className="start-day-btn" style={{ fontSize: '0.8rem', padding: '0.8rem', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', boxShadow: 'none', color: 'rgba(255,255,255,0.6)' }} onClick={() => setHideOverlay(true)}>
+                  I have things left to say
+                </button>
+              </div>
             </div>
           )}
 
