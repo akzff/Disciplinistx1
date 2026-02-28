@@ -106,7 +106,7 @@ export default function RecordsPage() {
 </block3>
 
 <artifact>
-(IMAGE PROMPT ONLY: Cinematic portrait collage in manhwa sketch style — young Indian man with curly hair and gold aviator glasses as powerful centerpiece face, 2 film-still scenes from today's key activities double-exposed around him. Dark moody background, movie poster composition.)
+(IMAGE PROMPT ONLY: Pick ONE specific, vivid moment from today's activities and describe it as a cinematic wide-angle film still. Focus on the environment, mood, lighting, and action — not faces. Examples: a lone figure hunched over a laptop in dim light, a dark gym with iron weights and dramatic shadows, rain-streaked windows at night with open books. Style: anamorphic lens flare, cinematic color grading, 35mm film. Be specific to what actually happened today. Output the image prompt text only.)
 </artifact>
 
 Context: ${JSON.stringify({ ...context, messages: undefined })}
@@ -133,7 +133,7 @@ Recent Chat: ${JSON.stringify(context.messages?.slice(-15))}`;
             const artifactMatch = fullContent.match(/<artifact>([\s\S]+?)<\/artifact>/i) || fullContent.match(/\[ARTIFACT_PROMPT:?([\s\S]+?)\]/i);
             const artifactPrompt = artifactMatch
                 ? artifactMatch[1].trim()
-                : `Cinematic portrait collage: young Indian man with curly hair and gold aviator glasses as large centerpiece face, manhwa sketch style, dark moody double exposure, two film stills of disciplined work overlaid around him, movie poster composition.`;
+                : `Cinematic wide-angle film still: a lone figure studying late at night, desk lamp casting warm amber light on open books, rain-streaked window in background, anamorphic lens flare, dark moody color grading, 35mm film aesthetic.`;
 
             const summary = fullContent.replace(/<artifact>([\s\S]+?)<\/artifact>/gi, '').replace(/\[ARTIFACT_PROMPT:?([\s\S]+?)\]/gi, '').trim();
 
