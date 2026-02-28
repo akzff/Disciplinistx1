@@ -20,7 +20,7 @@ export async function POST(req: Request) {
 
         const fullMessages = [
             { role: 'system', content: systemPrompt || 'You are Disciplinist, a helpful AI.' },
-            ...messages
+            ...messages.map((m: { role: string; content: string }) => ({ role: m.role, content: m.content }))
         ];
 
         const response = await fetch(endpoint, {
