@@ -902,6 +902,85 @@ export default function ChatPage() {
       <style jsx global>{`
                 @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
                 .setting-item { padding: 12px; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
+
+                /* Mission Complete Card */
+                .mission-complete-card {
+                  background: linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(0,0,0,0) 100%);
+                  border: 1px solid rgba(16,185,129,0.3);
+                  border-radius: 20px;
+                  padding: 1.2rem 1.4rem;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 1rem;
+                  min-width: 280px;
+                  box-shadow: 0 0 30px rgba(16,185,129,0.08);
+                }
+                .mc-header {
+                  display: flex;
+                  align-items: center;
+                  gap: 12px;
+                  padding-bottom: 0.8rem;
+                  border-bottom: 1px solid rgba(16,185,129,0.15);
+                }
+                .mc-icon { font-size: 1.6rem; }
+                .mc-label {
+                  font-size: 0.55rem;
+                  font-weight: 900;
+                  letter-spacing: 0.2em;
+                  color: #10b981;
+                  opacity: 0.7;
+                  margin: 0;
+                }
+                .mc-title {
+                  font-size: 1rem;
+                  font-weight: 800;
+                  color: white;
+                  margin: 2px 0 0 0;
+                }
+                .mc-grid {
+                  display: grid;
+                  grid-template-columns: 1fr 1fr;
+                  gap: 10px;
+                }
+                .mc-stat {
+                  background: rgba(255,255,255,0.03);
+                  border: 1px solid rgba(255,255,255,0.06);
+                  border-radius: 12px;
+                  padding: 10px 12px;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 4px;
+                }
+                .mc-stat.mc-accent {
+                  background: rgba(16,185,129,0.1);
+                  border-color: rgba(16,185,129,0.25);
+                }
+                .mc-stat.mc-wide {
+                  grid-column: span 2;
+                  background: rgba(255,255,255,0.02);
+                }
+                .mc-stat-label {
+                  font-size: 0.55rem;
+                  font-weight: 900;
+                  letter-spacing: 0.15em;
+                  opacity: 0.45;
+                  text-transform: uppercase;
+                }
+                .mc-stat.mc-accent .mc-stat-label { color: #10b981; opacity: 0.8; }
+                .mc-stat-value {
+                  font-size: 0.95rem;
+                  font-weight: 800;
+                  color: white;
+                }
+                .mc-stat.mc-accent .mc-stat-value { color: #10b981; }
+                .mc-prompt {
+                  font-size: 0.8rem;
+                  opacity: 0.6;
+                  margin: 0;
+                  padding-top: 0.5rem;
+                  border-top: 1px solid rgba(255,255,255,0.05);
+                  font-style: italic;
+                }
             `}</style>
       {showMissions && (
         <MissionsBoard

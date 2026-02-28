@@ -75,15 +75,20 @@ export default function ExpensesPage() {
     };
 
     const generateAudit = async () => {
-        if (!activeChat || (activeChat.expenses?.length || 0) === 0) {
+        if (!activeChat || ((activeChat.expenses?.length || 0) === 0 && (activeChat.messages?.length || 0) === 0)) {
             alert("No data to audit for this cycle.");
             return;
         }
         setIsGenerating(true);
 
         try {
+            const chatLog = (activeChat.messages || []).map(m => `[${m.role.toUpperCase()}]: ${m.content}`).join('\n');
             const prompt = `Perform a RUTHLESS financial discipline audit for ${selectedDate}.
-            Transactions: ${JSON.stringify(activeChat.expenses)}
+            Logged Transactions: ${JSON.stringify(activeChat.expenses || [])}
+            Today's Chat Log:
+            ${chatLog}
+            
+            Find all expenses (both explicitly logged ones and any mentioned within the chat log) and audit them.
             
             Structure the report in these blocks:
             
@@ -92,7 +97,7 @@ export default function ExpensesPage() {
             - Be blunt.
             
             BLOCK 2: DISCIPLINE RATIO
-            - Calculate total.
+            - Calculate the total amount spent (logged + chatted).
             - Judge if this spending aligns with a high-performance lifestyle.
             
             BLOCK 3: PROTOCOL CORRECTION
@@ -256,7 +261,8 @@ export default function ExpensesPage() {
                                     {(!activeChat || (activeChat.expenses?.length || 0) === 0) && (
                                         <div style={{ textAlign: 'center', padding: '3rem 0', opacity: 0.3 }}>
                                             <p style={{ fontSize: '2rem' }}>💸</p>
-                                            <p style={{ fontWeight: '800', marginTop: '1rem', fontSize: '0.75rem' }}>NO DATA FOR THIS CYCLE</p>
+                                            <p style={{ fontWeight: '800', marginTop: '1rem', fontSize: '0.75rem' }}>NO EXPLICIT TRANSACTIONS LOGGED</p>
+                                            <p style={{ fontSize: '0.65rem', marginTop: '0.5rem' }}>The Disciplinist will audit your chat dialog if no explicit entries exist.</p>
                                         </div>
                                     )}
 
