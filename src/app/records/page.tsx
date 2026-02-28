@@ -9,8 +9,6 @@ import { NavigationBar } from '@/components/NavigationBar';
 import { cloudStorage } from '@/lib/cloudStorage';
 import { useData } from '@/lib/DataContext';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-declare const puter: any;
 
 interface ReportBlocks {
     execution: string;
@@ -132,10 +130,17 @@ Recent Chat: ${JSON.stringify(context.messages?.slice(-15))}`;
 
             let artifactUrl = '';
             try {
-                const imageElement = await puter.ai.txt2img(artifactPrompt, {
-                    model: 'black-forest-labs/FLUX.1-schnell'
+                const imgRes = await fetch('/api/image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: artifactPrompt })
                 });
-                artifactUrl = imageElement.src;
+                if (imgRes.ok) {
+                    const imgData = await imgRes.json();
+                    artifactUrl = imgData.imageUrl;
+                } else {
+                    console.error('Image generation failed:', await imgRes.text());
+                }
             } catch (imgError) {
                 console.error('Image generation failed:', imgError);
             }

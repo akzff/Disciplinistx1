@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Script from "next/script";
 import { AuthProvider } from "@/lib/AuthContext";
 import AuthGate from "@/components/AuthGate";
 import { DataProvider } from "@/lib/DataContext";
@@ -31,7 +30,6 @@ export default function RootLayout({
             </DataProvider>
           </AuthGate>
         </AuthProvider>
-        <Script src="https://js.puter.com/v2/" strategy="beforeInteractive" />
       </body>
     </html>
   );
