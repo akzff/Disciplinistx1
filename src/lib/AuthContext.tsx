@@ -44,8 +44,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             const { error } = await supabase.auth.signInWithPassword({ email, password });
             return error ? error.message : null;
-        } catch (err: any) {
-            return err.message || String(err);
+        } catch (err: unknown) {
+            return err instanceof Error ? err.message : String(err);
         }
     };
 
@@ -56,8 +56,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // Auto sign-in immediately — bypasses email confirmation requirement
             const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
             return loginError ? loginError.message : null;
-        } catch (err: any) {
-            return err.message || String(err);
+        } catch (err: unknown) {
+            return err instanceof Error ? err.message : String(err);
         }
     };
 
@@ -66,8 +66,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             const { error } = await supabase.auth.signInAnonymously();
             return error ? error.message : null;
-        } catch (err: any) {
-            return err.message || String(err);
+        } catch (err: unknown) {
+            return err instanceof Error ? err.message : String(err);
         }
     };
 
@@ -76,8 +76,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             const { error } = await supabase.auth.updateUser({ email, password });
             return error ? error.message : null;
-        } catch (err: any) {
-            return err.message || String(err);
+        } catch (err: unknown) {
+            return err instanceof Error ? err.message : String(err);
         }
     };
 

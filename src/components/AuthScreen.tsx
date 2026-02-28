@@ -32,8 +32,8 @@ export default function AuthScreen() {
             }
 
             if (errMsg) setError(errMsg);
-        } catch (err: any) {
-            setError(err.message || String(err));
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : String(err));
         } finally {
             setLoading(false);
         }
@@ -45,8 +45,8 @@ export default function AuthScreen() {
         try {
             const errMsg = await signInAsGuest();
             if (errMsg) setError(errMsg);
-        } catch (err: any) {
-            setError(err.message || String(err));
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : String(err));
         } finally {
             setGuestLoading(false);
         }

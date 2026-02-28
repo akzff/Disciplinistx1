@@ -18,7 +18,7 @@ interface MissionChecklistProps {
     onRemoveExpense?: (id: string) => void;
 }
 
-export default function MissionChecklist({ todos, dailies, expenses = [], sidebarOpen, onClose, onToggleTodo, onToggleDaily, onReorderTodo, onReorderDaily, onStartLiveMission, onAddExpense, onRemoveExpense }: MissionChecklistProps) {
+export default function MissionChecklist({ todos, dailies, sidebarOpen, onClose, onToggleTodo, onToggleDaily, onReorderTodo, onReorderDaily, onStartLiveMission }: MissionChecklistProps) {
 
     const [dragInfo, setDragInfo] = useState<{ index: number; type: 'DAILIES' | 'TODOS' } | null>(null);
     const [isStartingLive, setIsStartingLive] = useState(false);

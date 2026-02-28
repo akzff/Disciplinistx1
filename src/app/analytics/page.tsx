@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { storage, DailyChat } from '@/lib/storage';
-import Link from 'next/link';
+import { DailyChat } from '@/lib/storage';
 import { NavigationBar } from '@/components/NavigationBar';
 import { cloudStorage } from '@/lib/cloudStorage';
 
@@ -21,6 +20,7 @@ export default function AnalyticsPage() {
             }
         };
         init();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [strategyType]);
 
     function getAllUniqueStrategies(chats: Record<string, DailyChat>, type: 'todo' | 'daily') {
