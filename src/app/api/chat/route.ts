@@ -33,7 +33,7 @@ export async function POST(req: Request) {
                 model: selectedModel,
                 messages: fullMessages,
                 temperature: 0.4,
-                max_tokens: maxTokens || 400,
+                max_tokens: maxTokens || 1000,
             }),
         });
 

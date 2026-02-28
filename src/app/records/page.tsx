@@ -203,7 +203,9 @@ Recent Chat: ${JSON.stringify(context.messages?.slice(-15))}`;
                         <p style={{ fontSize: '0.7rem', opacity: 0.6 }}>PREVIOUS MISSIONS & AI INTELLIGENCE</p>
                     </div>
                     <div className="header-controls" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                        <NavigationBar />
+                        <div className="nav-center-wrapper">
+                            <NavigationBar />
+                        </div>
                     </div>
                 </header>
 

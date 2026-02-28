@@ -90,7 +90,9 @@ export default function AnalyticsPage() {
                         <p style={{ fontSize: '0.7rem', opacity: 0.6 }}>LONG-TERM PERFORMANCE & CONSISTENCY METER</p>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                        <NavigationBar />
+                        <div className="nav-center-wrapper">
+                            <NavigationBar />
+                        </div>
                     </div>
                 </header>
 

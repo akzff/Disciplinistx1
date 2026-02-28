@@ -8,9 +8,13 @@ export const cloudStorage = {
     // ── Chats ──────────────────────────────────────────────────────────────
 
     getAllChats: async (): Promise<Record<string, DailyChat>> => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return {};
+
         const { data, error } = await supabase
             .from('disciplinist_daily_chats')
             .select('date, data')
+            .eq('user_id', user.id)
             .order('date', { ascending: false });
 
         if (error) { console.error('Cloud fetch chats error:', error); return {}; }
@@ -23,10 +27,14 @@ export const cloudStorage = {
     },
 
     getChat: async (date: string): Promise<DailyChat | null> => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return null;
+
         const { data, error } = await supabase
             .from('disciplinist_daily_chats')
             .select('data')
             .eq('date', date)
+            .eq('user_id', user.id)
             .maybeSingle();
 
         if (error) { console.error('Cloud fetch chat error:', error); return null; }
@@ -65,9 +73,13 @@ export const cloudStorage = {
     // ── Preferences ────────────────────────────────────────────────────────
 
     getPreferences: async (): Promise<UserPreferences | null> => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return null;
+
         const { data, error } = await supabase
             .from('disciplinist_preferences')
             .select('data')
+            .eq('user_id', user.id)
             .maybeSingle();
 
         if (error) { console.error('Cloud fetch prefs error:', error); return null; }

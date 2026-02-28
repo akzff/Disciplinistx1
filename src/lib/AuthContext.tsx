@@ -25,6 +25,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         supabase.auth.getSession().then(({ data: { session } }) => {
             setUser(session?.user ?? null);
             setLoading(false);
+        }).catch(err => {
+            console.error('Session init error:', err);
+            setLoading(false);
         });
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -38,28 +41,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const isGuest = user?.is_anonymous === true;
 
     const signInWithEmail = async (email: string, password: string): Promise<string | null> => {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        return error ? error.message : null;
+        try {
+            const { error } = await supabase.auth.signInWithPassword({ email, password });
+            return error ? error.message : null;
+        } catch (err: any) {
+            return err.message || String(err);
+        }
     };
 
     const signUpWithEmail = async (email: string, password: string): Promise<string | null> => {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) return error.message;
-        // Auto sign-in immediately — bypasses email confirmation requirement
-        const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
-        return loginError ? loginError.message : null;
+        try {
+            const { error } = await supabase.auth.signUp({ email, password });
+            if (error) return error.message;
+            // Auto sign-in immediately — bypasses email confirmation requirement
+            const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+            return loginError ? loginError.message : null;
+        } catch (err: any) {
+            return err.message || String(err);
+        }
     };
 
     // Anonymous session — Supabase creates a real user row (is_anonymous: true)
     const signInAsGuest = async (): Promise<string | null> => {
-        const { error } = await supabase.auth.signInAnonymously();
-        return error ? error.message : null;
+        try {
+            const { error } = await supabase.auth.signInAnonymously();
+            return error ? error.message : null;
+        } catch (err: any) {
+            return err.message || String(err);
+        }
     };
 
     // Upgrade guest to full account — Supabase preserves all existing data automatically
     const linkGuestAccount = async (email: string, password: string): Promise<string | null> => {
-        const { error } = await supabase.auth.updateUser({ email, password });
-        return error ? error.message : null;
+        try {
+            const { error } = await supabase.auth.updateUser({ email, password });
+            return error ? error.message : null;
+        } catch (err: any) {
+            return err.message || String(err);
+        }
     };
 
     const signOut = async () => {

@@ -124,7 +124,17 @@ main {
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
-  gap: 1rem;
+  position: relative;
+  justify-content: space-between;
+}
+
+@media (min-width: 769px) {
+  .nav-center-wrapper {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+  }
 }
 
 .status-indicator {

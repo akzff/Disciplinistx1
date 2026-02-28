@@ -8,6 +8,18 @@ import remarkGfm from 'remark-gfm';
 import { NavigationBar } from '@/components/NavigationBar';
 import { cloudStorage } from '@/lib/cloudStorage';
 
+// Strip model's internal reasoning tags before displaying
+function cleanBotMessage(text: string): string {
+    let cleaned = text
+        .replace(/<think>[\s\S]*?<\/think>/gi, '')
+        .replace(/<thinking>[\s\S]*?<\/thinking>/gi, '');
+
+    if (cleaned.includes('<think>')) cleaned = cleaned.split('<think>')[0];
+    if (cleaned.includes('<thinking>')) cleaned = cleaned.split('<thinking>')[0];
+
+    return cleaned.trim();
+}
+
 export default function ExpensesPage() {
     const [allChats, setAllChats] = useState<Record<string, DailyChat>>({});
     const [selectedDate, setSelectedDate] = useState('');
@@ -83,34 +95,26 @@ export default function ExpensesPage() {
 
         try {
             const chatLog = (activeChat.messages || []).map(m => `[${m.role.toUpperCase()}]: ${m.content}`).join('\n');
-            const prompt = `Perform a RUTHLESS financial discipline audit for ${selectedDate}.
+            const prompt = `Analyze the financial data for ${selectedDate}.
             Logged Transactions: ${JSON.stringify(activeChat.expenses || [])}
             Today's Chat Log:
             ${chatLog}
             
-            Find all expenses (both explicitly logged ones and any mentioned within the chat log) and audit them.
+            Find all expenses (both explicitly logged ones and any mentioned within the chat log).
             
-            Structure the report in these blocks:
+            Simply list how much was spent and where it was spent using bullet points. Do NOT add any extra commentary, judgment, or advice.
+            Example format:
+            - $15 at Starbucks
+            - $50 for Groceries
             
-            BLOCK 1: THE DRAIN
-            - List each expense with a short judgment (e.g. "Essential", "Weakness", "Lust").
-            - Be blunt.
-            
-            BLOCK 2: DISCIPLINE RATIO
-            - Calculate the total amount spent (logged + chatted).
-            - Judge if this spending aligns with a high-performance lifestyle.
-            
-            BLOCK 3: PROTOCOL CORRECTION
-            - One task to fix this spending pattern tomorrow.
-            
-            Rules: Use bullet points. Be cold and analytical. No fluff.`;
+            NOTHING MORE. No "BLOCKs", no reflection, no protocol correction, no greeting. Just the raw list of what was spent and where.`;
 
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     messages: [{ role: 'user', content: prompt }],
-                    systemPrompt: "You are the Disciplinist. You judge every dollar spent. Be ruthless, structured, and use bullet points."
+                    systemPrompt: "You are a raw data extractor. You only list expenses accurately. You never lecture, judge, or add conversational filler."
                 }),
             });
 
@@ -140,7 +144,9 @@ export default function ExpensesPage() {
                         <p style={{ fontSize: '0.7rem', opacity: 0.6 }}>FINANCIAL DISCIPLINE & EXPENDITURE LOG</p>
                     </div>
                     <div className="header-controls" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                        <NavigationBar />
+                        <div className="nav-center-wrapper">
+                            <NavigationBar />
+                        </div>
                     </div>
                 </header>
 
@@ -250,7 +256,7 @@ export default function ExpensesPage() {
                                         </div>
                                         <div className="audit-content">
                                             <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                                {activeChat.financialAudit}
+                                                {cleanBotMessage(activeChat.financialAudit)}
                                             </ReactMarkdown>
                                         </div>
                                     </div>

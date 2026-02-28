@@ -63,6 +63,7 @@ export default function ChatPage() {
   const [completedTasks, setCompletedTasks] = useState<DailyChat['completedTasks']>([]);
   const [now, setNow] = useState(Date.now());
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const { user, signOut } = useAuth();
@@ -120,6 +121,7 @@ export default function ChatPage() {
         setExpenses(base.expenses || []);
         if (!todayChat) await cloudStorage.saveChat(today, base);
       }
+      setIsInitialized(true);
     };
     init();
   }, []);
@@ -206,7 +208,7 @@ export default function ChatPage() {
                     - If user sends [Protocol Started], acknowledge it intensely and briefly (e.g., "Proceed.", "Do not fail.", "Acknowledged."). Do NOT say failed.
                     - INTENSITY: ${preferences.mentorLevel === 1 ? 'Novice/Supportive' : preferences.mentorLevel === 2 ? 'Elite/Strict' : 'Beast/Ruthless'}.
                     - Level 3 (Beast) requirement: Minimum words, maximum pressure, no mercy.
-                    - Bullet points only. Max 3 sentences. 
+                    - Provide detailed, constructive feedback and guidance. Use bullet points when helpful.
                     - TRACK_EXPENSE: amount | description (Use if user mentions spending money)
                     - MOOD: 'HOPEFUL|DISAPPOINTED|DOMINATOR|NEUTRAL' (End with mood)
                     - Level: ${preferences.mentorLevel} (1=Mid, 2=High, 3=Max)`
@@ -496,7 +498,9 @@ export default function ChatPage() {
           </div>
 
           <div className="header-controls" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-            <NavigationBar />
+            <div className="nav-center-wrapper">
+              <NavigationBar />
+            </div>
 
             <div style={{ display: 'flex', gap: '8px' }}>
               <button
@@ -586,7 +590,7 @@ export default function ChatPage() {
           )}
 
           <div className="chat-messages" ref={scrollRef}>
-            {messages.length === 0 && (
+            {isInitialized && messages.length === 0 && (
               <div className="start-day-wrapper">
                 <div style={{ fontSize: '4rem', filter: 'drop-shadow(0 0 20px var(--accent-glow))' }}>🌅</div>
                 <div>

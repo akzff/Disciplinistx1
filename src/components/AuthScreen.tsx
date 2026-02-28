@@ -21,25 +21,35 @@ export default function AuthScreen() {
         setInfo('');
         setLoading(true);
 
-        let errMsg: string | null = null;
+        try {
+            let errMsg: string | null = null;
 
-        if (mode === 'signup') {
-            errMsg = await signUpWithEmail(email, password);
-            // No message needed — auto-login takes user directly into the app
-        } else {
-            errMsg = await signInWithEmail(email, password);
+            if (mode === 'signup') {
+                errMsg = await signUpWithEmail(email, password);
+                // No message needed — auto-login takes user directly into the app
+            } else {
+                errMsg = await signInWithEmail(email, password);
+            }
+
+            if (errMsg) setError(errMsg);
+        } catch (err: any) {
+            setError(err.message || String(err));
+        } finally {
+            setLoading(false);
         }
-
-        if (errMsg) setError(errMsg);
-        setLoading(false);
     };
 
     const handleGuest = async () => {
         setError('');
         setGuestLoading(true);
-        const errMsg = await signInAsGuest();
-        if (errMsg) setError(errMsg);
-        setGuestLoading(false);
+        try {
+            const errMsg = await signInAsGuest();
+            if (errMsg) setError(errMsg);
+        } catch (err: any) {
+            setError(err.message || String(err));
+        } finally {
+            setGuestLoading(false);
+        }
     };
 
     const inputStyle: React.CSSProperties = {
