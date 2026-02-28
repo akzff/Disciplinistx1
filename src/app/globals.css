@@ -120,25 +120,28 @@ main {
 }
 
 .chat-header {
-  padding: 1.25rem 1.75rem;
-  border-bottom: 1px solid var(--border);
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   display: flex;
   align-items: center;
   position: relative;
   justify-content: space-between;
-  background:
-    radial-gradient(900px 160px at 18% 35%, rgba(139, 92, 246, 0.16), transparent 60%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+  background: rgba(10, 10, 15, 0.4);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
 }
 
 .chat-header::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(90deg, rgba(139, 92, 246, 0.14), transparent 35%, transparent 65%, rgba(139, 92, 246, 0.10));
-  opacity: 0.25;
+  display: none;
+}
+
+.header-action-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.2);
+}
+
+.logout-btn:hover {
+  color: #ef4444 !important;
 }
 
 .chat-header__left {

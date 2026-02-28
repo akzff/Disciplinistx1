@@ -208,7 +208,10 @@ export default function ChatPage() {
       ].join(', ') || 'None';
 
       // Token Optimization: Last 8 messages for balance of context vs cost
-      const contextMessages = newMessages.slice(-8);
+      const contextMessages = newMessages.slice(-8).map(m => ({
+        role: m.role,
+        content: m.content
+      }));
 
       // Only send Bio on start or if habits are few to save tokens
       const habitSummary = preferences.habitNotes.slice(0, 3).map(h => h.issue).join(', ');
@@ -483,13 +486,6 @@ export default function ChatPage() {
 
       <div className="chat-container">
         <header className="chat-header">
-          <div
-            className="status-indicator"
-            style={{
-              '--mood-color': botMood === 'DISAPPOINTED' ? '#ef4444' : botMood === 'HOPEFUL' ? '#10b981' : botMood === 'DOMINATOR' ? '#8b5cf6' : '#6b7280'
-            } as React.CSSProperties}
-          ></div>
-
           <button
             className="sidebar-toggle-btn"
             onClick={() => setSidebarOpen(v => !v)}
@@ -502,18 +498,26 @@ export default function ChatPage() {
             </svg>
           </button>
 
-          <div className="chat-header__left" style={{ flex: 1 }}>
-            <h1 className="app-title">
-              <span className="app-title__brand">DISCIPLINIST</span>
-              <span className="mood-pill">{botMood}</span>
-            </h1>
-            <div className="chat-header__subtitleRow">
-              <p className="session-subtitle">{activeDay === currentDate ? 'TODAY' : 'YESTERDAY'}&apos;S SESSION</p>
-              {isPreviousDayOpen && hideOverlay && (
-                <button onClick={closePreviousDay} className="close-prev-btn">
-                  CLOSE YESTERDAY
-                </button>
-              )}
+          <div className="chat-header__left" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div
+              className="status-indicator"
+              style={{
+                '--mood-color': botMood === 'DISAPPOINTED' ? '#ef4444' : botMood === 'HOPEFUL' ? '#10b981' : botMood === 'DOMINATOR' ? '#8b5cf6' : '#6b7280'
+              } as React.CSSProperties}
+            ></div>
+            <div>
+              <h1 className="app-title" style={{ marginBottom: '2px' }}>
+                <span className="app-title__brand">DISCIPLINIST</span>
+                <span className="mood-pill" style={{ marginLeft: '6px' }}>{botMood}</span>
+              </h1>
+              <div className="chat-header__subtitleRow" style={{ marginTop: '0' }}>
+                <p className="session-subtitle">{activeDay === currentDate ? 'TODAY' : 'YESTERDAY'}&apos;S SESSION</p>
+                {isPreviousDayOpen && hideOverlay && (
+                  <button onClick={closePreviousDay} className="close-prev-btn">
+                    CLOSE YESTERDAY
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -522,21 +526,22 @@ export default function ChatPage() {
               <NavigationBar />
             </div>
 
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
               <button
                 onClick={() => setShowMissions(true)}
+                className="header-action-btn"
                 style={{
                   background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.1))',
                   border: '1px solid rgba(139, 92, 246, 0.4)',
                   color: '#d8b4fe',
-                  padding: '8px 16px',
+                  padding: '8px 18px',
                   borderRadius: '100px',
                   cursor: 'pointer',
-                  fontSize: '0.7rem',
-                  fontWeight: '900',
+                  fontSize: '0.75rem',
+                  fontWeight: '800',
                   letterSpacing: '0.05em',
-                  boxShadow: '0 4px 15px rgba(139, 92, 246, 0.1)',
-                  transition: 'all 0.2s',
+                  boxShadow: '0 4px 15px rgba(139, 92, 246, 0.15)',
+                  transition: 'all 0.3s',
                   textTransform: 'uppercase'
                 }}
               >
@@ -545,25 +550,31 @@ export default function ChatPage() {
 
               <button
                 onClick={() => setShowSettings(!showSettings)}
-                style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'white', padding: '8px', borderRadius: '100px', cursor: 'pointer', display: 'flex', alignItems: 'center', transition: 'all 0.2s' }}
+                className="header-action-btn"
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '10px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="3"></circle>
                   <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
                 </svg>
               </button>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 12px', borderRadius: '100px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'linear-gradient(135deg, #8b5cf6, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: '900' }}>
-                  {user?.email?.charAt(0).toUpperCase()}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 14px', borderRadius: '100px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'linear-gradient(135deg, #8b5cf6, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: '900', boxShadow: '0 2px 10px rgba(139, 92, 246, 0.3)' }}>
+                  {user?.email?.charAt(0).toUpperCase() || 'U'}
                 </div>
-                <span style={{ fontSize: '0.6rem', opacity: 0.5, maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.email}</span>
+                <span style={{ fontSize: '0.75rem', opacity: 0.7, maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: '600' }}>{user?.email || 'User'}</span>
                 <button
                   onClick={signOut}
                   title="Sign Out"
-                  style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '0.6rem', padding: '2px 4px', borderRadius: '4px' }}
+                  className="logout-btn"
+                  style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.9rem', padding: '0 4px', transition: 'color 0.2s' }}
                 >
-                  ⏻
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                  </svg>
                 </button>
               </div>
             </div>
