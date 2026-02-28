@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { storage, DailyChat, UserPreferences } from '@/lib/storage';
+import { storage, DailyChat, UserPreferences, formatTime } from '@/lib/storage';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -317,7 +317,7 @@ Recent Chat: ${JSON.stringify(context.messages?.slice(-15))}`;
                                                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent)' }}></div>
                                                     <div>
                                                         <p style={{ fontWeight: '800', fontSize: '0.85rem' }}>{task.name}</p>
-                                                        <p style={{ fontSize: '0.65rem', opacity: 0.5, marginTop: '2px' }}>⏱ {Math.floor(task.activeTime / 60000)}m {Math.floor((task.activeTime % 60000) / 1000)}s</p>
+                                                        <p style={{ fontSize: '0.65rem', opacity: 0.5, marginTop: '2px' }}>⏱ {formatTime(task.activeTime)}</p>
                                                     </div>
                                                 </div>
                                             ))}

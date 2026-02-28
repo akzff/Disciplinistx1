@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { storage, Message, DailyChat, UserPreferences, ActiveTask } from '@/lib/storage';
+import { storage, Message, DailyChat, UserPreferences, ActiveTask, formatTime } from '@/lib/storage';
 import Link from 'next/link';
 import MissionsBoard from '@/components/MissionsBoard';
 import MissionChecklist from '@/components/MissionChecklist';
@@ -655,15 +655,15 @@ export default function ChatPage() {
                             </div>
                             <div className="mc-stat mc-accent">
                               <span className="mc-stat-label">⚡ ACTIVE TIME</span>
-                              <span className="mc-stat-value">{Math.floor(msg.completedMission.activeTime / 60000)}m {Math.floor((msg.completedMission.activeTime % 60000) / 1000)}s</span>
+                              <span className="mc-stat-value">{formatTime(msg.completedMission.activeTime)}</span>
                             </div>
                             <div className="mc-stat">
                               <span className="mc-stat-label">⏸ PAUSED TIME</span>
-                              <span className="mc-stat-value">{Math.floor(msg.completedMission.pausedTime / 60000)}m {Math.floor((msg.completedMission.pausedTime % 60000) / 1000)}s</span>
+                              <span className="mc-stat-value">{formatTime(msg.completedMission.pausedTime)}</span>
                             </div>
                             <div className="mc-stat mc-wide">
                               <span className="mc-stat-label">⏱ TOTAL DURATION</span>
-                              <span className="mc-stat-value">{Math.floor((msg.completedMission.endTime - msg.completedMission.startTime) / 60000)}m {Math.floor(((msg.completedMission.endTime - msg.completedMission.startTime) % 60000) / 1000)}s</span>
+                              <span className="mc-stat-value">{formatTime(msg.completedMission.endTime - msg.completedMission.startTime)}</span>
                             </div>
                           </div>
                           <p className="mc-prompt">{msg.content}</p>
@@ -728,7 +728,7 @@ export default function ChatPage() {
                     <p style={{ fontSize: '0.7rem', opacity: 0.6, fontWeight: '700', textTransform: 'uppercase' }}>Current Task</p>
                     <p style={{ fontWeight: '800' }}>{task.name}</p>
                     <p style={{ fontSize: '0.65rem', opacity: 0.5, marginTop: '2px' }}>
-                      Active: {Math.floor(activeTime / 60000)}m {Math.floor((activeTime % 60000) / 1000)}s | Paused: {Math.floor(pausedTime / 60000)}m {Math.floor((pausedTime % 60000) / 1000)}s
+                      Active: {formatTime(activeTime)} | Paused: {formatTime(pausedTime)}
                     </p>
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
