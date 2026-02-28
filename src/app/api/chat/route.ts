@@ -10,7 +10,7 @@ const DEFAULT_MODEL = 'qwen/qwen3-32b';
 
 export async function POST(req: Request) {
     try {
-        const { messages, systemPrompt, model } = await req.json();
+        const { messages, systemPrompt, model, maxTokens } = await req.json();
 
         const selectedModel = model || DEFAULT_MODEL;
         const isPoe = selectedModel.toLowerCase().startsWith('gpt-') || selectedModel.includes('image');
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
                 model: selectedModel,
                 messages: fullMessages,
                 temperature: 0.4,
-                max_tokens: 400,
+                max_tokens: maxTokens || 400,
             }),
         });
 

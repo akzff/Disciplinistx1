@@ -86,39 +86,49 @@ export default function RecordsPage() {
                 ambition: preferences.ambition
             };
 
-            const prompt = `Generate a structured intelligence report for ${chat.date}. You MUST use the exact XML tags specified below. Output ONLY bullet points inside the blocks. No conversational text, no intro, no outro, no thinking text.
+            const prompt = `Generate a structured intelligence report for ${chat.date}. You MUST use the exact XML tags below. All content goes inside the XML tags. Output text and bullet points only — DO NOT include any XML tag descriptions or parenthetical instructions in the output.
 
 <block1>
-(DAY EXECUTION LOG: Comprehensive, detailed bullet points. Pull from EVERY available source: todos, dailies, completed missions, and especially the chat history. Include timestamps (e.g., 7:00 AM) and specific details like what you ate, thought, or felt. Be exhaustive but keep it in points. Max 15 bullets.)
+(DAY EXECUTION LOG: A detailed, comprehensive timeline of the day. Each bullet = one real moment with a timestamp. Include wake-up time, meals, every activity, how the user felt, what they were doing at college/gym/home. Pull from ALL sources: todos, dailies, completed missions, and especially every message in the chat history. Be exhaustive — every meaningful moment gets a bullet. No cap on bullets.)
 </block1>
 
 <block2>
-(BEHAVIORAL ALIGNMENT: 1-2 bullets for RIGHT (✅) and 1-2 bullets for WRONG (❌). Be extremely concise.)
+✅ RIGHT:
+- (accomplished action aligned with their goals)
+- (another right action)
+❌ WRONG:
+- (specific failure or distraction)
+- (another wrong move)
 </block2>
 
 <block3>
-(STRATEGIC REFINEMENT: 2-3 short bullets. Tomorrow's pivot.)
+(STRATEGIC REFINEMENT: 3 concrete, numbered action items for tomorrow. Specific and actionable.)
 </block3>
 
 <artifact>
-(IMAGE PROMPT: Describe a CINEMATIC PORTRAIT COLLAGE in manhwa sketch style — young Indian man with curly hair and gold aviator glasses as centerpiece face, with 2 small film-still scenes from today's key moments overlaid via double exposure. Dark moody background. Movie poster aesthetics.)
+(IMAGE PROMPT ONLY: Cinematic portrait collage in manhwa sketch style — young Indian man with curly hair and gold aviator glasses as powerful centerpiece face, 2 film-still scenes from today's key activities double-exposed around him. Dark moody background, movie poster composition.)
 </artifact>
 
 Context: ${JSON.stringify({ ...context, messages: undefined })}
-Recent Chat: ${JSON.stringify(context.messages?.slice(-10))}`;
+Recent Chat: ${JSON.stringify(context.messages?.slice(-15))}`;
 
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     messages: [{ role: 'user', content: prompt }],
-                    systemPrompt: "You are a tactical intelligence analyzer. Output exact XML tags as requested. Output ONLY bullet points. Add nothing else. Be extremely brief."
+                    maxTokens: 1500,
+                    systemPrompt: "You are a tactical intelligence analyzer. Output exact XML tags as instructed. Fill each block with real content from the user's context. Be comprehensive on execution log, concise on alignment and refinement."
                 }),
             });
 
             if (!response.ok) throw new Error('Failed to generate report');
             const data = await response.json();
-            const fullContent = data.choices[0].message.content;
+            // Strip think tags that reasoning models emit before parsing
+            const fullContent = (data.choices[0].message.content as string)
+                .replace(/<think>[\s\S]*?<\/think>/gi, '')
+                .replace(/<thinking>[\s\S]*?<\/thinking>/gi, '')
+                .trim();
 
             const artifactMatch = fullContent.match(/<artifact>([\s\S]+?)<\/artifact>/i) || fullContent.match(/\[ARTIFACT_PROMPT:?([\s\S]+?)\]/i);
             const artifactPrompt = artifactMatch
