@@ -117,7 +117,7 @@ Recent Chat: ${JSON.stringify(context.messages?.slice(-15))}`;
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     messages: [{ role: 'user', content: prompt }],
-                    maxTokens: 1500,
+                    maxTokens: 3000,
                     systemPrompt: "You are a tactical intelligence analyzer. Output exact XML tags as instructed. Fill each block with real content from the user's context. Be comprehensive on execution log, concise on alignment and refinement."
                 }),
             });
