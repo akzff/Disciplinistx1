@@ -479,7 +479,7 @@ export default function ChatPage() {
                 <button
                   onClick={closePreviousDay}
                   style={{ fontSize: '0.65rem', padding: '4px 12px', borderRadius: '100px', border: '1px solid var(--accent)', background: 'rgba(139, 92, 246, 0.1)', color: 'var(--accent)', cursor: 'pointer', fontWeight: '800' }}>
-                  FINISH YESTERDAY
+                  CLOSE YESTERDAY
                 </button>
               )}
             </div>
@@ -506,7 +506,7 @@ export default function ChatPage() {
                   textTransform: 'uppercase'
                 }}
               >
-                Missions
+                Tasks
               </button>
 
               <button
@@ -559,7 +559,7 @@ export default function ChatPage() {
           {isPreviousDayOpen && !hideOverlay && (
             <div className="overlay">
               <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⏳</div>
-              <h2 style={{ marginBottom: '1rem' }}>Unfinished Business</h2>
+              <h2 style={{ marginBottom: '1rem' }}>Yesterday Not Closed</h2>
               <p style={{ maxWidth: '400px', opacity: 0.8, marginBottom: '2rem' }}>
                 You haven&apos;t told the bot how you spent the end of <b>{previousDate}</b>.
                 Complete the details before starting today.
@@ -580,8 +580,8 @@ export default function ChatPage() {
               <div className="start-day-wrapper">
                 <div style={{ fontSize: '4rem', filter: 'drop-shadow(0 0 20px var(--accent-glow))' }}>🌅</div>
                 <div>
-                  <h2 style={{ fontSize: '2rem', fontWeight: '900', marginBottom: '0.5rem' }}>A New Cycle Begins</h2>
-                  <p style={{ opacity: 0.6 }}>Your path today is yet to be written.</p>
+                  <h2 style={{ fontSize: '2rem', fontWeight: '900', marginBottom: '0.5rem' }}>A New Day Begins</h2>
+                  <p style={{ opacity: 0.6 }}>Your day starts fresh. What will you do today?</p>
                 </div>
                 <button className="start-day-btn" onClick={startMyDay}>
                   Start My Day
@@ -631,7 +631,7 @@ export default function ChatPage() {
                           <div className="mc-header">
                             <span className="mc-icon">✅</span>
                             <div>
-                              <p className="mc-label">MISSION COMPLETE</p>
+                              <p className="mc-label">TASK COMPLETE</p>
                               <p className="mc-title">{msg.completedMission.name}</p>
                             </div>
                           </div>
@@ -683,9 +683,9 @@ export default function ChatPage() {
 
                       {msg.taskRequest?.status === 'PENDING' && (
                         <div className="task-request-inline">
-                          <h4>Start Mission?</h4>
+                          <h4>Start task?</h4>
                           <p>{msg.taskRequest.name}</p>
-                          <button className="approve-btn" onClick={() => approveTask(i)}>Approve Mission</button>
+                          <button className="approve-btn" onClick={() => approveTask(i)}>Start</button>
                         </div>
                       )}
                     </div>
@@ -716,7 +716,7 @@ export default function ChatPage() {
                 <div key={task.id} className="active-tasks-card">
                   <div style={{ fontSize: '1.5rem' }}>{task.status === 'RUNNING' ? '🔥' : '⏸️'}</div>
                   <div style={{ flex: 1 }}>
-                    <p style={{ fontSize: '0.7rem', opacity: 0.6, fontWeight: '700', textTransform: 'uppercase' }}>Active Mission</p>
+                    <p style={{ fontSize: '0.7rem', opacity: 0.6, fontWeight: '700', textTransform: 'uppercase' }}>Current Task</p>
                     <p style={{ fontWeight: '800' }}>{task.name}</p>
                     <p style={{ fontSize: '0.65rem', opacity: 0.5, marginTop: '2px' }}>
                       Active: {Math.floor(activeTime / 60000)}m {Math.floor((activeTime % 60000) / 1000)}s | Paused: {Math.floor(pausedTime / 60000)}m {Math.floor((pausedTime % 60000) / 1000)}s
@@ -746,7 +746,7 @@ export default function ChatPage() {
               animation: 'slideIn 0.3s ease-out',
               zIndex: 10
             }}>
-              <h3 style={{ fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1.5rem', opacity: 0.7 }}>Your Identity</h3>
+              <h3 style={{ fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1.5rem', opacity: 0.7 }}>Profile Settings</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 <div className="setting-item" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                   <div style={{ position: 'relative' }}>
@@ -778,35 +778,7 @@ export default function ChatPage() {
                   </div>
                 </div>
 
-                <div className="setting-item">
-                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--accent)', display: 'block', marginBottom: '8px' }}>CORE MODEL</label>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {[
-                      { id: 'qwen/qwen3-32b', name: 'LITE-CORE (GROQ)', sub: 'Fast, efficient coaching' },
-                      { id: 'gpt-4o', name: 'PRIME-CORE (POE)', sub: 'High intelligence reasoning' },
-                      { id: 'gpt-image-1.5', name: 'VISION-CORE (POE)', sub: 'Image generation enabled' }
-                    ].map(m => (
-                      <button
-                        key={m.id}
-                        onClick={() => updateProfile({ selectedModel: m.id })}
-                        style={{
-                          width: '100%',
-                          textAlign: 'left',
-                          padding: '10px',
-                          borderRadius: '8px',
-                          border: preferences.selectedModel === m.id ? '1px solid var(--accent)' : '1px solid var(--border)',
-                          background: preferences.selectedModel === m.id ? 'rgba(0,186,124,0.1)' : 'var(--surface)',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s',
-                          fontFamily: 'inherit'
-                        }}
-                      >
-                        <div style={{ fontSize: '0.75rem', fontWeight: '900', color: preferences.selectedModel === m.id ? 'var(--accent)' : 'white' }}>{m.name}</div>
-                        <div style={{ fontSize: '0.6rem', opacity: 0.5 }}>{m.sub}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+
 
                 <div className="setting-item">
                   <label style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--accent)', display: 'block', marginBottom: '8px' }}>MENTORING INTENSITY</label>
@@ -851,7 +823,7 @@ export default function ChatPage() {
                 </div>
 
                 <div className="setting-item">
-                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#ffd700', display: 'block', marginBottom: '8px' }}>SOUL OF AMBITIONS</label>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#ffd700', display: 'block', marginBottom: '8px' }}>YOUR MOTIVATION</label>
                   <textarea
                     className="settings-input"
                     placeholder="Why are you working this hard? (e.g., 'I want to be the best' or 'To prove my worth')"
@@ -881,7 +853,7 @@ export default function ChatPage() {
         <div className="input-area">
           <div className="input-wrapper">
             <textarea
-              placeholder="Commune with Disciplinist..."
+              placeholder="Message your coach..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}

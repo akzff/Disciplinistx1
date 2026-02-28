@@ -96,18 +96,18 @@ export default function TaskEditModal({ item, type, onSave, onClose }: TaskEditM
         <div className="modal-backdrop" onClick={onClose}>
             <div className="modal-content" onClick={e => e.stopPropagation()}>
                 <header className="modal-header">
-                    <h3>EDIT MISSION</h3>
+                    <h3>EDIT TASK</h3>
                     <button className="close-btn" onClick={onClose}>×</button>
                 </header>
 
                 <div className="modal-body">
                     <div className="form-group">
-                        <label>MISSION TITLE</label>
+                        <label>TASK NAME</label>
                         <input
                             type="text"
                             value={text}
                             onChange={(e) => setText(e.target.value)}
-                            placeholder="What is the mission?"
+                            placeholder="Task name..."
                             autoFocus
                         />
                     </div>
@@ -199,7 +199,7 @@ export default function TaskEditModal({ item, type, onSave, onClose }: TaskEditM
                     <div className="form-group">
                         <label>SUBTASKS</label>
                         <div className="subtask-list">
-                            {subtasks.length === 0 && <p style={{ fontSize: '0.75rem', opacity: 0.3, padding: '10px' }}>No micro-missions defined.</p>}
+                            {subtasks.length === 0 && <p style={{ fontSize: '0.75rem', opacity: 0.3, padding: '10px' }}>No sub-tasks added.</p>}
                             {subtasks.map(sub => (
                                 <div key={sub.id} className="subtask-item">
                                     <input
@@ -216,7 +216,7 @@ export default function TaskEditModal({ item, type, onSave, onClose }: TaskEditM
                         <div className="add-subtask-row">
                             <input
                                 type="text"
-                                placeholder="Add micro-mission..."
+                                placeholder="Add sub-task..."
                                 value={newSubtask}
                                 onChange={(e) => setNewSubtask(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && addSubtask()}
@@ -228,7 +228,7 @@ export default function TaskEditModal({ item, type, onSave, onClose }: TaskEditM
 
                 <footer className="modal-footer">
                     <button className="cancel-pill" onClick={onClose}>CANCEL</button>
-                    <button className="save-pill" onClick={handleSave}>UPDATE PROTOCOL</button>
+                    <button className="save-pill" onClick={handleSave}>SAVE CHANGES</button>
                 </footer>
             </div>
 

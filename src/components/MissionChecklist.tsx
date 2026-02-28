@@ -81,7 +81,7 @@ export default function MissionChecklist({ todos, dailies, expenses = [], sideba
                     }}>
                         <input
                             autoFocus
-                            placeholder="Current Mission..."
+                            placeholder="Current Task..."
                             value={liveInput}
                             onChange={(e) => setLiveInput(e.target.value)}
                             onKeyDown={(e) => {
@@ -163,7 +163,7 @@ export default function MissionChecklist({ todos, dailies, expenses = [], sideba
                             transition: 'all 0.2s'
                         }}
                     >
-                        <span>🔥</span> LIVE MISSION
+                        <span>🔥</span> START TASK
                     </button>
                 )}
             </section>
@@ -172,7 +172,7 @@ export default function MissionChecklist({ todos, dailies, expenses = [], sideba
                 <div
                     style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
                 >
-                    {dailies.length === 0 && <p style={{ fontSize: '0.8rem', opacity: 0.3 }}>No dailies established.</p>}
+                    {dailies.length === 0 && <p style={{ fontSize: '0.8rem', opacity: 0.3 }}>No dailies added.</p>}
                     {dailies.map((daily, idx) => (
                         <div
                             key={daily.id}
@@ -225,7 +225,7 @@ export default function MissionChecklist({ todos, dailies, expenses = [], sideba
             <section>
                 <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: 'var(--accent)', letterSpacing: '0.1em', marginBottom: '1rem', textTransform: 'uppercase' }}>To-Do&apos;s</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {todos.length === 0 && <p style={{ fontSize: '0.8rem', opacity: 0.3 }}>No to-do&apos;s assigned.</p>}
+                    {todos.length === 0 && <p style={{ fontSize: '0.8rem', opacity: 0.3 }}>No to-dos added.</p>}
                     {todos.map((todo, idx) => (
                         <div
                             key={todo.id}

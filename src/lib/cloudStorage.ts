@@ -34,6 +34,9 @@ export const cloudStorage = {
     },
 
     saveChat: async (date: string, chatData: Partial<DailyChat>): Promise<void> => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
         // Upsert: load existing then merge
         const existing = await cloudStorage.getChat(date);
         const defaults: DailyChat = {
@@ -50,7 +53,7 @@ export const cloudStorage = {
 
         const { error } = await supabase
             .from('disciplinist_daily_chats')
-            .upsert({ date, data: merged }, { onConflict: 'user_id,date' });
+            .upsert({ user_id: user.id, date, data: merged }, { onConflict: 'user_id,date' });
 
         if (error) console.error('Cloud save chat error:', error);
     },

@@ -210,7 +210,7 @@ Recent Chat: ${JSON.stringify(context.messages?.slice(-15))}`;
                 <div className="sidebar-layout" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
                     {/* Sidebar */}
                     <div className="sidebar-panel" style={{ width: '220px', borderRight: '1px solid var(--border)', overflowY: 'auto', padding: '1rem', flexShrink: 0 }}>
-                        <h3 style={{ fontSize: '0.65rem', opacity: 0.5, marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Mission History</h3>
+                        <h3 style={{ fontSize: '0.65rem', opacity: 0.5, marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Day History</h3>
                         <div className="sidebar-panel-content" style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                             {allDates.map(date => (
                                 <button
@@ -259,7 +259,7 @@ Recent Chat: ${JSON.stringify(context.messages?.slice(-15))}`;
                                     reader.onload = (event) => {
                                         const content = event.target?.result as string;
                                         if (storage.importData(content)) {
-                                            alert('Data Protocol Restored.');
+                                            alert('Data restored. Reloading...');
                                             window.location.reload();
                                         } else {
                                             alert('Import Failed.');
@@ -280,7 +280,7 @@ Recent Chat: ${JSON.stringify(context.messages?.slice(-15))}`;
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem' }}>
                                     <div>
                                         <h2 style={{ fontSize: '2.2rem', fontWeight: '900', color: 'white', lineHeight: 1 }}>{selectedDate}</h2>
-                                        <p style={{ opacity: 0.4, fontWeight: '600', fontSize: '0.75rem', marginTop: '4px', letterSpacing: '0.1em' }}>MISSION PERFORMANCE DATA</p>
+                                        <p style={{ opacity: 0.4, fontWeight: '600', fontSize: '0.75rem', marginTop: '4px', letterSpacing: '0.1em' }}>DAY SUMMARY</p>
                                     </div>
                                     <button
                                         onClick={generateReport}
@@ -295,12 +295,12 @@ Recent Chat: ${JSON.stringify(context.messages?.slice(-15))}`;
                                 {/* Stats Row */}
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
                                     <div className="stat-box">
-                                        <span className="stat-label">DAILY RITES</span>
+                                        <span className="stat-label">DAILIES</span>
                                         <span className="stat-value">{dailyStats.completed}/{dailyStats.total}</span>
                                         <div className="progress-bar"><div className="progress-fill" style={{ width: `${dailyStats.percent}%`, background: '#10b981' }}></div></div>
                                     </div>
                                     <div className="stat-box">
-                                        <span className="stat-label">MISSIONS MET</span>
+                                        <span className="stat-label">TO-DOS DONE</span>
                                         <span className="stat-value">{todoStats.completed}/{todoStats.total}</span>
                                         <div className="progress-bar"><div className="progress-fill" style={{ width: `${todoStats.percent}%` }}></div></div>
                                     </div>
