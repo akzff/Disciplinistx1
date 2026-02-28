@@ -152,6 +152,30 @@ export default function ChatPage() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    if (!activeTasks || activeTasks.length === 0) {
+      document.title = "Disciplinist | Discipline Engine";
+      return;
+    }
+
+    const runningTask = activeTasks.find(t => t.status === 'RUNNING');
+    const pausedTask = activeTasks.find(t => t.status === 'PAUSED');
+    const task = runningTask || pausedTask;
+
+    if (task) {
+      const activeTime = task.status === 'RUNNING'
+        ? (task.totalActiveTime || 0) + Math.max(0, now - (task.lastStartedAt || task.startTime || now))
+        : (task.totalActiveTime || 0);
+
+      const timeStr = formatTime(activeTime).replace(/ /g, ''); // e.g. 1h20m30s
+      const statusIcon = task.status === 'RUNNING' ? '▶' : '⏸';
+
+      document.title = `${timeStr} ${statusIcon} ${task.name} | Disciplinist`;
+    } else {
+      document.title = "Disciplinist | Discipline Engine";
+    }
+  }, [activeTasks, now]);
+
   const handleSend = async (overrideInput?: string, overrideMessages?: Message[]) => {
     const textToSend = overrideInput || input;
     if (!textToSend.trim() || isLoading) return;
