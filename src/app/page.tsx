@@ -75,8 +75,8 @@ export default function ChatPage() {
   const saveDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    if (isInitialized || !globalPrefs || !allChats) return;
     const init = async () => {
-      if (!globalPrefs || !allChats) return;
       setPreferences(globalPrefs);
 
       const today = storage.getCurrentDate();
@@ -142,7 +142,7 @@ export default function ChatPage() {
     };
     init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [globalPrefs, allChats]);
+  }, [globalPrefs, allChats, isInitialized]);
 
   // Debounced cloud save (500ms) to avoid hammering Supabase on every keystroke
   useEffect(() => {
@@ -571,9 +571,6 @@ export default function ChatPage() {
           </div>
 
           <div className="header-controls">
-            <div className="nav-center-wrapper">
-              <NavigationBar />
-            </div>
 
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <button
@@ -1057,6 +1054,9 @@ export default function ChatPage() {
           onClose={() => setShowMissions(false)}
         />
       )}
+      <div className="nav-center-wrapper">
+        <NavigationBar />
+      </div>
     </main>
   );
 }

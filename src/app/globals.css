@@ -173,6 +173,7 @@ main {
   padding: 1.5rem 2rem;
   max-width: 1400px;
   margin: 0 auto;
+  position: relative;
 }
 
 .block-card {
@@ -241,9 +242,11 @@ main {
 @media (min-width: 769px) {
   .nav-center-wrapper {
     position: absolute;
+    top: 2rem;
+    /* Align with header center */
     left: 50%;
     transform: translateX(-50%);
-    z-index: 10;
+    z-index: 100;
   }
 }
 
@@ -713,11 +716,13 @@ textarea {
 
   .nav-center-wrapper {
     position: fixed;
-    bottom: 1rem;
+    bottom: 0.8rem;
     left: 50%;
     transform: translateX(-50%);
-    width: 90%;
-    z-index: 1000;
+    width: 95%;
+    max-width: 400px;
+    z-index: 2000;
+    pointer-events: auto;
   }
 
   .mobile-hidden {
