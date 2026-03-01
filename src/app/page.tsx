@@ -65,7 +65,7 @@ export default function ChatPage() {
   const [botMood, setBotMood] = useState<'NEUTRAL' | 'DISAPPOINTED' | 'HOPEFUL' | 'DOMINATOR'>('NEUTRAL');
   const [completedTasks, setCompletedTasks] = useState<DailyChat['completedTasks']>([]);
   const [now, setNow] = useState(Date.now());
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -134,7 +134,7 @@ export default function ChatPage() {
         setCompletedTasks((base as typeof todayChat)?.completedTasks || []);
         setExpenses(base.expenses || []);
         if (!todayChat) {
-          cloudStorage.saveChat(today, base, user?.id || undefined, true);
+          cloudStorage.saveChat(today, base, user?.id || undefined);
           setLocalChat(today, base as DailyChat);
         }
       }
@@ -150,7 +150,7 @@ export default function ChatPage() {
     if (saveDebounce.current) clearTimeout(saveDebounce.current);
     saveDebounce.current = setTimeout(() => {
       const chatD = { messages, status: chatStatus, activeTasks, distractions, botMood, todos, dailies, completedTasks, expenses };
-      cloudStorage.saveChat(activeDay, chatD, user?.id || undefined, true);
+      cloudStorage.saveChat(activeDay, chatD, user?.id || undefined);
       setLocalChat(activeDay, chatD as DailyChat);
     }, 500);
     return () => { if (saveDebounce.current) clearTimeout(saveDebounce.current); };
@@ -492,7 +492,7 @@ export default function ChatPage() {
     setDailies(base.dailies || []);
     setCompletedTasks((base as typeof todayChat)?.completedTasks || []);
     setExpenses(base.expenses || []);
-    if (!todayChat) await cloudStorage.saveChat(today, base, user?.id || undefined, true);
+    if (!todayChat) await cloudStorage.saveChat(today, base, user?.id || undefined);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -792,6 +792,19 @@ export default function ChatPage() {
               <div className="message ai">
                 <div className="typing-indicator">
                   <div className="dot"></div><div className="dot"></div><div className="dot"></div>
+                </div>
+              </div>
+            )}
+
+            {activeTasks.length === 0 && (
+              <div className="active-tasks-card" style={{ opacity: 0.6 }}>
+                <div style={{ fontSize: '1.5rem' }}>🎯</div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: '0.7rem', opacity: 0.6, fontWeight: '700', textTransform: 'uppercase' }}>No Active Tasks</p>
+                  <p style={{ fontWeight: '800' }}>Start a task to begin tracking</p>
+                  <p style={{ fontSize: '0.65rem', opacity: 0.5, marginTop: '2px' }}>
+                    Click &quot;🔥 START TASK&quot; in the sidebar
+                  </p>
                 </div>
               </div>
             )}

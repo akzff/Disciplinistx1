@@ -138,6 +138,7 @@ body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   overflow: hidden;
   height: 100vh;
+  height: 100dvh;
   width: 100vw;
 }
 
@@ -170,6 +171,7 @@ main {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh;
   padding: 1.5rem 2rem;
   max-width: 1400px;
   margin: 0 auto;
@@ -671,7 +673,8 @@ textarea {
 
   .chat-container {
     border-radius: 16px;
-    height: calc(100vh - 1rem) !important;
+    height: 100% !important;
+    max-height: calc(100dvh - 1rem);
   }
 
   .message {
@@ -1027,8 +1030,17 @@ textarea {
 
   .input-area {
     padding: 0.75rem 1rem;
-    padding-bottom: 6rem;
-    /* Extra padding to clear bottom navigation */
+    /* Clear bottom navigation: nav height (~3.5rem) + safe area + extra breathing room */
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+    background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.4) 20%, rgba(0, 0, 0, 0.8));
+    z-index: 5;
+  }
+
+  .send-button {
+    min-height: 40px !important;
+    /* Override the global 48px to keep it compact */
+    height: 40px !important;
+    width: 40px !important;
   }
 
   .mobile-only {

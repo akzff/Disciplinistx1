@@ -206,10 +206,10 @@ IMPORTANT: For each completed task, check if there's an abandonmentReason. If pr
         setIsImporting(true);
         try {
             const content = await file.text();
-            
+
             // Show preview first
             const preview: ImportPreview = await EnhancedExportImport.getImportPreview(content);
-            
+
             const confirmMessage = `Import this data?
             
 📊 Summary:
@@ -227,7 +227,7 @@ This will ${user?.id ? 'sync to cloud storage' : 'import to local storage'}. Con
             }
 
             const result = await EnhancedExportImport.importAllData(content, user?.id);
-            
+
             if (result.success) {
                 alert(`✅ ${result.message}\n\nPage will reload to show imported data.`);
                 setTimeout(() => {
@@ -292,9 +292,6 @@ This will ${user?.id ? 'sync to cloud storage' : 'import to local storage'}. Con
                         <p style={{ fontSize: '0.7rem', opacity: 0.6 }}>PREVIOUS MISSIONS & AI INTELLIGENCE</p>
                     </div>
                     <div className="header-controls" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                        <div className="nav-center-wrapper">
-                            <NavigationBar />
-                        </div>
                     </div>
                 </header>
 
@@ -330,45 +327,45 @@ This will ${user?.id ? 'sync to cloud storage' : 'import to local storage'}. Con
                             <button
                                 onClick={handleExport}
                                 disabled={isExporting}
-                                style={{ 
-                                    padding: '9px', 
-                                    borderRadius: '8px', 
-                                    background: isExporting ? 'rgba(139, 92, 246, 0.2)' : 'rgba(255,255,255,0.05)', 
-                                    border: '1px solid var(--border)', 
-                                    color: 'white', 
-                                    fontSize: '0.72rem', 
-                                    fontWeight: '800', 
+                                style={{
+                                    padding: '9px',
+                                    borderRadius: '8px',
+                                    background: isExporting ? 'rgba(139, 92, 246, 0.2)' : 'rgba(255,255,255,0.05)',
+                                    border: '1px solid var(--border)',
+                                    color: 'white',
+                                    fontSize: '0.72rem',
+                                    fontWeight: '800',
                                     cursor: isExporting ? 'not-allowed' : 'pointer',
                                     opacity: isExporting ? 0.7 : 1
                                 }}
                             >
                                 {isExporting ? '📤 EXPORTING...' : '📤 EXPORT'}
                             </button>
-                            <label style={{ 
-                                padding: '9px', 
-                                borderRadius: '8px', 
-                                background: isImporting ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255,255,255,0.05)', 
-                                border: '1px solid var(--border)', 
-                                color: 'white', 
-                                fontSize: '0.72rem', 
-                                fontWeight: '800', 
-                                cursor: isImporting ? 'not-allowed' : 'pointer', 
+                            <label style={{
+                                padding: '9px',
+                                borderRadius: '8px',
+                                background: isImporting ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255,255,255,0.05)',
+                                border: '1px solid var(--border)',
+                                color: 'white',
+                                fontSize: '0.72rem',
+                                fontWeight: '800',
+                                cursor: isImporting ? 'not-allowed' : 'pointer',
                                 textAlign: 'center',
                                 display: 'block',
                                 opacity: isImporting ? 0.7 : 1
                             }}>
-                                <input 
-                                    type="file" 
-                                    accept=".json" 
+                                <input
+                                    type="file"
+                                    accept=".json"
                                     onChange={handleImport}
                                     disabled={isImporting}
-                                    style={{ 
-                                        position: 'absolute', 
-                                        opacity: 0, 
-                                        width: '100%', 
-                                        height: '100%', 
-                                        cursor: isImporting ? 'not-allowed' : 'pointer' 
-                                    }} 
+                                    style={{
+                                        position: 'absolute',
+                                        opacity: 0,
+                                        width: '100%',
+                                        height: '100%',
+                                        cursor: isImporting ? 'not-allowed' : 'pointer'
+                                    }}
                                 />
                                 {isImporting ? '📥 IMPORTING...' : '📥 IMPORT'}
                             </label>
@@ -520,6 +517,9 @@ This will ${user?.id ? 'sync to cloud storage' : 'import to local storage'}. Con
                         )}
                     </div>
                 </div>
+            </div>
+            <div className="nav-center-wrapper">
+                <NavigationBar />
             </div>
 
             <style jsx>{`

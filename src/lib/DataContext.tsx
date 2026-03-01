@@ -43,8 +43,28 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 cloudStorage.getPreferences(userId)
             ]) as [Record<string, DailyChat>, UserPreferences | null];
 
-            // Update state silently
-            if (fetchedChats) setAllChats(prev => ({ ...prev, ...fetchedChats }));
+            // UI Refresh: Merge cloud data into local state carefully
+            setAllChats(prev => {
+                const merged = { ...prev };
+                if (fetchedChats) {
+                    Object.entries(fetchedChats).forEach(([date, cloudChat]) => {
+                        const localChat = prev[date];
+                        if (!localChat) {
+                            merged[date] = cloudChat;
+                        } else {
+                            // Merge logic: If cloud has more messages, it's likely newer from another device
+                            // We prefer cloud version but preserve local if it looks significantly different
+                            const cloudMsgCount = cloudChat.messages?.length || 0;
+                            const localMsgCount = localChat.messages?.length || 0;
+
+                            if (cloudMsgCount >= localMsgCount) {
+                                merged[date] = cloudChat;
+                            }
+                        }
+                    });
+                }
+                return merged;
+            });
             if (fetchedPrefs) setPreferences(fetchedPrefs);
 
             // Background migration
