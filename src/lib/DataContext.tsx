@@ -4,6 +4,8 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { DailyChat, UserPreferences, storage } from '@/lib/storage';
 import { cloudStorage } from '@/lib/cloudStorage';
 import { useAuth as useClerkAuth } from '@clerk/nextjs';
+import { useUser } from '@clerk/nextjs';
+import { UserMigration } from '@/lib/userMigration';
 
 interface DataContextType {
     allChats: Record<string, DailyChat>;
@@ -18,6 +20,7 @@ const DataContext = createContext<DataContextType | null>(null);
 
 export function DataProvider({ children }: { children: ReactNode }) {
     const { userId } = useClerkAuth();
+    const { user } = useUser();
     const [allChats, setAllChats] = useState<Record<string, DailyChat>>({});
     const [preferences, setPreferences] = useState<UserPreferences | null>(null);
     const [isLoadingData, setIsLoadingData] = useState(true);
@@ -30,6 +33,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         try {
             console.log("Syncing Supabase resources for user:", userId);
+            
+            // First, check if we need to migrate data for this user
+            const userEmail = user?.primaryEmailAddress?.emailAddress || '';
+            
+            if (userEmail) {
+                console.log("Checking for data migration for user:", userEmail);
+                await UserMigration.checkAndMigrateUser(userId, userEmail);
+            }
+
             const fetchedChats = await cloudStorage.getAllChats(userId);
             const fetchedPrefs = await cloudStorage.getPreferences(userId);
 
@@ -58,7 +70,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
             console.log("Data sync completed:", {
                 chatsCount: Object.keys(migrating).length,
-                hasPreferences: !!finalPrefs
+                hasPreferences: !!finalPrefs,
+                userEmail
             });
 
         } catch (err) {
@@ -69,7 +82,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         } finally {
             setIsLoadingData(false);
         }
-    }, [userId]);
+    }, [userId, user]);
 
     useEffect(() => {
         setIsLoadingData(true);

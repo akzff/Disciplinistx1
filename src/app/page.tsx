@@ -12,6 +12,7 @@ import { cloudStorage } from '@/lib/cloudStorage';
 import { useAuthContext } from '@/lib/AuthContext';
 import { useData } from '@/lib/DataContext';
 import { useUser } from '@clerk/nextjs';
+import '@/lib/manualMigration';
 
 // Strip model's internal reasoning tags before displaying
 function cleanBotMessage(text: string): string {
