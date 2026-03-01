@@ -4,12 +4,12 @@ import { useState, useEffect } from 'react';
 import { storage, DailyChat, formatTime } from '@/lib/storage';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { NavigationBar } from '@/components/NavigationBar';
 import { cloudStorage } from '@/lib/cloudStorage';
 import { useData } from '@/lib/DataContext';
 import { useUser } from '@clerk/nextjs';
 import Image from 'next/image';
 import { EnhancedExportImport } from '@/lib/enhancedExportImport';
+import UniversalLayout from '@/components/UniversalLayout';
 
 
 interface ReportBlocks {
@@ -282,7 +282,7 @@ This will ${user?.id ? 'sync to cloud storage' : 'import to local storage'}. Con
     ];
 
     return (
-        <main>
+        <UniversalLayout showTaskSidebar={false} showNavigationBar={true}>
             <div className="bg-mesh"></div>
 
             <div className="chat-container" style={{ maxHeight: '95vh', overflow: 'hidden' }}>
@@ -592,9 +592,6 @@ This will ${user?.id ? 'sync to cloud storage' : 'import to local storage'}. Con
                     </div>
                 </div>
             </div>
-            <div className="nav-center-wrapper">
-                <NavigationBar />
-            </div>
 
             <style jsx>{`
                 .stat-box {
@@ -658,6 +655,7 @@ This will ${user?.id ? 'sync to cloud storage' : 'import to local storage'}. Con
                     letter-spacing: 0.05em;
                 }
             `}</style>
-        </main>
+        </div>
+        </UniversalLayout>
     );
 }
