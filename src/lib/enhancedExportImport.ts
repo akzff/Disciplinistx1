@@ -53,23 +53,31 @@ export class EnhancedExportImport {
     static async exportAllData(userId?: string): Promise<string> {
         try {
             console.log('Starting comprehensive data export...');
+            console.log('User ID provided:', !!userId);
             
             // Get data from cloud (if userId provided) or local storage
             let allChats: Record<string, DailyChat> = {};
             let preferences: UserPreferences | null = null;
             
             if (userId) {
-                // Export from cloud storage
-                allChats = await cloudStorage.getAllChats(userId);
+                // Export from cloud storage - explicitly no limit for all data
+                console.log('Fetching from cloud storage...');
+                allChats = await cloudStorage.getAllChats(userId); // No limit parameter
                 preferences = await cloudStorage.getPreferences(userId);
+                console.log('Cloud fetch completed. Chats found:', Object.keys(allChats).length);
             } else {
                 // Export from local storage
+                console.log('Fetching from local storage...');
                 allChats = storage.getChats();
                 preferences = storage.getUserPreferences();
+                console.log('Local fetch completed. Chats found:', Object.keys(allChats).length);
             }
 
-            // Calculate summary statistics
+            // Log all available dates for debugging
             const chatDates = Object.keys(allChats);
+            console.log('All chat dates:', chatDates.sort());
+            
+            // Calculate summary statistics
             const totalTodos = Object.values(allChats).reduce((sum, chat) => sum + (chat.todos?.length || 0), 0);
             const totalDailies = Object.values(allChats).reduce((sum, chat) => sum + (chat.dailies?.length || 0), 0);
             const totalExpenses = Object.values(allChats).reduce((sum, chat) => sum + (chat.expenses?.length || 0), 0);
@@ -81,6 +89,16 @@ export class EnhancedExportImport {
                 earliest: sortedDates[0] || '',
                 latest: sortedDates[sortedDates.length - 1] || ''
             };
+
+            console.log('Export summary:', {
+                totalChats: chatDates.length,
+                totalTodos,
+                totalDailies,
+                totalExpenses,
+                totalCompletedTasks,
+                totalActiveTasks,
+                dateRange
+            });
 
             // Get user information
             let userEmail = '';

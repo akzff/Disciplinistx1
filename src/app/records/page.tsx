@@ -187,12 +187,26 @@ IMPORTANT: For each completed task, check if there's an abandonmentReason. If pr
     const handleExport = async () => {
         setIsExporting(true);
         try {
+            console.log('Starting export from records page...');
+            console.log('Available chats count:', Object.keys(allChats).length);
+            console.log('Available dates:', Object.keys(allChats).sort());
+            
             const exportData = await EnhancedExportImport.exportAllData(user?.id);
             const filename = EnhancedExportImport.generateFilename();
+            
+            console.log('Export completed, downloading file:', filename);
             EnhancedExportImport.downloadFile(exportData, filename);
+            
+            // Show success message with details
+            const exportInfo = JSON.parse(exportData);
+            const totalDays = exportInfo.data.summary.totalChats;
+            const dateRange = exportInfo.data.summary.dateRange;
+            
+            alert(`✅ Export successful!\n\n📊 Export Summary:\n• Total days: ${totalDays}\n• Date range: ${dateRange.earliest} to ${dateRange.latest}\n• File: ${filename}`);
+            
         } catch (error) {
             console.error('Export failed:', error);
-            alert(`Export failed: ${error instanceof Error ? error.message : String(error)}`);
+            alert(`❌ Export failed: ${error instanceof Error ? error.message : String(error)}`);
         } finally {
             setIsExporting(false);
         }
@@ -655,6 +669,7 @@ This will ${user?.id ? 'sync to cloud storage' : 'import to local storage'}. Con
                     letter-spacing: 0.05em;
                 }
             `}</style>
+            </div>
         </div>
         </UniversalLayout>
     );
