@@ -20,93 +20,57 @@ const DataContext = createContext<DataContextType | null>(null);
 export function DataProvider({ children }: { children: ReactNode }) {
     const { userId } = useClerkAuth();
     const { user } = useUser();
-    const [allChats, setAllChats] = useState<Record<string, DailyChat>>({});
-    const [preferences, setPreferences] = useState<UserPreferences | null>(null);
-    const [isLoadingData, setIsLoadingData] = useState(true);
+    // Sudden loading: Start with local storage immediately if available
+    const [allChats, setAllChats] = useState<Record<string, DailyChat>>(() => {
+        if (typeof window !== 'undefined') return storage.getChats();
+        return {};
+    });
+    const [preferences, setPreferences] = useState<UserPreferences | null>(() => {
+        if (typeof window !== 'undefined') return storage.getUserPreferences();
+        return null;
+    });
+    const [isLoadingData, setIsLoadingData] = useState(false); // No longer blocks by default
 
     const refreshData = useCallback(async () => {
-        if (!userId) {
-            setIsLoadingData(false);
-            return;
-        }
+        if (!userId) return;
 
         try {
-            console.log("Starting FAST data sync for user:", userId);
+            console.log("Sudden data sync starting for user:", userId);
 
-            // Parallel data fetching - fetch only recent 30 days initially for speed
-            const dataPromises = [
+            // Fetch in background
+            const [fetchedChats, fetchedPrefs] = await Promise.all([
                 cloudStorage.getAllChats(userId, 30),
                 cloudStorage.getPreferences(userId)
-            ];
+            ]) as [Record<string, DailyChat>, UserPreferences | null];
 
-            // Wait for all data to arrive in parallel
-            const [fetchedChats, fetchedPrefs] = await Promise.all(dataPromises) as [
-                Record<string, DailyChat>,
-                UserPreferences | null
-            ];
+            // Update state silently
+            if (fetchedChats) setAllChats(prev => ({ ...prev, ...fetchedChats }));
+            if (fetchedPrefs) setPreferences(fetchedPrefs);
 
-            // Set initial state immediately for better UX
-            setAllChats(fetchedChats);
-            setPreferences(fetchedPrefs);
-            setIsLoadingData(false);
-
-            // Process data in background (non-blocking)
+            // Background migration
             setTimeout(async () => {
-                // ─── Legacy Migration Logic ──────────────────────────────────────────
-                // If the user has local data (e.g. they just logged in or guest mode before)
-                // that is NOT in the cloud, we merge it up.
                 const localChats = storage.getChats();
-                const migrating = { ...fetchedChats };
-
-                // Only migrate if there's local data not in cloud
                 const hasLocalData = Object.keys(localChats).length > 0;
                 const hasCloudData = fetchedChats && Object.keys(fetchedChats).length > 0;
 
                 if (hasLocalData && !hasCloudData) {
-                    console.log("Migrating local data to cloud...");
-
-                    // Batch migrate local data
-                    const migrationPromises = Object.entries(localChats).map(([date, lChat]) => {
-                        if (!fetchedChats || !fetchedChats[date]) {
-                            console.log(`Migrating legacy local data to cloud for date: ${date}`);
-                            return cloudStorage.saveChat(date, lChat, userId);
-                        }
-                        return Promise.resolve();
-                    });
-
-                    // Wait for migration to complete
+                    const migrationPromises = Object.entries(localChats).map(([date, lChat]) =>
+                        cloudStorage.saveChat(date, lChat, userId)
+                    );
                     await Promise.all(migrationPromises);
                 }
 
-                // Update state with processed data
-                setAllChats(migrating);
-
-                // Preferences migration
-                const finalPrefs = fetchedPrefs || storage.getUserPreferences();
-                setPreferences(finalPrefs);
-                if (!fetchedPrefs) {
-                    cloudStorage.savePreferences(finalPrefs, userId);
+                if (!fetchedPrefs && preferences) {
+                    cloudStorage.savePreferences(preferences, userId);
                 }
-
-                console.log("Data sync completed:", {
-                    chatsCount: Object.keys(migrating).length,
-                    hasPreferences: !!finalPrefs,
-                    hasLocalData,
-                    hasCloudData
-                });
             }, 100);
 
         } catch (err) {
-            console.error('Data sync error:', err);
-            // Fallback to local storage if cloud fails
-            setAllChats(storage.getChats());
-            setPreferences(storage.getUserPreferences());
-            setIsLoadingData(false);
+            console.error('Background sync failed:', err);
         }
-    }, [userId]);
+    }, [userId, preferences]);
 
     useEffect(() => {
-        setIsLoadingData(true);
         refreshData();
     }, [userId, refreshData]);
 
@@ -124,21 +88,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 ...prev,
                 [date]: { ...prev[date], ...chatData } as DailyChat
             };
-            // Also sync to localStorage as secondary backup for extreme consistency
             storage.saveChat(date, chatData);
             return updated;
         });
     }, []);
-
-    if (isLoadingData) {
-        return (
-            <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1rem', background: '#050505', color: '#fff', fontFamily: 'system-ui, sans-serif' }}>
-                <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: -1, background: 'radial-gradient(circle at 20% 30%, #1e1b4b 0%, transparent 50%), radial-gradient(circle at 80% 70%, #312e81 0%, transparent 50%)', filter: 'blur(80px)', opacity: 0.5 }}></div>
-                <div style={{ fontSize: '2rem', filter: 'drop-shadow(0 0 20px rgba(139,92,246,0.5))' }}>⚡</div>
-                <p style={{ fontSize: '0.75rem', opacity: 0.4, letterSpacing: '0.15em', fontWeight: '700' }}>SYNCING RESOURCES...</p>
-            </main>
-        );
-    }
 
     return (
         <DataContext.Provider value={{ allChats, preferences, isLoadingData, refreshData, updatePreferences, setLocalChat }}>
