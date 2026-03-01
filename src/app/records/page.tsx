@@ -7,13 +7,27 @@ import remarkGfm from 'remark-gfm';
 import { NavigationBar } from '@/components/NavigationBar';
 import { cloudStorage } from '@/lib/cloudStorage';
 import { useData } from '@/lib/DataContext';
+import { useUser } from '@clerk/nextjs';
 import Image from 'next/image';
+import { EnhancedExportImport } from '@/lib/enhancedExportImport';
 
 
 interface ReportBlocks {
     execution: string;
     alignment: string;
     refinement: string;
+}
+
+interface ImportPreview {
+    canImport: boolean;
+    preview: {
+        totalChats: number;
+        dateRange: { earliest: string; latest: string };
+        hasPreferences: boolean;
+        version: string;
+        exportDate: string;
+        warnings: string[];
+    };
 }
 
 function parseBlocks(summary: string): ReportBlocks {
@@ -44,9 +58,12 @@ function parseBlocks(summary: string): ReportBlocks {
 
 export default function RecordsPage() {
     const { allChats, preferences, setLocalChat } = useData();
+    const { user } = useUser();
     const [selectedDate, setSelectedDate] = useState('');
     const [chat, setChat] = useState<DailyChat | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
+    const [isImporting, setIsImporting] = useState(false);
 
     useEffect(() => {
         const today = storage.getCurrentDate();
@@ -156,13 +173,76 @@ IMPORTANT: For each completed task, check if there's an abandonmentReason. If pr
             }
 
             setLocalChat(selectedDate, { aiSummary: summary, artifactUrl });
-            cloudStorage.saveChat(selectedDate, { aiSummary: summary, artifactUrl });
+            cloudStorage.saveChat(selectedDate, { aiSummary: summary, artifactUrl }, user?.id);
             setChat(prev => prev ? { ...prev, aiSummary: summary, artifactUrl } : null);
         } catch (error) {
             console.error(error);
             alert('Mission analysis failed. Try again, Disciple.');
         } finally {
             setIsGenerating(false);
+        }
+    };
+
+    // Enhanced export functionality
+    const handleExport = async () => {
+        setIsExporting(true);
+        try {
+            const exportData = await EnhancedExportImport.exportAllData(user?.id);
+            const filename = EnhancedExportImport.generateFilename();
+            EnhancedExportImport.downloadFile(exportData, filename);
+        } catch (error) {
+            console.error('Export failed:', error);
+            alert(`Export failed: ${error instanceof Error ? error.message : String(error)}`);
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
+    // Enhanced import functionality
+    const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        setIsImporting(true);
+        try {
+            const content = await file.text();
+            
+            // Show preview first
+            const preview: ImportPreview = await EnhancedExportImport.getImportPreview(content);
+            
+            const confirmMessage = `Import this data?
+            
+📊 Summary:
+• ${preview.preview.totalChats} chats (${preview.preview.dateRange.earliest} to ${preview.preview.dateRange.latest})
+• Preferences: ${preview.preview.hasPreferences ? 'Yes' : 'No'}
+• Version: ${preview.preview.version}
+• Exported: ${new Date(preview.preview.exportDate).toLocaleDateString()}
+
+${preview.preview.warnings.length > 0 ? `⚠️ Warnings:\n${preview.preview.warnings.join('\n')}` : ''}
+
+This will ${user?.id ? 'sync to cloud storage' : 'import to local storage'}. Continue?`;
+
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+
+            const result = await EnhancedExportImport.importAllData(content, user?.id);
+            
+            if (result.success) {
+                alert(`✅ ${result.message}\n\nPage will reload to show imported data.`);
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                alert(`❌ Import failed:\n${result.errors.join('\n')}`);
+            }
+        } catch (error) {
+            console.error('Import failed:', error);
+            alert(`Import failed: ${error instanceof Error ? error.message : String(error)}`);
+        } finally {
+            setIsImporting(false);
+            // Reset file input
+            event.target.value = '';
         }
     };
 
@@ -248,36 +328,49 @@ IMPORTANT: For each completed task, check if there's an abandonmentReason. If pr
                         <div style={{ marginTop: '2rem', paddingTop: '1rem', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             <h3 style={{ fontSize: '0.65rem', opacity: 0.5, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>Data</h3>
                             <button
-                                onClick={() => {
-                                    const data = storage.exportData();
-                                    const blob = new Blob([data], { type: 'application/json' });
-                                    const url = URL.createObjectURL(blob);
-                                    const a = document.createElement('a');
-                                    a.href = url;
-                                    a.download = `deciplinist_backup_${new Date().toISOString().split('T')[0]}.json`;
-                                    a.click();
+                                onClick={handleExport}
+                                disabled={isExporting}
+                                style={{ 
+                                    padding: '9px', 
+                                    borderRadius: '8px', 
+                                    background: isExporting ? 'rgba(139, 92, 246, 0.2)' : 'rgba(255,255,255,0.05)', 
+                                    border: '1px solid var(--border)', 
+                                    color: 'white', 
+                                    fontSize: '0.72rem', 
+                                    fontWeight: '800', 
+                                    cursor: isExporting ? 'not-allowed' : 'pointer',
+                                    opacity: isExporting ? 0.7 : 1
                                 }}
-                                style={{ padding: '9px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: 'white', fontSize: '0.72rem', fontWeight: '800', cursor: 'pointer' }}
                             >
-                                📤 EXPORT
+                                {isExporting ? '📤 EXPORTING...' : '📤 EXPORT'}
                             </button>
-                            <label style={{ padding: '9px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: 'white', fontSize: '0.72rem', fontWeight: '800', cursor: 'pointer', textAlign: 'center' }}>
-                                📥 IMPORT
-                                <input type="file" accept=".json" onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (!file) return;
-                                    const reader = new FileReader();
-                                    reader.onload = (event) => {
-                                        const content = event.target?.result as string;
-                                        if (storage.importData(content)) {
-                                            alert('Data restored. Reloading...');
-                                            window.location.reload();
-                                        } else {
-                                            alert('Import Failed.');
-                                        }
-                                    };
-                                    reader.readAsText(file);
-                                }} style={{ display: 'none' }} />
+                            <label style={{ 
+                                padding: '9px', 
+                                borderRadius: '8px', 
+                                background: isImporting ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255,255,255,0.05)', 
+                                border: '1px solid var(--border)', 
+                                color: 'white', 
+                                fontSize: '0.72rem', 
+                                fontWeight: '800', 
+                                cursor: isImporting ? 'not-allowed' : 'pointer', 
+                                textAlign: 'center',
+                                display: 'block',
+                                opacity: isImporting ? 0.7 : 1
+                            }}>
+                                <input 
+                                    type="file" 
+                                    accept=".json" 
+                                    onChange={handleImport}
+                                    disabled={isImporting}
+                                    style={{ 
+                                        position: 'absolute', 
+                                        opacity: 0, 
+                                        width: '100%', 
+                                        height: '100%', 
+                                        cursor: isImporting ? 'not-allowed' : 'pointer' 
+                                    }} 
+                                />
+                                {isImporting ? '📥 IMPORTING...' : '📥 IMPORT'}
                             </label>
                         </div>
                     </div>
