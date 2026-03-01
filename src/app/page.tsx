@@ -9,8 +9,9 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { NavigationBar } from '@/components/NavigationBar';
 import { cloudStorage } from '@/lib/cloudStorage';
-import { useAuth } from '@/lib/AuthContext';
+import { useAuthContext } from '@/lib/AuthContext';
 import { useData } from '@/lib/DataContext';
+import { useUser } from '@clerk/nextjs';
 
 // Strip model's internal reasoning tags before displaying
 function cleanBotMessage(text: string): string {
@@ -67,7 +68,8 @@ export default function ChatPage() {
   const [isInitialized, setIsInitialized] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { user, signOut } = useAuth();
+  const { signOut } = useAuthContext();
+  const { user } = useUser();
   const { allChats, preferences: globalPrefs, updatePreferences: updateContextPrefs, setLocalChat } = useData();
   const saveDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -607,9 +609,9 @@ export default function ChatPage() {
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 14px', borderRadius: '100px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)' }}>
                 <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'linear-gradient(135deg, #8b5cf6, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: '900', boxShadow: '0 2px 10px rgba(139, 92, 246, 0.3)' }}>
-                  {user?.email?.charAt(0).toUpperCase() || 'U'}
+                  {user?.primaryEmailAddress?.emailAddress?.charAt(0).toUpperCase() || 'U'}
                 </div>
-                <span style={{ fontSize: '0.75rem', opacity: 0.7, maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: '600' }}>{user?.email || 'User'}</span>
+                <span style={{ fontSize: '0.75rem', opacity: 0.7, maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: '600' }}>{user?.primaryEmailAddress?.emailAddress || 'User'}</span>
                 <button
                   onClick={signOut}
                   title="Sign Out"

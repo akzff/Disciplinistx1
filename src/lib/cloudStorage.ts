@@ -1,20 +1,27 @@
 import { supabase } from './supabase';
 import { DailyChat, UserPreferences } from './storage';
 
-// ─── Cloud sync layer that talks directly to Supabase ──────────────────────
+// Helper function to get current user ID from Clerk
+// Note: This function should only be called with userId parameter from React components
+async function getCurrentUserId(userId?: string): Promise<string | null> {
+    // Return the provided userId or null
+    return userId || null;
+}
+
+// ─── Cloud sync layer that talks directly to Supabase with Clerk auth ──────────────────────
 
 export const cloudStorage = {
 
     // ── Chats ──────────────────────────────────────────────────────────────
 
-    getAllChats: async (): Promise<Record<string, DailyChat>> => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return {};
+    getAllChats: async (userId?: string): Promise<Record<string, DailyChat>> => {
+        const currentUserId = userId;
+        if (!currentUserId) return {};
 
         const { data, error } = await supabase
             .from('disciplinist_daily_chats')
             .select('date, data')
-            .eq('user_id', user.id)
+            .eq('user_id', currentUserId)
             .order('date', { ascending: false });
 
         if (error) { console.error('Cloud fetch chats error:', error); return {}; }
@@ -23,7 +30,7 @@ export const cloudStorage = {
         (data || []).forEach((row) => {
             result[row.date] = row.data as DailyChat;
         });
-
+        
         // Verify data integrity
         const totalTodos = Object.values(result).reduce((sum, chat) => sum + (chat.todos?.length || 0), 0);
         const totalDailies = Object.values(result).reduce((sum, chat) => sum + (chat.dailies?.length || 0), 0);
@@ -33,97 +40,92 @@ export const cloudStorage = {
             totalDailies,
             dates: Object.keys(result)
         });
-
+        
         return result;
     },
 
-    getChat: async (date: string): Promise<DailyChat | null> => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return null;
+    getChat: async (date: string, userId?: string): Promise<DailyChat | null> => {
+        const currentUserId = userId;
+        if (!currentUserId) return null;
 
         const { data, error } = await supabase
             .from('disciplinist_daily_chats')
             .select('data')
+            .eq('user_id', currentUserId)
             .eq('date', date)
-            .eq('user_id', user.id)
-            .maybeSingle();
+            .single();
 
-        if (error) { console.error('Cloud fetch chat error:', error); return null; }
-        return data ? (data.data as DailyChat) : null;
+        if (error) { 
+            console.error('Cloud fetch chat error:', error); 
+            return null; 
+        }
+
+        return data.data as DailyChat;
     },
 
-    saveChat: async (date: string, chatData: Partial<DailyChat>): Promise<void> => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+    saveChat: async (date: string, chatData: Partial<DailyChat>, userId?: string): Promise<void> => {
+        const currentUserId = userId;
+        if (!currentUserId) return;
 
-        // Smart merge: load existing then merge – but ONLY if chatData is partial
-        // If chatData contains critical arrays like todos/dailies, we favor it as the current state
-        const isFullState = !!(chatData.todos && chatData.dailies && chatData.messages);
-
-        let merged: DailyChat;
-        if (isFullState) {
-            // If it's a full state, we only need to preserve fields NOT in the payload (like artifactUrl if not provided)
-            const existing = await cloudStorage.getChat(date);
-            merged = {
-                date,
-                messages: [], status: 'OPEN', activeTasks: [], distractions: [], todos: [], dailies: [], expenses: [],
-                ...(existing || {}),
-                ...chatData
-            };
-        } else {
-            const existing = await cloudStorage.getChat(date);
-            const defaults: DailyChat = {
-                date,
-                messages: [], status: 'OPEN', activeTasks: [], distractions: [], todos: [], dailies: [], expenses: []
-            };
-            merged = { ...(existing || defaults), ...chatData };
-        }
+        // Upsert: load existing then merge
+        const existing = await cloudStorage.getChat(date, currentUserId);
+        const defaults: DailyChat = {
+            date,
+            messages: [],
+            status: 'OPEN',
+            activeTasks: [],
+            distractions: [],
+            todos: [],
+            dailies: [],
+            expenses: []
+        };
+        const merged = { ...(existing || defaults), ...chatData };
 
         const { error } = await supabase
             .from('disciplinist_daily_chats')
-            .upsert({ user_id: user.id, date, data: merged }, { onConflict: 'user_id,date' });
+            .upsert({ user_id: currentUserId, date, data: merged }, { onConflict: 'user_id,date' });
 
-        if (error) {
-            console.error('Cloud save chat error:', error);
-        } else {
-            console.log(`Cloud saved successfully: ${date} (${merged.todos?.length || 0} todos, ${merged.dailies?.length || 0} dailies)`);
-        }
+        if (error) console.error('Cloud save chat error:', error);
     },
 
-    closeChat: async (date: string): Promise<void> => {
-        await cloudStorage.saveChat(date, { status: 'CLOSED' });
+    closeChat: async (date: string, userId?: string): Promise<void> => {
+        await cloudStorage.saveChat(date, { status: 'CLOSED' }, userId);
     },
 
     // ── Preferences ────────────────────────────────────────────────────────
 
-    getPreferences: async (): Promise<UserPreferences | null> => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return null;
+    getPreferences: async (userId?: string): Promise<UserPreferences | null> => {
+        const currentUserId = userId;
+        if (!currentUserId) return null;
 
         const { data, error } = await supabase
             .from('disciplinist_preferences')
             .select('data')
-            .eq('user_id', user.id)
-            .maybeSingle();
+            .eq('user_id', currentUserId)
+            .single();
 
-        if (error) { console.error('Cloud fetch prefs error:', error); return null; }
-        return data ? (data.data as UserPreferences) : null;
+        if (error) { 
+            console.error('Cloud fetch prefs error:', error); 
+            return null; 
+        }
+
+        return data.data as UserPreferences;
     },
 
-    savePreferences: async (prefs: UserPreferences): Promise<void> => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+    savePreferences: async (prefs: UserPreferences, userId?: string): Promise<void> => {
+        const currentUserId = userId;
+        if (!currentUserId) return;
 
         const { error } = await supabase
             .from('disciplinist_preferences')
-            .upsert({ user_id: user.id, data: prefs }, { onConflict: 'user_id' });
+            .upsert({ user_id: currentUserId, data: prefs }, { onConflict: 'user_id' });
 
         if (error) console.error('Cloud save prefs error:', error);
     },
 
     // ── Data Verification ─────────────────────────────────────────────────────
 
-    verifyDataIntegrity: async (): Promise<{ status: 'ok' | 'error', details: {
+    verifyDataIntegrity: async (userId?: string): Promise<{ status: 'ok' | 'error', details: {
         user?: string;
         totalChats?: number;
         todayDataExists?: boolean;
@@ -134,19 +136,19 @@ export const cloudStorage = {
         datesWithData?: string[];
         error?: string;
     } }> => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return { status: 'error', details: { error: 'No user authenticated' } };
+        const currentUserId = userId;
+        if (!currentUserId) return { status: 'error', details: { error: 'No user authenticated' } };
 
         try {
             // Test fetch all data
-            const allData = await cloudStorage.getAllChats();
+            const allData = await cloudStorage.getAllChats(currentUserId);
             const today = new Date().toISOString().split('T')[0];
             const todayData = allData[today];
 
             const verification = {
                 status: 'ok' as const,
                 details: {
-                    user: user.id,
+                    user: currentUserId,
                     totalChats: Object.keys(allData).length,
                     todayDataExists: !!todayData,
                     todayTodos: todayData?.todos?.length || 0,
@@ -160,8 +162,8 @@ export const cloudStorage = {
             console.log('Data integrity verification:', verification);
             return verification;
         } catch (error) {
-            return {
-                status: 'error' as const,
+            return { 
+                status: 'error' as const, 
                 details: { error: error instanceof Error ? error.message : String(error) }
             };
         }

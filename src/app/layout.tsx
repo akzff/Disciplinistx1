@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { ClerkProvider } from '@clerk/nextjs';
 import { AuthProvider } from "@/lib/AuthContext";
 import AuthGate from "@/components/AuthGate";
 import { DataProvider } from "@/lib/DataContext";
@@ -22,16 +23,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={inter.variable}>
-        <AuthProvider>
-          <AuthGate>
-            <DataProvider>
-              {children}
-            </DataProvider>
-          </AuthGate>
-        </AuthProvider>
-      </body>
-    </html>
+    <ClerkProvider publishableKey="pk_test_ZXBpYy1seW54LTIuY2xlcmsuYWNjb3VudHMuZGV2JA">
+      <html lang="en">
+        <body className={inter.variable}>
+          <AuthProvider>
+            <AuthGate>
+              <DataProvider>
+                {children}
+              </DataProvider>
+            </AuthGate>
+          </AuthProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

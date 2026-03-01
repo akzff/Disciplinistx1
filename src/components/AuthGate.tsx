@@ -1,13 +1,13 @@
 'use client';
 
-import { useAuth } from '@/lib/AuthContext';
-import AuthScreen from './AuthScreen';
+import { useAuth } from '@clerk/nextjs';
+import { SignedIn, SignedOut, RedirectToSignIn } from '@clerk/nextjs';
 import { ReactNode } from 'react';
 
 export default function AuthGate({ children }: { children: ReactNode }) {
-    const { user, loading } = useAuth();
+    const { isLoaded } = useAuth();
 
-    if (loading) {
+    if (!isLoaded) {
         return (
             <main style={{
                 minHeight: '100vh',
@@ -20,65 +20,46 @@ export default function AuthGate({ children }: { children: ReactNode }) {
                 position: 'relative',
                 overflow: 'hidden'
             }}>
-                {/* Background */}
-                <div className="bg-mesh" style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    opacity: 0.3
-                }} />
-                
-                {/* Content */}
+                <div className="bg-mesh"></div>
                 <div style={{
                     position: 'relative',
                     zIndex: 1,
-                    textAlign: 'center'
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexDirection: 'column',
+                    gap: '1.5rem'
                 }}>
                     <div style={{
-                        fontSize: '3rem',
-                        marginBottom: '1.5rem',
-                        filter: 'drop-shadow(0 0 30px rgba(139,92,246,0.6))',
-                        animation: 'pulse 2s infinite'
-                    }}>⚡</div>
-                    <h1 style={{
-                        fontSize: '1.2rem',
-                        fontWeight: '900',
-                        letterSpacing: '0.2em',
-                        color: 'white',
-                        marginBottom: '0.5rem',
-                        background: 'linear-gradient(135deg, #8b5cf6, #a855f7)',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        backgroundClip: 'text'
-                    }}>DISCIPLINIST</h1>
-                    <p style={{
-                        fontSize: '0.8rem',
-                        opacity: 0.4,
-                        letterSpacing: '0.15em',
-                        textTransform: 'uppercase',
-                        animation: 'fadeInOut 2s infinite'
-                    }}>INITIALIZING SYSTEMS...</p>
+                        width: '60px',
+                        height: '60px',
+                        border: '3px solid rgba(139, 92, 246, 0.2)',
+                        borderTop: '3px solid #8b5cf6',
+                        borderRadius: '50%',
+                        animation: 'spin 1s linear infinite'
+                    }}></div>
+                    <p style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '0.9rem' }}>
+                        Initializing...
+                    </p>
                 </div>
-
                 <style jsx>{`
-                    @keyframes pulse {
-                        0%, 100% { transform: scale(1); opacity: 1; }
-                        50% { transform: scale(1.05); opacity: 0.8; }
-                    }
-                    @keyframes fadeInOut {
-                        0%, 100% { opacity: 0.4; }
-                        50% { opacity: 0.8; }
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
                     }
                 `}</style>
             </main>
         );
     }
 
-    if (!user) {
-        return <AuthScreen />;
-    }
-
-    return <>{children}</>;
+    return (
+        <>
+            <SignedIn>
+                {children}
+            </SignedIn>
+            <SignedOut>
+                <RedirectToSignIn />
+            </SignedOut>
+        </>
+    );
 }

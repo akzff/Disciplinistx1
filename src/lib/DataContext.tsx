@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { DailyChat, UserPreferences, storage } from '@/lib/storage';
 import { cloudStorage } from '@/lib/cloudStorage';
-import { useAuth } from '@/lib/AuthContext';
+import { useAuth as useClerkAuth } from '@clerk/nextjs';
 
 interface DataContextType {
     allChats: Record<string, DailyChat>;
@@ -17,21 +17,21 @@ interface DataContextType {
 const DataContext = createContext<DataContextType | null>(null);
 
 export function DataProvider({ children }: { children: ReactNode }) {
-    const { user } = useAuth();
+    const { userId } = useClerkAuth();
     const [allChats, setAllChats] = useState<Record<string, DailyChat>>({});
     const [preferences, setPreferences] = useState<UserPreferences | null>(null);
     const [isLoadingData, setIsLoadingData] = useState(true);
 
     const refreshData = useCallback(async () => {
-        if (!user) {
+        if (!userId) {
             setIsLoadingData(false);
             return;
         }
 
         try {
-            console.log("Syncing Supabase resources for user:", user.id);
-            const fetchedChats = await cloudStorage.getAllChats();
-            const fetchedPrefs = await cloudStorage.getPreferences();
+            console.log("Syncing Supabase resources for user:", userId);
+            const fetchedChats = await cloudStorage.getAllChats(userId);
+            const fetchedPrefs = await cloudStorage.getPreferences(userId);
 
             // ─── Legacy Migration Logic ──────────────────────────────────────────
             // If the user has local data (e.g. they just logged in or guest mode before)
@@ -43,7 +43,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 if (!fetchedChats[date]) {
                     console.log(`Migrating legacy local data to cloud for date: ${date}`);
                     migrating[date] = lChat;
-                    cloudStorage.saveChat(date, lChat); // Async fire-and-forget migration
+                    cloudStorage.saveChat(date, lChat, userId); // Async fire-and-forget migration
                 }
             });
 
@@ -53,26 +53,35 @@ export function DataProvider({ children }: { children: ReactNode }) {
             const finalPrefs = fetchedPrefs || storage.getUserPreferences();
             setPreferences(finalPrefs);
             if (!fetchedPrefs) {
-                cloudStorage.savePreferences(finalPrefs);
+                cloudStorage.savePreferences(finalPrefs, userId);
             }
 
-            console.log("Cloud sync complete. Chats:", Object.keys(migrating).length);
-        } catch (error) {
-            console.error("Failed to load global data:", error);
+            console.log("Data sync completed:", {
+                chatsCount: Object.keys(migrating).length,
+                hasPreferences: !!finalPrefs
+            });
+
+        } catch (err) {
+            console.error('Data sync error:', err);
+            // Fallback to local storage if cloud fails
+            setAllChats(storage.getChats());
+            setPreferences(storage.getUserPreferences());
         } finally {
             setIsLoadingData(false);
         }
-    }, [user]);
+    }, [userId]);
 
     useEffect(() => {
         setIsLoadingData(true);
         refreshData();
-    }, [user, refreshData]);
+    }, [userId, refreshData]);
 
     const updatePreferences = async (updates: Partial<UserPreferences>) => {
         const newPrefs = { ...(preferences || storage.getUserPreferences()), ...updates };
         setPreferences(newPrefs);
-        await cloudStorage.savePreferences(newPrefs);
+        if (userId) {
+            await cloudStorage.savePreferences(newPrefs, userId);
+        }
     };
 
     const setLocalChat = useCallback((date: string, chatData: Partial<DailyChat>) => {
