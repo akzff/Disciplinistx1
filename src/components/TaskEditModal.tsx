@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Checkbox } from '@/components/Checkbox';
 
 interface TaskEditModalProps {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -126,11 +127,10 @@ export default function TaskEditModal({ item, type, onSave, onClose }: TaskEditM
                                 <div className="form-group">
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                         <label style={{ margin: 0 }}>SCHEDULE TIME</label>
-                                        <input
-                                            type="checkbox"
+                                        <Checkbox
                                             checked={isTimed}
-                                            onChange={(e) => setIsTimed(e.target.checked)}
-                                            style={{ width: 'auto', marginBottom: 0 }}
+                                            onChange={setIsTimed}
+                                            size="md"
                                         />
                                     </div>
                                     {isTimed ? (
@@ -202,11 +202,10 @@ export default function TaskEditModal({ item, type, onSave, onClose }: TaskEditM
                             {subtasks.length === 0 && <p style={{ fontSize: '0.75rem', opacity: 0.3, padding: '10px' }}>No sub-tasks added.</p>}
                             {subtasks.map(sub => (
                                 <div key={sub.id} className="subtask-item">
-                                    <input
-                                        type="checkbox"
+                                    <Checkbox
                                         checked={sub.completed}
                                         onChange={() => toggleSubtask(sub.id)}
-                                        style={{ width: 'auto' }}
+                                        size="sm"
                                     />
                                     <span style={{ flex: 1, opacity: sub.completed ? 0.4 : 1, textDecoration: sub.completed ? 'line-through' : 'none' }}>{sub.text}</span>
                                     <button className="remove-sub" onClick={() => removeSubtask(sub.id)}>×</button>

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { DailyChat } from '@/lib/storage';
+import React, { useState } from 'react';
+import { DailyChat, formatTime } from '@/lib/storage';
+import { MissionCheckbox } from '@/components/Checkbox';
 
 interface MissionChecklistProps {
     todos: DailyChat['todos'];
@@ -194,11 +195,10 @@ export default function MissionChecklist({ todos, dailies, sidebarOpen, onClose,
                         >
                             <div style={{ opacity: 0.3, marginTop: '4px', fontSize: '0.7rem' }}>⋮⋮</div>
                             <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', cursor: 'pointer', flex: 1 }}>
-                                <input
-                                    type="checkbox"
+                                <MissionCheckbox
                                     checked={daily.completed}
                                     onChange={() => onToggleDaily(daily.id)}
-                                    style={{ cursor: 'pointer', marginTop: '3px', accentColor: '#10b981' }}
+                                    variant="daily"
                                 />
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                                     <span style={{
@@ -247,11 +247,10 @@ export default function MissionChecklist({ todos, dailies, sidebarOpen, onClose,
                         >
                             <div style={{ opacity: 0.3, marginTop: '4px', fontSize: '0.7rem' }}>⋮⋮</div>
                             <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', cursor: 'pointer', flex: 1 }}>
-                                <input
-                                    type="checkbox"
+                                <MissionCheckbox
                                     checked={todo.completed}
                                     onChange={() => onToggleTodo(todo.id)}
-                                    style={{ cursor: 'pointer', marginTop: '3px', accentColor: 'var(--accent)' }}
+                                    variant="todo"
                                 />
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                                     <span style={{

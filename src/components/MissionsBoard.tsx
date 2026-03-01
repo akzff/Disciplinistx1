@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { DailyChat } from '@/lib/storage';
+import React, { useState, useEffect } from 'react';
+import { useData } from '@/lib/DataContext';
+import { DailyChat, formatTime } from '@/lib/storage';
+import { MissionCheckbox } from '@/components/Checkbox';
 import TaskEditModal from './TaskEditModal';
 
 interface MissionsBoardProps {
@@ -211,7 +213,7 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
                         {activeTab === 'TODOS' ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.8rem', opacity: 0.8 }}>
-                                    <input type="checkbox" checked={isTimed} onChange={(e) => setIsTimed(e.target.checked)} />
+                                    <MissionCheckbox checked={isTimed} onChange={setIsTimed} variant="todo" />
                                     SCHEDULE
                                 </label>
                                 {isTimed && (
@@ -319,7 +321,7 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
                             >
                                 <div style={{ display: 'flex', gap: '1rem' }}>
                                     <label style={{ display: 'flex', gap: '1rem', flex: 1, cursor: 'pointer' }}>
-                                        <input type="checkbox" checked={daily.completed} onChange={(e) => { e.stopPropagation(); toggleDaily(daily.id); }} className="mission-check" />
+                                        <MissionCheckbox checked={daily.completed} onChange={() => { toggleDaily(daily.id); }} variant="daily" />
                                         <div style={{ flex: 1 }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                                 <h4 style={{ fontSize: '1.1rem', fontWeight: '700', textDecoration: daily.completed ? 'line-through' : 'none', opacity: daily.completed ? 0.5 : 1 }}>{daily.text}</h4>
@@ -380,7 +382,7 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
                             >
                                 <div style={{ display: 'flex', gap: '1rem' }}>
                                     <label style={{ display: 'flex', gap: '1rem', flex: 1, cursor: 'pointer' }}>
-                                        <input type="checkbox" checked={todo.completed} onChange={(e) => { e.stopPropagation(); toggleTodo(todo.id); }} className="mission-check" />
+                                        <MissionCheckbox checked={todo.completed} onChange={() => { toggleTodo(todo.id); }} variant="todo" />
                                         <div style={{ flex: 1 }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                                 <div>
