@@ -499,6 +499,17 @@ export default function ChatPage() {
     }
   };
 
+  // Global verification function for testing (accessible from browser console)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).verifySupabaseData = async () => {
+        const result = await cloudStorage.verifyDataIntegrity();
+        console.table(result.details);
+        return result;
+      };
+    }
+  }, []);
+
   const updateProfile = (updates: Partial<UserPreferences>) => {
     const newPrefs = { ...preferences, ...updates };
     setPreferences(newPrefs);

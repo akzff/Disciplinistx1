@@ -27,25 +27,38 @@ export function DataProvider({ children }: { children: ReactNode }) {
             setIsLoadingData(false);
             return;
         }
-        try {
-            const [fetchedChats, fetchedPrefs] = await Promise.all([
-                cloudStorage.getAllChats(),
-                cloudStorage.getPreferences()
-            ]);
 
-            setAllChats(fetchedChats);
-            // For new users or if cloud fails, use empty defaults to ensure isolation
-            setPreferences(fetchedPrefs || {
-                name: 'Disciple',
-                bio: '',
-                pfp: '',
-                dayVision: '',
-                dailyModel: '', // DETAILED DAILY MODEL - empty for new users
-                ambition: '', // YOUR MOTIVATION - empty for new users
-                mentorLevel: 1,
-                habitNotes: [],
-                selectedModel: 'qwen/qwen3-32b'
+        try {
+            console.log("Syncing Supabase resources for user:", user.id);
+            const fetchedChats = await cloudStorage.getAllChats();
+            const fetchedPrefs = await cloudStorage.getPreferences();
+
+            // ─── Legacy Migration Logic ──────────────────────────────────────────
+            // If the user has local data (e.g. they just logged in or guest mode before)
+            // that is NOT in the cloud, we merge it up.
+            const localChats = storage.getChats();
+            const migrating = { ...fetchedChats };
+            let migrationHappened = false;
+
+            Object.entries(localChats).forEach(([date, lChat]) => {
+                if (!fetchedChats[date]) {
+                    console.log(`Migrating legacy local data to cloud for date: ${date}`);
+                    migrating[date] = lChat;
+                    cloudStorage.saveChat(date, lChat); // Async fire-and-forget migration
+                    migrationHappened = true;
+                }
             });
+
+            setAllChats(migrating);
+
+            // Preferences migration
+            const finalPrefs = fetchedPrefs || storage.getUserPreferences();
+            setPreferences(finalPrefs);
+            if (!fetchedPrefs) {
+                cloudStorage.savePreferences(finalPrefs);
+            }
+
+            console.log("Cloud sync complete. Chats:", Object.keys(migrating).length);
         } catch (error) {
             console.error("Failed to load global data:", error);
         } finally {
@@ -56,7 +69,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         setIsLoadingData(true);
         refreshData();
-    }, [refreshData]);
+    }, [user, refreshData]);
 
     const updatePreferences = async (updates: Partial<UserPreferences>) => {
         const newPrefs = { ...(preferences || storage.getUserPreferences()), ...updates };
@@ -65,10 +78,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
     };
 
     const setLocalChat = useCallback((date: string, chatData: Partial<DailyChat>) => {
-        setAllChats(prev => ({
-            ...prev,
-            [date]: { ...prev[date], ...chatData } as DailyChat
-        }));
+        setAllChats(prev => {
+            const updated = {
+                ...prev,
+                [date]: { ...prev[date], ...chatData } as DailyChat
+            };
+            // Also sync to localStorage as secondary backup for extreme consistency
+            storage.saveChat(date, chatData);
+            return updated;
+        });
     }, []);
 
     if (isLoadingData) {
