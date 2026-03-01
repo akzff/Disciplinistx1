@@ -622,44 +622,72 @@ This will ${user?.id ? 'sync to cloud storage' : 'import to local storage'}. Con
                 .progress-fill { height: 100%; transition: width 0.6s ease; background: var(--accent); }
                 
                 .block-card {
-                    background: rgba(255,255,255,0.02);
+                    background: rgba(255,255,255,0.03);
                     border: 1px solid var(--border);
                     border-radius: 16px;
-                    padding: 1.25rem;
-                    min-height: 280px;
+                    padding: 1.5rem;
+                    position: relative;
+                    overflow: hidden;
+                }
+                .block-card.detailed {
+                    background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(34, 197, 94, 0.02));
+                    border: 1px solid rgba(16, 185, 129, 0.2);
+                }
+                .block-card.concise {
+                    background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(168, 85, 247, 0.02));
+                    border: 1px solid rgba(139, 92, 246, 0.2);
+                }
+                .block-card.refinement {
+                    background: linear-gradient(135deg, rgba(245, 158, 11, 0.05), rgba(251, 191, 36, 0.02));
+                    border: 1px solid rgba(245, 158, 11, 0.2);
+                }
+                .block-header {
                     display: flex;
-                    flex-direction: column;
+                    align-items: center;
+                    gap: 12px;
+                    margin-bottom: 1.5rem;
+                    padding-bottom: 1rem;
+                    border-bottom: 1px solid rgba(255,255,255,0.1);
                 }
-                .block-markdown {
-                    font-size: 0.82rem;
-                    line-height: 1.7;
-                    flex: 1;
+                .block-icon {
+                    font-size: 2rem;
                 }
-                .detailed-markdown {
-                    font-size: 0.88rem;
+                .block-title {
+                    font-size: 0.9rem;
+                    font-weight: 800;
+                    color: white;
+                    letter-spacing: 0.1em;
+                    text-transform: uppercase;
                 }
-                .detailed-markdown :global(li) {
-                    margin-bottom: 0.8rem !important;
-                    font-weight: 500;
-                    color: rgba(255,255,255,0.9);
+                .block-subtitle {
+                    font-size: 0.65rem;
+                    opacity: 0.6;
+                    margin-top: 2px;
+                }
+                .block-content {
+                    font-size: 0.85rem;
+                    line-height: 1.6;
+                    color: rgba(255,255,255,0.8);
                 }
                 .block-markdown p {
-                    opacity: 0.75;
-                    margin-bottom: 0.5rem;
+                    margin: 0 0 1em 0;
+                }
+                .block-markdown p:last-child {
+                    margin-bottom: 0;
                 }
                 .block-markdown ul, .block-markdown ol {
-                    padding-left: 1.2rem;
-                    margin: 0;
+                    margin: 0 0 1em 0;
+                    padding-left: 1.5em;
                 }
                 .block-markdown li {
-                    opacity: 0.8;
-                    margin-bottom: 0.4rem;
-                    font-size: 0.8rem;
-                    line-height: 1.5;
+                    margin-bottom: 0.5em;
                 }
-                .block-markdown strong {
-                    color: white;
-                    font-weight: 700;
+                .block-markdown code {
+                    background: rgba(255,255,255,0.1);
+                    padding: 2px 6px;
+                    border-radius: 4px;
+                    font-family: monospace;
+                    font-size: 0.8em;
                 }
                 .block-markdown h3, .block-markdown h4 {
                     font-size: 0.75rem;
@@ -669,8 +697,6 @@ This will ${user?.id ? 'sync to cloud storage' : 'import to local storage'}. Con
                     letter-spacing: 0.05em;
                 }
             `}</style>
-            </div>
-        </div>
         </UniversalLayout>
     );
 }

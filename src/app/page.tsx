@@ -82,7 +82,7 @@ export default function ChatPage() {
       setPreferences(globalPrefs);
 
       const today = storage.getCurrentDate();
-      const prev = storage.getPreviousDate(today);
+      const prev = storage.getPreviousDay(today);
       const prevChat = allChats[prev];
       const todayChat = allChats[today];
 
@@ -193,8 +193,7 @@ export default function ChatPage() {
 
     const userMessage: Message = {
       role: 'user',
-      content: textToSend.trim(),
-      timestamp: Date.now()
+      content: textToSend.trim()
     };
 
     const updatedMessages = [...messagesToSend, userMessage];
@@ -257,8 +256,7 @@ Keep responses under 150 words. Use emojis sparingly for emphasis.`;
       const data = await response.json();
       const botMessage: Message = {
         role: 'assistant',
-        content: cleanBotMessage(data.content),
-        timestamp: Date.now()
+        content: cleanBotMessage(data.content)
       };
 
       setMessages(prev => [...prev, botMessage]);
@@ -279,8 +277,7 @@ Keep responses under 150 words. Use emojis sparingly for emphasis.`;
 
         setMessages(prevMsgs => [...prevMsgs, botMessage, {
           role: 'assistant',
-          content: `🔥 Task "${taskName}" started! Stay focused and execute with precision.`,
-          timestamp: Date.now()
+          content: `🔥 Task "${taskName}" started! Stay focused and execute with precision.`
         }]);
 
         setActiveTasks([newTask, ...activeTasks]);
@@ -290,8 +287,7 @@ Keep responses under 150 words. Use emojis sparingly for emphasis.`;
       console.error('Chat error:', err);
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: 'Error: Failed to process your request. Try again.',
-        timestamp: Date.now()
+        content: 'Error: Failed to process your request. Try again.'
       }]);
     } finally {
       setIsLoading(false);
@@ -356,7 +352,6 @@ Keep responses under 150 words. Use emojis sparingly for emphasis.`;
       setMessages(prevMsgs => [...prevMsgs, {
         role: 'assistant',
         content: '',
-        timestamp: Date.now(),
         completedMission: {
           name: task.name,
           startTime: task.startTime,
@@ -369,18 +364,17 @@ Keep responses under 150 words. Use emojis sparingly for emphasis.`;
       // Also emit a plain text fallback for compatibility
       setMessages(prevMsgs => [...prevMsgs, {
         role: 'assistant',
-        content: `✅ Mission Complete: "${task.name}"\n⏱ Active: ${formatTime(finalActiveTime)} | ⏸ Paused: ${formatTime(finalPausedTime)}`,
-        timestamp: Date.now()
+        content: `✅ Mission Complete: "${task.name}"\n⏱ Active: ${formatTime(finalActiveTime)} | ⏸ Paused: ${formatTime(finalPausedTime)}`
       }]);
 
       // Add to completed tasks
-      setCompletedTasks(prev => [...prev, {
+      setCompletedTasks(prev => (prev || []).concat([{
         name: task.name,
         activeTime: finalActiveTime,
         pausedTime: finalPausedTime,
         finishedAt: timestamp,
         abandonmentReason: '' // Will be filled when user responds
-      }]);
+      }]));
 
       return prev.filter(t => t.id !== taskId);
     });
@@ -396,8 +390,7 @@ Keep responses under 150 words. Use emojis sparingly for emphasis.`;
       date: today,
       messages: [{
         role: 'assistant',
-        content: `🌅 Good morning, ${preferences.name || 'Disciple'}!\n\nToday is a fresh start. Your discipline from yesterday builds momentum for today.\n\nWhat's your primary mission today? Be specific and actionable.\n\nRemember: Excellence is not an act, but a habit.`,
-        timestamp: Date.now()
+        content: `🌅 Good morning, ${preferences.name || 'Disciple'}!\n\nToday is a fresh start. Your discipline from yesterday builds momentum for today.\n\nWhat's your primary mission today? Be specific and actionable.\n\nRemember: Excellence is not an act, but a habit.`
       }],
       status: 'OPEN',
       activeTasks: [],
@@ -555,7 +548,7 @@ Keep responses under 150 words. Use emojis sparingly for emphasis.`;
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
                   )}
                   <div className="message-time">
-                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     {msg.role === 'user' && (
                       <button 
                         className="edit-btn"
