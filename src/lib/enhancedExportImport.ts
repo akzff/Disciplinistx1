@@ -16,6 +16,7 @@ export interface ComprehensiveExportData {
             totalDailies: number;
             totalExpenses: number;
             totalCompletedTasks: number;
+            totalActiveTasks: number;
             dateRange: {
                 earliest: string;
                 latest: string;
@@ -62,6 +63,7 @@ export class EnhancedExportImport {
             const totalDailies = Object.values(allChats).reduce((sum, chat) => sum + (chat.dailies?.length || 0), 0);
             const totalExpenses = Object.values(allChats).reduce((sum, chat) => sum + (chat.expenses?.length || 0), 0);
             const totalCompletedTasks = Object.values(allChats).reduce((sum, chat) => sum + (chat.completedTasks?.length || 0), 0);
+            const totalActiveTasks = Object.values(allChats).reduce((sum, chat) => sum + (chat.activeTasks?.length || 0), 0);
 
             const sortedDates = chatDates.sort();
             const dateRange = {
@@ -94,6 +96,7 @@ export class EnhancedExportImport {
                         totalDailies,
                         totalExpenses,
                         totalCompletedTasks,
+                        totalActiveTasks,
                         dateRange
                     }
                 }
