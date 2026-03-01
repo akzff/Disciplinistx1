@@ -21,13 +21,6 @@ export default function AuthScreen() {
         setInfo('');
         setLoading(true);
 
-        // Basic network check for mobile
-        if (!navigator.onLine) {
-            setError('No internet connection. Please check your network and try again.');
-            setLoading(false);
-            return;
-        }
-
         try {
             let errMsg: string | null = null;
 
@@ -44,14 +37,23 @@ export default function AuthScreen() {
                     setError('Incorrect email or password. Please try again.');
                 } else if (errMsg.includes('Email not confirmed')) {
                     setError('Please check your email and confirm your account.');
-                } else if (errMsg.includes('network') || errMsg.includes('fetch')) {
-                    setError('Network error. Check your connection and try again.');
+                } else if (errMsg.includes('network') || errMsg.includes('fetch') || errMsg.includes('Failed to fetch')) {
+                    setError('Unable to connect. Please check your internet connection and try again.');
+                } else if (errMsg.includes('timeout')) {
+                    setError('Connection timed out. Please try again.');
                 } else {
                     setError(errMsg);
                 }
             }
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : String(err));
+            const errorMsg = err instanceof Error ? err.message : String(err);
+            if (errorMsg.includes('network') || errorMsg.includes('fetch') || errorMsg.includes('Failed to fetch')) {
+                setError('Unable to connect. Please check your internet connection and try again.');
+            } else if (errorMsg.includes('timeout')) {
+                setError('Connection timed out. Please try again.');
+            } else {
+                setError(errorMsg);
+            }
         } finally {
             setLoading(false);
         }
