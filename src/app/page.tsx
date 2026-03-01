@@ -536,7 +536,7 @@ export default function ChatPage() {
       <div className="chat-container">
         <header className="chat-header">
           <button
-            className="sidebar-toggle-btn"
+            className="sidebar-toggle-btn mobile-only"
             onClick={() => setSidebarOpen(v => !v)}
             aria-label="Open mission panel"
           >
@@ -557,7 +557,7 @@ export default function ChatPage() {
             <div>
               <h1 className="app-title" style={{ marginBottom: '2px' }}>
                 <span className="app-title__brand">DISCIPLINIST</span>
-                <span className="mood-pill" style={{ marginLeft: '6px' }}>{botMood}</span>
+                <span className="mood-pill mobile-hidden" style={{ marginLeft: '6px' }}>{botMood}</span>
               </h1>
               <div className="chat-header__subtitleRow" style={{ marginTop: '0' }}>
                 <p className="session-subtitle">{activeDay === currentDate ? 'TODAY' : 'YESTERDAY'}&apos;S SESSION</p>
@@ -634,17 +634,19 @@ export default function ChatPage() {
             <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />
           )}
 
-          <MissionChecklist
-            todos={todos}
-            dailies={dailies}
-            sidebarOpen={sidebarOpen}
-            onClose={() => setSidebarOpen(false)}
-            onToggleTodo={(id: string) => setTodos(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t))}
-            onToggleDaily={(id: string) => setDailies(prev => prev.map(d => d.id === id ? { ...d, completed: !d.completed } : d))}
-            onReorderTodo={(newTodos: DailyChat['todos']) => setTodos(newTodos)}
-            onReorderDaily={(newDailies: DailyChat['dailies']) => setDailies(newDailies)}
-            onStartLiveMission={startManualTask}
-          />
+          {sidebarOpen && (
+            <MissionChecklist
+              todos={todos}
+              dailies={dailies}
+              sidebarOpen={sidebarOpen}
+              onClose={() => setSidebarOpen(false)}
+              onToggleTodo={(id: string) => setTodos(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t))}
+              onToggleDaily={(id: string) => setDailies(prev => prev.map(d => d.id === id ? { ...d, completed: !d.completed } : d))}
+              onReorderTodo={(newTodos: DailyChat['todos']) => setTodos(newTodos)}
+              onReorderDaily={(newDailies: DailyChat['dailies']) => setDailies(newDailies)}
+              onStartLiveMission={startManualTask}
+            />
+          )}
 
           {isPreviousDayOpen && !hideOverlay && (
             <div className="overlay">
