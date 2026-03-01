@@ -1,4 +1,4 @@
-import { DailyChat, UserPreferences, storage } from './storage';
+import { DailyChat, UserPreferences, storage, HabitIssue } from './storage';
 import { supabase } from './supabase';
 import { cloudStorage } from './cloudStorage';
 
@@ -9,6 +9,17 @@ export interface ComprehensiveExportData {
     userEmail?: string;
     data: {
         chats: Record<string, DailyChat>;
+        profile: {
+            name: string;
+            bio: string;
+            pfp: string;
+            dayVision: string;
+            dailyModel: string;
+            ambition: string;
+            mentorLevel: 1 | 2 | 3;
+            habitNotes: HabitIssue[];
+            selectedModel: string;
+        };
         preferences: UserPreferences;
         summary: {
             totalChats: number;
@@ -89,6 +100,17 @@ export class EnhancedExportImport {
                 userEmail,
                 data: {
                     chats: allChats,
+                    profile: {
+                        name: preferences?.name || 'Disciple',
+                        bio: preferences?.bio || '',
+                        pfp: preferences?.pfp || '',
+                        dayVision: preferences?.dayVision || '',
+                        dailyModel: preferences?.dailyModel || '',
+                        ambition: preferences?.ambition || '',
+                        mentorLevel: preferences?.mentorLevel || 1,
+                        habitNotes: preferences?.habitNotes || [],
+                        selectedModel: preferences?.selectedModel || ''
+                    },
                     preferences: preferences || storage.getUserPreferences(),
                     summary: {
                         totalChats: chatDates.length,
@@ -179,6 +201,17 @@ export class EnhancedExportImport {
                 }
             }
 
+            // Validate profile data (newer format)
+            if (data.data.profile) {
+                if (typeof data.data.profile === 'object') {
+                    result.summary.hasPreferences = true; // Profile counts as preferences
+                    console.log('Profile data found in export');
+                } else {
+                    result.errors.push('Invalid profile format');
+                    result.isValid = false;
+                }
+            }
+
         } catch (error) {
             result.errors.push(`Invalid JSON format: ${error instanceof Error ? error.message : String(error)}`);
             result.isValid = false;
@@ -213,7 +246,7 @@ export class EnhancedExportImport {
             }
 
             const data = JSON.parse(jsonStr);
-            const { chats, preferences } = data.data;
+            const { chats, profile } = data.data;
 
             // Import chats
             if (chats && userId) {
@@ -238,10 +271,10 @@ export class EnhancedExportImport {
                 result.importedChats = Object.keys(chats).length;
             }
 
-            // Import preferences
-            if (preferences && userId) {
+            // Import preferences and profile
+            if (data.data.preferences && userId) {
                 try {
-                    await cloudStorage.savePreferences(preferences as UserPreferences, userId);
+                    await cloudStorage.savePreferences(data.data.preferences, userId);
                     result.importedPreferences = true;
                     console.log('Preferences imported to cloud successfully');
                 } catch (error) {
@@ -249,11 +282,32 @@ export class EnhancedExportImport {
                     result.errors.push(errorMsg);
                     console.error(errorMsg);
                 }
-            } else if (preferences && !userId) {
+            } else if (data.data.preferences && !userId) {
                 // Import to local storage
-                storage.saveUserPreferences(preferences as UserPreferences);
+                storage.saveUserPreferences(data.data.preferences);
                 result.importedPreferences = true;
                 console.log('Preferences imported to local storage');
+            }
+
+            // Import profile separately if available (for newer export format)
+            if (profile && userId) {
+                try {
+                    // Update preferences with profile data
+                    const existingPrefs = await cloudStorage.getPreferences(userId) || data.data.preferences;
+                    const updatedPrefs = { ...existingPrefs, ...profile };
+                    await cloudStorage.savePreferences(updatedPrefs, userId);
+                    console.log('Profile data imported to cloud successfully');
+                } catch (error) {
+                    const errorMsg = `Failed to import profile: ${error instanceof Error ? error.message : String(error)}`;
+                    result.errors.push(errorMsg);
+                    console.error(errorMsg);
+                }
+            } else if (profile && !userId) {
+                // Import profile to local storage
+                const existingPrefs = storage.getUserPreferences();
+                const updatedPrefs = { ...existingPrefs, ...profile };
+                storage.saveUserPreferences(updatedPrefs);
+                console.log('Profile data imported to local storage');
             }
 
             result.success = result.errors.length === 0;
@@ -330,7 +384,7 @@ export class EnhancedExportImport {
                     earliest: dates[0] || '',
                     latest: dates[dates.length - 1] || ''
                 },
-                hasPreferences: !!data.data.preferences,
+                hasPreferences: !!data.data.preferences || !!data.data.profile,
                 version: data.version || '1.0',
                 exportDate: data.exportedAt || 'unknown',
                 warnings: validation.warnings
