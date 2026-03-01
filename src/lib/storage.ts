@@ -66,6 +66,7 @@ export interface DailyChat {
         activeTime: number;
         pausedTime: number;
         finishedAt: number;
+        abandonmentReason?: string;
     }[];
     aiSummary?: string;
     artifactUrl?: string;

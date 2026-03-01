@@ -22,9 +22,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setUser(session?.user ?? null);
-            setLoading(false);
+        supabase.auth.getSession().then(({ data: { session }, error }) => {
+            if (error && error.message?.includes('third-party cookies')) {
+                console.warn('Third-party cookies disabled; falling back to anonymous session');
+                signInAsGuest().catch(() => setLoading(false));
+            } else {
+                setUser(session?.user ?? null);
+                setLoading(false);
+            }
         }).catch(err => {
             console.error('Session init error:', err);
             setLoading(false);

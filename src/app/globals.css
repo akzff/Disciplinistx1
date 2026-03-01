@@ -899,13 +899,23 @@ textarea {
   }
 }
 
-/* On desktop, hide sidebar toggle and backdrop */
-@media (min-width: 769px) {
-  .sidebar-toggle-btn {
-    display: none !important;
-  }
+/* Mobile-friendly input focus and active states */
+input:focus-visible {
+  border-color: var(--accent) !important;
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
 
-  .sidebar-backdrop {
-    display: none !important;
-  }
+input:active {
+  background: rgba(139, 92, 246, 0.08);
+}
+
+button:active {
+  transform: scale(0.98);
+  filter: brightness(0.9);
+}
+
+/* Ensure tap targets are at least 48px for iOS */
+button, input {
+  min-height: 48px;
 }

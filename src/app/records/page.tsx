@@ -80,7 +80,15 @@ export default function RecordsPage() {
             const prompt = `Generate a structured intelligence report for ${chat.date}. You MUST use the exact XML tags below. All content goes inside the XML tags. Output text and bullet points only — DO NOT include any XML tag descriptions or parenthetical instructions in the output.
 
 <block1>
-(DAY EXECUTION LOG: A detailed, comprehensive timeline of the day. Each bullet = one real moment with a timestamp. Include wake-up time, meals, every activity, how the user felt, what they were doing at college/gym/home. Pull from ALL sources: todos, dailies, completed missions, and especially every message in the chat history. Be exhaustive — every meaningful moment gets a bullet. No cap on bullets.)
+(DAY EXECUTION LOG: A detailed, comprehensive timeline of the day. Each bullet = one real moment with a timestamp. Include wake-up time, meals, every activity, how the user felt, what they were doing at college/gym/home. Pull from ALL sources: todos, dailies, completed missions, and especially every message in the chat history. Be exhaustive — every meaningful moment gets a bullet. No cap on bullets.
+
+CRITICAL: When you detect task abandonment, distraction, or context switching, ALWAYS include the specific reason or trigger. Examples:
+- "Abandoned studying because felt mentally exhausted and couldn't focus"
+- "Switched to football betting after seeing notification on phone"
+- "Stopped coding to watch YouTube due to boredom"
+- "Left workout early because of headache"
+
+Look for explicit reasons in messages and infer from context. Never just say "abandoned X" without explaining WHY.)
 </block1>
 
 <block2>
@@ -101,7 +109,9 @@ export default function RecordsPage() {
 </artifact>
 
 Context: ${JSON.stringify({ ...context, messages: undefined })}
-Recent Chat: ${JSON.stringify(context.messages?.slice(-15))}`;
+Recent Chat: ${JSON.stringify(context.messages?.slice(-15))}
+
+IMPORTANT: For each completed task, check if there's an abandonmentReason. If present, include it in the execution log like: "• [TIME]: Abandoned [task name] - [reason]". If no reason is given but the task was short or context suggests abandonment, infer the likely reason from the chat messages.`;
 
             const response = await fetch('/api/chat', {
                 method: 'POST',

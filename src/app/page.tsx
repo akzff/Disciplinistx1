@@ -180,6 +180,27 @@ export default function ChatPage() {
     const textToSend = overrideInput || input;
     if (!textToSend.trim() || isLoading) return;
 
+    // Check if this is a response to a task completion prompt
+    const lastAssistantMessage = messages[messages.length - 1];
+    if (lastAssistantMessage?.role === 'assistant' && lastAssistantMessage?.completedMission) {
+      // Extract the task name from the completion prompt
+      const taskName = lastAssistantMessage.completedMission.name;
+      
+      // Update the abandonment reason for the most recent completed task
+      setCompletedTasks(prev => {
+        if (!prev) return prev;
+        const updated = [...prev];
+        // Find the most recent completion of this task
+        for (let i = updated.length - 1; i >= 0; i--) {
+          if (updated[i].name === taskName && !updated[i].abandonmentReason) {
+            updated[i] = { ...updated[i], abandonmentReason: textToSend };
+            break;
+          }
+        }
+        return updated;
+      });
+    }
+
     // Cleanup pending task requests from previous messages
     const cleanedMessages = (overrideMessages || messages).map(msg => {
       if (msg.taskRequest?.status === 'PENDING') {
@@ -404,7 +425,7 @@ export default function ChatPage() {
       // Emit a rich completedMission card instead of plain text
       setMessages(prevMsgs => [...prevMsgs, {
         role: 'assistant',
-        content: `How did "${task.name}" go? Share your reflection.`,
+        content: `How did "${task.name}" go? Share your reflection. If you abandoned or switched tasks, explain what triggered it.`,
         completedMission: {
           name: task.name,
           startTime: task.startTime,
@@ -420,7 +441,8 @@ export default function ChatPage() {
           name: task.name,
           activeTime: finalActiveTime,
           pausedTime: finalPausedTime,
-          finishedAt: timestamp
+          finishedAt: timestamp,
+          abandonmentReason: '' // Will be filled when user responds
         }
       ]);
 

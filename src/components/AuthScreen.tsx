@@ -21,6 +21,13 @@ export default function AuthScreen() {
         setInfo('');
         setLoading(true);
 
+        // Basic network check for mobile
+        if (!navigator.onLine) {
+            setError('No internet connection. Please check your network and try again.');
+            setLoading(false);
+            return;
+        }
+
         try {
             let errMsg: string | null = null;
 
@@ -31,7 +38,18 @@ export default function AuthScreen() {
                 errMsg = await signInWithEmail(email, password);
             }
 
-            if (errMsg) setError(errMsg);
+            if (errMsg) {
+                // Provide clearer mobile-friendly messages
+                if (errMsg.includes('Invalid login credentials')) {
+                    setError('Incorrect email or password. Please try again.');
+                } else if (errMsg.includes('Email not confirmed')) {
+                    setError('Please check your email and confirm your account.');
+                } else if (errMsg.includes('network') || errMsg.includes('fetch')) {
+                    setError('Network error. Check your connection and try again.');
+                } else {
+                    setError(errMsg);
+                }
+            }
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : String(err));
         } finally {
@@ -129,8 +147,6 @@ export default function AuthScreen() {
                             required
                             placeholder="you@example.com"
                             style={inputStyle}
-                            onFocus={(e) => e.currentTarget.style.borderColor = 'rgba(139,92,246,0.5)'}
-                            onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}
                         />
                     </div>
 
@@ -145,8 +161,6 @@ export default function AuthScreen() {
                                 required
                                 placeholder="••••••••"
                                 style={{ ...inputStyle, paddingRight: '48px' }}
-                                onFocus={(e) => e.currentTarget.style.borderColor = 'rgba(139,92,246,0.5)'}
-                                onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}
                             />
                             <button
                                 type="button"
@@ -165,8 +179,6 @@ export default function AuthScreen() {
                                     lineHeight: 1,
                                     transition: 'color 0.2s',
                                 }}
-                                onMouseEnter={(e) => e.currentTarget.style.color = 'rgba(255,255,255,0.8)'}
-                                onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255,255,255,0.35)'}
                                 title={showPassword ? 'Hide password' : 'Show password'}
                             >
                                 {showPassword ? '🙈' : '👁'}
@@ -235,8 +247,6 @@ export default function AuthScreen() {
                         transition: 'all 0.25s',
                         textTransform: 'uppercase',
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'white'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; }}
                 >
                     {guestLoading ? '...' : '👤 CONTINUE AS GUEST'}
                 </button>
