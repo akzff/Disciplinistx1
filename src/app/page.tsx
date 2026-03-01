@@ -796,19 +796,6 @@ export default function ChatPage() {
               </div>
             )}
 
-            {activeTasks.length === 0 && (
-              <div className="active-tasks-card" style={{ opacity: 0.6 }}>
-                <div style={{ fontSize: '1.5rem' }}>🎯</div>
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: '0.7rem', opacity: 0.6, fontWeight: '700', textTransform: 'uppercase' }}>No Active Tasks</p>
-                  <p style={{ fontWeight: '800' }}>Start a task to begin tracking</p>
-                  <p style={{ fontSize: '0.65rem', opacity: 0.5, marginTop: '2px' }}>
-                    Click &quot;🔥 START TASK&quot; in the sidebar
-                  </p>
-                </div>
-              </div>
-            )}
-
             {activeTasks.map(task => {
               const activeTime = task.status === 'RUNNING'
                 ? (task.totalActiveTime || 0) + Math.max(0, now - (task.lastStartedAt || task.startTime || now))
