@@ -73,7 +73,7 @@ export default function ChatPage() {
 
   useEffect(() => {
     const init = async () => {
-      if (!globalPrefs) return;
+      if (!globalPrefs || !allChats) return;
       setPreferences(globalPrefs);
 
       const today = storage.getCurrentDate();
@@ -84,6 +84,13 @@ export default function ChatPage() {
 
       const prevChat = allChats[prev];
       const todayChat = allChats[today];
+      
+      console.log('Data init:', { today, prev, prevChat: !!prevChat, todayChat: !!todayChat });
+      console.log('Prev chat data:', prevChat ? {
+        todos: prevChat.todos?.length || 0,
+        dailies: prevChat.dailies?.length || 0,
+        todosIncomplete: prevChat.todos?.filter(t => !t.completed).length || 0
+      } : 'No prev chat');
 
       if (prevChat && prevChat.status === 'OPEN') {
         setIsPreviousDayOpen(true);
@@ -108,6 +115,12 @@ export default function ChatPage() {
           todos: prevChat.todos?.filter(t => !t.completed) || [],
           dailies: prevChat.dailies?.map(d => ({ ...d, completed: false })) || []
         } : defaults);
+        
+        console.log('Task carry-over:', {
+          fromPrev: !!prevChat && !todayChat,
+          todosCarried: base.todos?.length || 0,
+          dailiesCarried: base.dailies?.length || 0
+        });
         setMessages(base.messages);
         setChatStatus(base.status);
         setBotMood((base as typeof todayChat & { botMood?: string })?.botMood as typeof botMood || 'NEUTRAL');
@@ -126,7 +139,7 @@ export default function ChatPage() {
     };
     init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [globalPrefs, allChats]);
 
   // Debounced cloud save (500ms) to avoid hammering Supabase on every keystroke
   useEffect(() => {

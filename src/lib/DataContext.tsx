@@ -34,7 +34,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
             ]);
 
             setAllChats(fetchedChats);
-            setPreferences(fetchedPrefs || storage.getUserPreferences());
+            // For new users or if cloud fails, use empty defaults to ensure isolation
+            setPreferences(fetchedPrefs || {
+                name: 'Disciple',
+                bio: '',
+                pfp: '',
+                dayVision: '',
+                dailyModel: '', // DETAILED DAILY MODEL - empty for new users
+                ambition: '', // YOUR MOTIVATION - empty for new users
+                mentorLevel: 1,
+                habitNotes: [],
+                selectedModel: 'qwen/qwen3-32b'
+            });
         } catch (error) {
             console.error("Failed to load global data:", error);
         } finally {
