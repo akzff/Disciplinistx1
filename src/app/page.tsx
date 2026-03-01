@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { storage, Message, DailyChat, UserPreferences, ActiveTask, formatTime } from '@/lib/storage';
-import Link from 'next/link';
+import Image from 'next/image';
 import MissionsBoard from '@/components/MissionsBoard';
 import MissionChecklist from '@/components/MissionChecklist';
 import ReactMarkdown from 'react-markdown';
@@ -502,7 +502,7 @@ export default function ChatPage() {
   // Global verification function for testing (accessible from browser console)
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      (window as any).verifySupabaseData = async () => {
+      (window as { verifySupabaseData?: () => Promise<{ status: 'ok' | 'error', details: { user?: string; totalChats?: number; todayDataExists?: boolean; todayTodos?: number; todayDailies?: number; allTodos?: number; allDailies?: number; datesWithData?: string[]; error?: string; } }> }).verifySupabaseData = async () => {
         const result = await cloudStorage.verifyDataIntegrity();
         console.table(result.details);
         return result;
@@ -703,7 +703,7 @@ export default function ChatPage() {
                         <>
                           <span className="profile-name">{preferences.name}</span>
                           {preferences.pfp ? (
-                            <img src={preferences.pfp} alt="pfp" className="pfp-icon" />
+                            <Image src={preferences.pfp} alt="pfp" className="pfp-icon" width={32} height={32} />
                           ) : (
                             <div className="pfp-icon" style={{ background: 'var(--accent)', opacity: 0.5 }}></div>
                           )}
@@ -754,13 +754,13 @@ export default function ChatPage() {
                           <ReactMarkdown
                             remarkPlugins={[remarkGfm]}
                             components={{
-                              img: ({ node, ...props }) => <img {...props} style={{ maxWidth: '100%', borderRadius: '12px', marginTop: '10px' }} alt="AI generated" />,
-                              a: ({ node, ...props }) => {
-                                const isImage = props.href?.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i);
-                                if (isImage) {
-                                  return <img src={props.href} style={{ maxWidth: '100%', borderRadius: '12px', marginTop: '10px', display: 'block' }} alt="AI generated" />;
+                              img: ({ src, ...props }) => src && typeof src === 'string' ? <Image src={src} {...props} style={{ maxWidth: '100%', borderRadius: '12px', marginTop: '10px' }} alt="AI generated" width={0} height={0} sizes="100vw" /> : null,
+                              a: ({ href, ...props }) => {
+                                const isImage = href?.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i);
+                                if (isImage && href && typeof href === 'string') {
+                                  return <Image src={href} style={{ maxWidth: '100%', borderRadius: '12px', marginTop: '10px', display: 'block' }} alt="AI generated" width={0} height={0} sizes="100vw" />;
                                 }
-                                return <a {...props} target="_blank" rel="noopener noreferrer" />;
+                                return <a href={href} {...props} target="_blank" rel="noopener noreferrer" />;
                               }
                             }}
                           >
@@ -841,7 +841,7 @@ export default function ChatPage() {
                 <div className="setting-item" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                   <div style={{ position: 'relative' }}>
                     {preferences.pfp ? (
-                      <img src={preferences.pfp} alt="pfp" style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover' }} />
+                      <Image src={preferences.pfp} alt="pfp" style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover' }} width={60} height={60} />
                     ) : (
                       <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>👤</div>
                     )}

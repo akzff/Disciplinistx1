@@ -38,14 +38,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
             // that is NOT in the cloud, we merge it up.
             const localChats = storage.getChats();
             const migrating = { ...fetchedChats };
-            let migrationHappened = false;
 
             Object.entries(localChats).forEach(([date, lChat]) => {
                 if (!fetchedChats[date]) {
                     console.log(`Migrating legacy local data to cloud for date: ${date}`);
                     migrating[date] = lChat;
                     cloudStorage.saveChat(date, lChat); // Async fire-and-forget migration
-                    migrationHappened = true;
                 }
             });
 

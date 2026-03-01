@@ -68,7 +68,7 @@ export const cloudStorage = {
                 date,
                 messages: [], status: 'OPEN', activeTasks: [], distractions: [], todos: [], dailies: [], expenses: [],
                 ...(existing || {}),
-                ...(chatData as any)
+                ...chatData
             };
         } else {
             const existing = await cloudStorage.getChat(date);
@@ -123,9 +123,19 @@ export const cloudStorage = {
 
     // ── Data Verification ─────────────────────────────────────────────────────
 
-    verifyDataIntegrity: async (): Promise<{ status: 'ok' | 'error', details: any }> => {
+    verifyDataIntegrity: async (): Promise<{ status: 'ok' | 'error', details: {
+        user?: string;
+        totalChats?: number;
+        todayDataExists?: boolean;
+        todayTodos?: number;
+        todayDailies?: number;
+        allTodos?: number;
+        allDailies?: number;
+        datesWithData?: string[];
+        error?: string;
+    } }> => {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return { status: 'error', details: 'No user authenticated' };
+        if (!user) return { status: 'error', details: { error: 'No user authenticated' } };
 
         try {
             // Test fetch all data
@@ -152,7 +162,7 @@ export const cloudStorage = {
         } catch (error) {
             return {
                 status: 'error' as const,
-                details: error instanceof Error ? error.message : String(error)
+                details: { error: error instanceof Error ? error.message : String(error) }
             };
         }
     }

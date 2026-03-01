@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { User } from '@supabase/supabase-js';
 
@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [loading, setLoading] = useState(true);
 
     // Haptic feedback for mobile
-    const triggerHaptic = (pattern: 'light' | 'medium' | 'heavy') => {
+    const triggerHaptic = useCallback((pattern: 'light' | 'medium' | 'heavy') => {
         if (typeof window !== 'undefined' && 'vibrate' in navigator) {
             const patterns = {
                 light: [10],
@@ -33,7 +33,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             };
             navigator.vibrate(patterns[pattern]);
         }
-    };
+    }, []);
+
+    const signInAsGuest = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
+        try {
+            const { error } = await supabase.auth.signInAnonymously();
+            if (error) {
+                return { success: false, error: error.message };
+            }
+            triggerHaptic('light');
+            return { success: true };
+        } catch (err: unknown) {
+            return { success: false, error: err instanceof Error ? err.message : String(err) };
+        }
+    }, [triggerHaptic]);
 
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session }, error }) => {
@@ -55,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
 
         return () => subscription.unsubscribe();
-    }, []);
+    }, [signInAsGuest]);
 
     const isGuest = user?.is_anonymous === true;
 
@@ -101,19 +114,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
             
             triggerHaptic('heavy');
-            return { success: true };
-        } catch (err: unknown) {
-            return { success: false, error: err instanceof Error ? err.message : String(err) };
-        }
-    };
-
-    const signInAsGuest = async (): Promise<{ success: boolean; error?: string }> => {
-        try {
-            const { error } = await supabase.auth.signInAnonymously();
-            if (error) {
-                return { success: false, error: error.message };
-            }
-            triggerHaptic('light');
             return { success: true };
         } catch (err: unknown) {
             return { success: false, error: err instanceof Error ? err.message : String(err) };

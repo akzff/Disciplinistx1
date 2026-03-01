@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { storage, DailyChat, UserPreferences, formatTime } from '@/lib/storage';
-import Link from 'next/link';
+import { storage, DailyChat, formatTime } from '@/lib/storage';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { NavigationBar } from '@/components/NavigationBar';
 import { cloudStorage } from '@/lib/cloudStorage';
 import { useData } from '@/lib/DataContext';
+import Image from 'next/image';
 
 
 interface ReportBlocks {
@@ -346,7 +346,7 @@ IMPORTANT: For each completed task, check if there's an abandonmentReason. If pr
                                         {/* Cover Image */}
                                         {chat.artifactUrl && (
                                             <div style={{ position: 'relative', borderRadius: '20px', overflow: 'hidden', marginBottom: '2rem', border: '1px solid var(--border)' }}>
-                                                <img src={chat.artifactUrl} alt="Mission Artifact" style={{ width: '100%', maxHeight: '420px', objectFit: 'cover', display: 'block' }} />
+                                                <Image src={chat.artifactUrl} alt="Mission Artifact" style={{ width: '100%', maxHeight: '420px', objectFit: 'cover', display: 'block' }} width={800} height={420} />
                                                 <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '2rem 1.5rem 1rem', background: 'linear-gradient(transparent, rgba(0,0,0,0.9))' }}>
                                                     <p style={{ fontSize: '0.6rem', fontWeight: '900', letterSpacing: '0.15em', color: 'var(--accent)' }}>MISSION ARTIFACT</p>
                                                     <p style={{ fontSize: '1.1rem', fontWeight: '900', color: 'white' }}>{selectedDate}</p>
