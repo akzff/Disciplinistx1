@@ -52,10 +52,8 @@ export class EnhancedExportImport {
     // Comprehensive export including all data types
     static async exportAllData(userId?: string): Promise<string> {
         try {
-            console.log('=== ENHANCED EXPORT DEBUG START ===');
             console.log('Starting comprehensive data export...');
             console.log('User ID provided:', !!userId);
-            console.log('User ID value:', userId);
             
             // Get data from cloud (if userId provided) or local storage
             let allChats: Record<string, DailyChat> = {};
@@ -64,13 +62,9 @@ export class EnhancedExportImport {
             if (userId) {
                 // Export from cloud storage - explicitly no limit for all data
                 console.log('Fetching from cloud storage...');
-                console.log('Calling cloudStorage.getAllChats with userId:', userId);
                 allChats = await cloudStorage.getAllChats(userId); // No limit parameter
-                console.log('Cloud fetch completed. Chats found:', Object.keys(allChats).length);
-                console.log('Cloud chat keys:', Object.keys(allChats).sort());
-                
                 preferences = await cloudStorage.getPreferences(userId);
-                console.log('Preferences fetched:', !!preferences);
+                console.log('Cloud fetch completed. Chats found:', Object.keys(allChats).length);
             } else {
                 // Export from local storage
                 console.log('Fetching from local storage...');
@@ -82,12 +76,6 @@ export class EnhancedExportImport {
             // Log all available dates for debugging
             const chatDates = Object.keys(allChats);
             console.log('All chat dates:', chatDates.sort());
-            console.log('Sample chat data:', chatDates.slice(0, 3).map(date => ({
-                date,
-                hasData: !!allChats[date],
-                messageCount: allChats[date]?.messages?.length || 0,
-                todosCount: allChats[date]?.todos?.length || 0
-            })));
             
             // Calculate summary statistics
             const totalTodos = Object.values(allChats).reduce((sum, chat) => sum + (chat.todos?.length || 0), 0);
@@ -119,9 +107,8 @@ export class EnhancedExportImport {
                 if (clerkUser?.primaryEmailAddress?.emailAddress) {
                     userEmail = clerkUser.primaryEmailAddress.emailAddress;
                 }
-                console.log('User email found:', userEmail);
-            } catch (err) {
-                console.log('Could not get user email for export:', err);
+            } catch {
+                console.log('Could not get user email for export');
             }
 
             const exportData: ComprehensiveExportData = {
@@ -155,25 +142,12 @@ export class EnhancedExportImport {
                 }
             };
 
-            console.log('Export data structure created successfully');
-            console.log('Export data keys:', Object.keys(exportData));
-            console.log('Export data.data keys:', Object.keys(exportData.data));
-            
-            const jsonString = JSON.stringify(exportData, null, 2);
-            console.log('JSON string length:', jsonString.length);
-            console.log('=== ENHANCED EXPORT DEBUG END ===');
-            
-            return jsonString;
+            console.log('Export completed:', exportData.data.summary);
+            return JSON.stringify(exportData, null, 2);
 
         } catch (error) {
-            console.error('=== ENHANCED EXPORT ERROR ===');
             console.error('Export failed:', error);
-            console.error('Error details:', {
-                name: (error as Error)?.name,
-                message: (error as Error)?.message,
-                stack: (error as Error)?.stack
-            });
-            throw error;
+            throw new Error(`Export failed: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
 
@@ -370,45 +344,15 @@ export class EnhancedExportImport {
 
     // Create downloadable file
     static downloadFile(content: string, filename: string): void {
-        try {
-            console.log('=== DOWNLOAD DEBUG START ===');
-            console.log('Download file called with:', { filename, contentLength: content.length });
-            
-            const blob = new Blob([content], { type: 'application/json' });
-            console.log('Blob created:', blob.size, 'bytes');
-            
-            const url = URL.createObjectURL(blob);
-            console.log('Object URL created:', url);
-            
-            const a = document.createElement('a');
-            console.log('Anchor element created');
-            
-            a.href = url;
-            a.download = filename;
-            console.log('Anchor attributes set:', { href: a.href, download: a.download });
-            
-            document.body.appendChild(a);
-            console.log('Anchor appended to body');
-            
-            a.click();
-            console.log('Click triggered');
-            
-            document.body.removeChild(a);
-            console.log('Anchor removed from body');
-            
-            URL.revokeObjectURL(url);
-            console.log('Object URL revoked');
-            console.log('=== DOWNLOAD DEBUG END ===');
-        } catch (error) {
-            console.error('=== DOWNLOAD ERROR ===');
-            console.error('Download failed:', error);
-            console.error('Error details:', {
-                name: (error as Error)?.name,
-                message: (error as Error)?.message,
-                stack: (error as Error)?.stack
-            });
-            throw error;
-        }
+        const blob = new Blob([content], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     }
 
     // Generate filename with timestamp
