@@ -57,7 +57,7 @@ function parseBlocks(summary: string): ReportBlocks {
 }
 
 export default function RecordsPage() {
-    const { allChats, preferences, setLocalChat } = useData();
+    const { allChats, preferences, setLocalChat, refreshData } = useData();
     const { user } = useUser();
     const [selectedDate, setSelectedDate] = useState('');
     const [chat, setChat] = useState<DailyChat | null>(null);
@@ -292,6 +292,80 @@ This will ${user?.id ? 'sync to cloud storage' : 'import to local storage'}. Con
                         <p style={{ fontSize: '0.7rem', opacity: 0.6 }}>PREVIOUS MISSIONS & AI INTELLIGENCE</p>
                     </div>
                     <div className="header-controls" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                        <button
+                            onClick={async () => {
+                                console.log("Manual sync triggered from records page");
+                                try {
+                                    setIsGenerating(true);
+                                    const result = await refreshData();
+                                    
+                                    // Force a refresh of the current chat data
+                                    if (selectedDate) {
+                                        const refreshedChat = allChats[selectedDate];
+                                        setChat(refreshedChat || null);
+                                    }
+                                    
+                                    if (result.success) {
+                                        alert(`✅ ${result.message}`);
+                                    } else {
+                                        alert(`❌ ${result.message}`);
+                                    }
+                                } catch (error) {
+                                    console.error('Sync failed:', error);
+                                    alert('❌ Sync failed. Please try again.');
+                                } finally {
+                                    setIsGenerating(false);
+                                }
+                            }}
+                            aria-label="Sync data across devices"
+                            title="Sync data across mobile and PC"
+                            style={{
+                                background: 'rgba(139, 92, 246, 0.2)',
+                                border: '1px solid var(--accent)',
+                                color: 'var(--accent)',
+                                padding: '8px 16px',
+                                borderRadius: '8px',
+                                fontSize: '0.8rem',
+                                fontWeight: '700',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                transition: 'all 0.2s ease',
+                                opacity: isGenerating ? 0.7 : 1
+                            }}
+                            onMouseEnter={(e) => {
+                                if (!isGenerating) {
+                                    e.currentTarget.style.background = 'rgba(139, 92, 246, 0.3)';
+                                    e.currentTarget.style.transform = 'translateY(-1px)';
+                                }
+                            }}
+                            onMouseLeave={(e) => {
+                                if (!isGenerating) {
+                                    e.currentTarget.style.background = 'rgba(139, 92, 246, 0.2)';
+                                    e.currentTarget.style.transform = 'translateY(0)';
+                                }
+                            }}
+                            disabled={isGenerating}
+                        >
+                            {isGenerating ? (
+                                <>
+                                    <div style={{
+                                        width: '12px',
+                                        height: '12px',
+                                        border: '2px solid var(--accent)',
+                                        borderTop: '2px solid transparent',
+                                        borderRadius: '50%',
+                                        animation: 'spin 1s linear infinite'
+                                    }}></div>
+                                    Syncing...
+                                </>
+                            ) : (
+                                <>
+                                    🔄 Sync Data
+                                </>
+                            )}
+                        </button>
                     </div>
                 </header>
 

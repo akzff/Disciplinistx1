@@ -547,41 +547,6 @@ export default function ChatPage() {
             </svg>
           </button>
 
-          <button
-            className="sync-btn desktop-only"
-            onClick={() => {
-              console.log("Manual sync triggered");
-              // Trigger data refresh from DataContext
-              window.location.reload();
-            }}
-            aria-label="Sync data"
-            title="Sync data across devices"
-            style={{
-              background: 'rgba(139, 92, 246, 0.2)',
-              border: '1px solid var(--accent)',
-              color: 'var(--accent)',
-              padding: '6px 12px',
-              borderRadius: '6px',
-              fontSize: '0.7rem',
-              fontWeight: '700',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(139, 92, 246, 0.3)';
-              e.currentTarget.style.transform = 'translateY(-1px)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(139, 92, 246, 0.2)';
-              e.currentTarget.style.transform = 'translateY(0)';
-            }}
-          >
-            🔄 Sync
-          </button>
-
           <div className="chat-header__left" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <div
               className="status-indicator"

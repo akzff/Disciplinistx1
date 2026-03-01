@@ -10,7 +10,7 @@ interface DataContextType {
     allChats: Record<string, DailyChat>;
     preferences: UserPreferences | null;
     isLoadingData: boolean;
-    refreshData: () => Promise<void>;
+    refreshData: () => Promise<{ success: boolean; message: string; syncedItems: number }>;
     updatePreferences: (updates: Partial<UserPreferences>) => Promise<void>;
     setLocalChat: (date: string, chatData: Partial<DailyChat>) => void;
 }
@@ -31,17 +31,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
     });
     const [isLoadingData, setIsLoadingData] = useState(false); // No longer blocks by default
 
-    const refreshData = useCallback(async () => {
-        if (!userId) return;
+    const refreshData = useCallback(async (): Promise<{ success: boolean; message: string; syncedItems: number }> => {
+        if (!userId) return { success: false, message: 'No user logged in', syncedItems: 0 };
 
         try {
-            console.log("Sudden data sync starting for user:", userId);
+            console.log("Manual sync starting for user:", userId);
 
             // Fetch in background - no limit for full sync
             const [fetchedChats, fetchedPrefs] = await Promise.all([
                 cloudStorage.getAllChats(userId),
                 cloudStorage.getPreferences(userId)
             ]) as [Record<string, DailyChat>, UserPreferences | null];
+
+            let syncedItems = 0;
+            const previousChatCount = Object.keys(allChats).length;
 
             // UI Refresh: Merge cloud data into local state carefully
             setAllChats(prev => {
@@ -51,21 +54,26 @@ export function DataProvider({ children }: { children: ReactNode }) {
                         const localChat = prev[date];
                         if (!localChat) {
                             merged[date] = cloudChat;
+                            syncedItems++;
                         } else {
                             // Merge logic: If cloud has more messages, it's likely newer from another device
-                            // We prefer cloud version but preserve local if it looks significantly different
                             const cloudMsgCount = cloudChat.messages?.length || 0;
                             const localMsgCount = localChat.messages?.length || 0;
 
                             if (cloudMsgCount >= localMsgCount) {
                                 merged[date] = cloudChat;
+                                syncedItems++;
                             }
                         }
                     });
                 }
                 return merged;
             });
-            if (fetchedPrefs) setPreferences(fetchedPrefs);
+            
+            if (fetchedPrefs) {
+                setPreferences(fetchedPrefs);
+                syncedItems++;
+            }
 
             // Background migration
             setTimeout(async () => {
@@ -85,10 +93,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 }
             }, 100);
 
+            const finalChatCount = Object.keys(fetchedChats || {}).length;
+            const message = syncedItems > 0 
+                ? `Synced ${syncedItems} items (${finalChatCount} chats, preferences: ${!!fetchedPrefs})`
+                : 'No new data to sync';
+
+            return { success: true, message, syncedItems };
+
         } catch (err) {
-            console.error('Background sync failed:', err);
+            console.error('Manual sync failed:', err);
+            return { success: false, message: `Sync failed: ${err instanceof Error ? err.message : 'Unknown error'}`, syncedItems: 0 };
         }
-    }, [userId, preferences]);
+    }, [userId, preferences, allChats]);
 
     useEffect(() => {
         if (!userId) return;
