@@ -187,15 +187,27 @@ IMPORTANT: For each completed task, check if there's an abandonmentReason. If pr
     const handleExport = async () => {
         setIsExporting(true);
         try {
+            console.log('=== EXPORT DEBUG START ===');
             console.log('Starting export from records page...');
+            console.log('User ID:', user?.id);
             console.log('Available chats count:', Object.keys(allChats).length);
             console.log('Available dates:', Object.keys(allChats).sort());
+            console.log('Sample chat data:', Object.keys(allChats).slice(0, 3).map(date => ({
+                date,
+                hasData: !!allChats[date],
+                messageCount: allChats[date]?.messages?.length || 0
+            })));
             
             const exportData = await EnhancedExportImport.exportAllData(user?.id);
-            const filename = EnhancedExportImport.generateFilename();
+            console.log('Export data type:', typeof exportData);
+            console.log('Export data length:', exportData.length);
             
-            console.log('Export completed, downloading file:', filename);
+            const filename = EnhancedExportImport.generateFilename();
+            console.log('Generated filename:', filename);
+            
+            console.log('About to download file...');
             EnhancedExportImport.downloadFile(exportData, filename);
+            console.log('Download completed');
             
             // Show success message with details
             const exportInfo = JSON.parse(exportData);
@@ -203,9 +215,16 @@ IMPORTANT: For each completed task, check if there's an abandonmentReason. If pr
             const dateRange = exportInfo.data.summary.dateRange;
             
             alert(`✅ Export successful!\n\n📊 Export Summary:\n• Total days: ${totalDays}\n• Date range: ${dateRange.earliest} to ${dateRange.latest}\n• File: ${filename}`);
+            console.log('=== EXPORT DEBUG END ===');
             
         } catch (error) {
+            console.error('=== EXPORT ERROR ===');
             console.error('Export failed:', error);
+            console.error('Error details:', {
+                name: error?.name,
+                message: error?.message,
+                stack: error?.stack
+            });
             alert(`❌ Export failed: ${error instanceof Error ? error.message : String(error)}`);
         } finally {
             setIsExporting(false);
