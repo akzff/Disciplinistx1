@@ -31,14 +31,9 @@ export const cloudStorage = {
             result[row.date] = row.data as DailyChat;
         });
         
-        // Verify data integrity
-        const totalTodos = Object.values(result).reduce((sum, chat) => sum + (chat.todos?.length || 0), 0);
-        const totalDailies = Object.values(result).reduce((sum, chat) => sum + (chat.dailies?.length || 0), 0);
+        // Simplified logging for performance
         console.log('Cloud fetch successful:', {
-            chatsCount: Object.keys(result).length,
-            totalTodos,
-            totalDailies,
-            dates: Object.keys(result)
+            chatsCount: Object.keys(result).length
         });
         
         return result;

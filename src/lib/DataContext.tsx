@@ -5,7 +5,6 @@ import { DailyChat, UserPreferences, storage } from '@/lib/storage';
 import { cloudStorage } from '@/lib/cloudStorage';
 import { useAuth as useClerkAuth } from '@clerk/nextjs';
 import { useUser } from '@clerk/nextjs';
-import { UserMigration } from '@/lib/userMigration';
 
 interface DataContextType {
     allChats: Record<string, DailyChat>;
@@ -32,57 +31,79 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }
 
         try {
-            console.log("Syncing Supabase resources for user:", userId);
+            console.log("Starting FAST data sync for user:", userId);
             
-            // First, check if we need to migrate data for this user
-            const userEmail = user?.primaryEmailAddress?.emailAddress || '';
-            
-            if (userEmail) {
-                console.log("Checking for data migration for user:", userEmail);
-                await UserMigration.checkAndMigrateUser(userId, userEmail);
-            }
+            // Parallel data fetching - all requests start at once
+            const dataPromises = [
+                cloudStorage.getAllChats(userId),
+                cloudStorage.getPreferences(userId)
+            ];
 
-            const fetchedChats = await cloudStorage.getAllChats(userId);
-            const fetchedPrefs = await cloudStorage.getPreferences(userId);
+            // Wait for all data to arrive in parallel
+            const [fetchedChats, fetchedPrefs] = await Promise.all(dataPromises) as [
+                Record<string, DailyChat>,
+                UserPreferences | null
+            ];
 
-            // ─── Legacy Migration Logic ──────────────────────────────────────────
-            // If the user has local data (e.g. they just logged in or guest mode before)
-            // that is NOT in the cloud, we merge it up.
-            const localChats = storage.getChats();
-            const migrating = { ...fetchedChats };
+            // Set initial state immediately for better UX
+            setAllChats(fetchedChats);
+            setPreferences(fetchedPrefs);
+            setIsLoadingData(false);
 
-            Object.entries(localChats).forEach(([date, lChat]) => {
-                if (!fetchedChats[date]) {
-                    console.log(`Migrating legacy local data to cloud for date: ${date}`);
-                    migrating[date] = lChat;
-                    cloudStorage.saveChat(date, lChat, userId); // Async fire-and-forget migration
+            // Process data in background (non-blocking)
+            setTimeout(async () => {
+                // ─── Legacy Migration Logic ──────────────────────────────────────────
+                // If the user has local data (e.g. they just logged in or guest mode before)
+                // that is NOT in the cloud, we merge it up.
+                const localChats = storage.getChats();
+                const migrating = { ...fetchedChats };
+
+                // Only migrate if there's local data not in cloud
+                const hasLocalData = Object.keys(localChats).length > 0;
+                const hasCloudData = fetchedChats && Object.keys(fetchedChats).length > 0;
+                
+                if (hasLocalData && !hasCloudData) {
+                    console.log("Migrating local data to cloud...");
+                    
+                    // Batch migrate local data
+                    const migrationPromises = Object.entries(localChats).map(([date, lChat]) => {
+                        if (!fetchedChats || !fetchedChats[date]) {
+                            console.log(`Migrating legacy local data to cloud for date: ${date}`);
+                            return cloudStorage.saveChat(date, lChat, userId);
+                        }
+                        return Promise.resolve();
+                    });
+                    
+                    // Wait for migration to complete
+                    await Promise.all(migrationPromises);
                 }
-            });
 
-            setAllChats(migrating);
+                // Update state with processed data
+                setAllChats(migrating);
 
-            // Preferences migration
-            const finalPrefs = fetchedPrefs || storage.getUserPreferences();
-            setPreferences(finalPrefs);
-            if (!fetchedPrefs) {
-                cloudStorage.savePreferences(finalPrefs, userId);
-            }
+                // Preferences migration
+                const finalPrefs = fetchedPrefs || storage.getUserPreferences();
+                setPreferences(finalPrefs);
+                if (!fetchedPrefs) {
+                    cloudStorage.savePreferences(finalPrefs, userId);
+                }
 
-            console.log("Data sync completed:", {
-                chatsCount: Object.keys(migrating).length,
-                hasPreferences: !!finalPrefs,
-                userEmail
-            });
+                console.log("Data sync completed:", {
+                    chatsCount: Object.keys(migrating).length,
+                    hasPreferences: !!finalPrefs,
+                    hasLocalData,
+                    hasCloudData
+                });
+            }, 100);
 
         } catch (err) {
             console.error('Data sync error:', err);
             // Fallback to local storage if cloud fails
             setAllChats(storage.getChats());
             setPreferences(storage.getUserPreferences());
-        } finally {
             setIsLoadingData(false);
         }
-    }, [userId, user]);
+    }, [userId]);
 
     useEffect(() => {
         setIsLoadingData(true);
