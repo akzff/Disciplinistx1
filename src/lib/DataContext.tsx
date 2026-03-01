@@ -37,9 +37,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         try {
             console.log("Sudden data sync starting for user:", userId);
 
-            // Fetch in background
+            // Fetch in background - no limit for full sync
             const [fetchedChats, fetchedPrefs] = await Promise.all([
-                cloudStorage.getAllChats(userId, 30),
+                cloudStorage.getAllChats(userId),
                 cloudStorage.getPreferences(userId)
             ]) as [Record<string, DailyChat>, UserPreferences | null];
 
@@ -91,6 +91,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }, [userId, preferences]);
 
     useEffect(() => {
+        if (!userId) return;
+
+        const syncInterval = setInterval(() => {
+            console.log("Periodic sync triggered for user:", userId);
+            refreshData();
+        }, 30000); // Sync every 30 seconds
+
+        return () => clearInterval(syncInterval);
+    }, [userId, refreshData]);
+
+    useEffect(() => {
+        setIsLoadingData(true);
         refreshData();
     }, [userId, refreshData]);
 

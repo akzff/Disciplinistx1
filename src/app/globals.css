@@ -666,6 +666,14 @@ textarea {
   }
 }
 
+.desktop-only {
+  display: flex;
+}
+
+.mobile-only {
+  display: none;
+}
+
 @media (max-width: 768px) {
   main {
     padding: 0.5rem;
@@ -1030,10 +1038,12 @@ textarea {
 
   .input-area {
     padding: 0.75rem 1rem;
-    /* Clear bottom navigation: nav height (~3.5rem) + safe area + extra breathing room */
-    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+    /* Reduced bottom padding to ensure visibility */
+    padding-bottom: calc(3.5rem + env(safe-area-inset-bottom));
     background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.4) 20%, rgba(0, 0, 0, 0.8));
     z-index: 5;
+    position: sticky;
+    bottom: 0;
   }
 
   .send-button {
@@ -1043,8 +1053,12 @@ textarea {
     width: 40px !important;
   }
 
-  .mobile-only {
+  .desktop-only {
     display: flex !important;
+  }
+
+  .mobile-only {
+    display: none !important;
   }
 }
 
@@ -1190,7 +1204,6 @@ input {
 }
 
 @keyframes meshFloat {
-
   0%,
   100% {
     transform: translate(0, 0) rotate(0deg);
@@ -1205,29 +1218,18 @@ input {
   }
 }
 
-/* Mobile optimizations */
-@media (max-width: 768px) {
-  .auth-container {
-    padding: 1rem;
-    margin: 1rem;
-  }
+/* Enhanced Auth System Styles */
+.auth-container {
+  animation: fadeInUp 0.6s ease-out;
+}
 
-  .auth-panel {
-    padding: 2rem !important;
-    border-radius: 24px !important;
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
   }
-
-  .auth-title {
-    font-size: 1.5rem !important;
-  }
-
-  .auth-input {
-    padding: 16px 18px !important;
-    font-size: 0.9rem !important;
-  }
-
-  .auth-button {
-    padding: 16px !important;
-    font-size: 0.85rem !important;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
