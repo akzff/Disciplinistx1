@@ -14,15 +14,21 @@ export const cloudStorage = {
 
     // ── Chats ──────────────────────────────────────────────────────────────
 
-    getAllChats: async (userId?: string): Promise<Record<string, DailyChat>> => {
+    getAllChats: async (userId?: string, limit?: number): Promise<Record<string, DailyChat>> => {
         const currentUserId = userId;
         if (!currentUserId) return {};
 
-        const { data, error } = await supabase
+        let query = supabase
             .from('disciplinist_daily_chats')
             .select('date, data')
             .eq('user_id', currentUserId)
             .order('date', { ascending: false });
+
+        if (limit) {
+            query = query.limit(limit);
+        }
+
+        const { data, error } = await query;
 
         if (error) { console.error('Cloud fetch chats error:', error); return {}; }
 
@@ -30,12 +36,12 @@ export const cloudStorage = {
         (data || []).forEach((row) => {
             result[row.date] = row.data as DailyChat;
         });
-        
-        // Simplified logging for performance
+
         console.log('Cloud fetch successful:', {
-            chatsCount: Object.keys(result).length
+            chatsCount: Object.keys(result).length,
+            limitApplied: !!limit
         });
-        
+
         return result;
     },
 
@@ -50,31 +56,34 @@ export const cloudStorage = {
             .eq('date', date)
             .single();
 
-        if (error) { 
-            console.error('Cloud fetch chat error:', error); 
-            return null; 
+        if (error) {
+            console.error('Cloud fetch chat error:', error);
+            return null;
         }
 
         return data.data as DailyChat;
     },
 
-    saveChat: async (date: string, chatData: Partial<DailyChat>, userId?: string): Promise<void> => {
+    saveChat: async (date: string, chatData: Partial<DailyChat>, userId?: string, skipFetch: boolean = false): Promise<void> => {
         const currentUserId = userId;
         if (!currentUserId) return;
 
-        // Upsert: load existing then merge
-        const existing = await cloudStorage.getChat(date, currentUserId);
-        const defaults: DailyChat = {
-            date,
-            messages: [],
-            status: 'OPEN',
-            activeTasks: [],
-            distractions: [],
-            todos: [],
-            dailies: [],
-            expenses: []
-        };
-        const merged = { ...(existing || defaults), ...chatData };
+        let merged = chatData;
+        if (!skipFetch) {
+            // Upsert: load existing then merge
+            const existing = await cloudStorage.getChat(date, currentUserId);
+            const defaults: DailyChat = {
+                date,
+                messages: [],
+                status: 'OPEN',
+                activeTasks: [],
+                distractions: [],
+                todos: [],
+                dailies: [],
+                expenses: []
+            };
+            merged = { ...(existing || defaults), ...chatData };
+        }
 
         const { error } = await supabase
             .from('disciplinist_daily_chats')
@@ -99,9 +108,9 @@ export const cloudStorage = {
             .eq('user_id', currentUserId)
             .single();
 
-        if (error) { 
-            console.error('Cloud fetch prefs error:', error); 
-            return null; 
+        if (error) {
+            console.error('Cloud fetch prefs error:', error);
+            return null;
         }
 
         return data.data as UserPreferences;
@@ -120,17 +129,19 @@ export const cloudStorage = {
 
     // ── Data Verification ─────────────────────────────────────────────────────
 
-    verifyDataIntegrity: async (userId?: string): Promise<{ status: 'ok' | 'error', details: {
-        user?: string;
-        totalChats?: number;
-        todayDataExists?: boolean;
-        todayTodos?: number;
-        todayDailies?: number;
-        allTodos?: number;
-        allDailies?: number;
-        datesWithData?: string[];
-        error?: string;
-    } }> => {
+    verifyDataIntegrity: async (userId?: string): Promise<{
+        status: 'ok' | 'error', details: {
+            user?: string;
+            totalChats?: number;
+            todayDataExists?: boolean;
+            todayTodos?: number;
+            todayDailies?: number;
+            allTodos?: number;
+            allDailies?: number;
+            datesWithData?: string[];
+            error?: string;
+        }
+    }> => {
         const currentUserId = userId;
         if (!currentUserId) return { status: 'error', details: { error: 'No user authenticated' } };
 
@@ -157,8 +168,8 @@ export const cloudStorage = {
             console.log('Data integrity verification:', verification);
             return verification;
         } catch (error) {
-            return { 
-                status: 'error' as const, 
+            return {
+                status: 'error' as const,
                 details: { error: error instanceof Error ? error.message : String(error) }
             };
         }

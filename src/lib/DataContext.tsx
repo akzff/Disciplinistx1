@@ -32,10 +32,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         try {
             console.log("Starting FAST data sync for user:", userId);
-            
-            // Parallel data fetching - all requests start at once
+
+            // Parallel data fetching - fetch only recent 30 days initially for speed
             const dataPromises = [
-                cloudStorage.getAllChats(userId),
+                cloudStorage.getAllChats(userId, 30),
                 cloudStorage.getPreferences(userId)
             ];
 
@@ -61,10 +61,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 // Only migrate if there's local data not in cloud
                 const hasLocalData = Object.keys(localChats).length > 0;
                 const hasCloudData = fetchedChats && Object.keys(fetchedChats).length > 0;
-                
+
                 if (hasLocalData && !hasCloudData) {
                     console.log("Migrating local data to cloud...");
-                    
+
                     // Batch migrate local data
                     const migrationPromises = Object.entries(localChats).map(([date, lChat]) => {
                         if (!fetchedChats || !fetchedChats[date]) {
@@ -73,7 +73,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                         }
                         return Promise.resolve();
                     });
-                    
+
                     // Wait for migration to complete
                     await Promise.all(migrationPromises);
                 }

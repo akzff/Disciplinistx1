@@ -28,7 +28,7 @@ export function NavigationBar() {
             {menu.map((item) => {
                 const active = pathname === item.href;
                 return (
-                    <Link key={item.href} href={item.href} style={{
+                    <Link key={item.href} href={item.href} className="nav-item" style={{
                         padding: '8px 24px',
                         borderRadius: '100px',
                         textDecoration: 'none',

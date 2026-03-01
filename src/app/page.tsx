@@ -87,7 +87,7 @@ export default function ChatPage() {
 
       const prevChat = allChats[prev];
       const todayChat = allChats[today];
-      
+
       console.log('Data init:', { today, prev, prevChat: !!prevChat, todayChat: !!todayChat });
       console.log('Prev chat data:', prevChat ? {
         todos: prevChat.todos?.length || 0,
@@ -118,7 +118,7 @@ export default function ChatPage() {
           todos: prevChat.todos?.filter(t => !t.completed) || [],
           dailies: prevChat.dailies?.map(d => ({ ...d, completed: false })) || []
         } : defaults);
-        
+
         console.log('Task carry-over:', {
           fromPrev: !!prevChat && !todayChat,
           todosCarried: base.todos?.length || 0,
@@ -134,7 +134,7 @@ export default function ChatPage() {
         setCompletedTasks((base as typeof todayChat)?.completedTasks || []);
         setExpenses(base.expenses || []);
         if (!todayChat) {
-          cloudStorage.saveChat(today, base);
+          cloudStorage.saveChat(today, base, user?.id || undefined, true);
           setLocalChat(today, base as DailyChat);
         }
       }
@@ -150,7 +150,7 @@ export default function ChatPage() {
     if (saveDebounce.current) clearTimeout(saveDebounce.current);
     saveDebounce.current = setTimeout(() => {
       const chatD = { messages, status: chatStatus, activeTasks, distractions, botMood, todos, dailies, completedTasks, expenses };
-      cloudStorage.saveChat(activeDay, chatD);
+      cloudStorage.saveChat(activeDay, chatD, user?.id || undefined, true);
       setLocalChat(activeDay, chatD as DailyChat);
     }, 500);
     return () => { if (saveDebounce.current) clearTimeout(saveDebounce.current); };
@@ -201,7 +201,7 @@ export default function ChatPage() {
     if (lastAssistantMessage?.role === 'assistant' && lastAssistantMessage?.completedMission) {
       // Extract the task name from the completion prompt
       const taskName = lastAssistantMessage.completedMission.name;
-      
+
       // Update the abandonment reason for the most recent completed task
       setCompletedTasks(prev => {
         if (!prev) return prev;
@@ -492,7 +492,7 @@ export default function ChatPage() {
     setDailies(base.dailies || []);
     setCompletedTasks((base as typeof todayChat)?.completedTasks || []);
     setExpenses(base.expenses || []);
-    if (!todayChat) await cloudStorage.saveChat(today, base);
+    if (!todayChat) await cloudStorage.saveChat(today, base, user?.id || undefined, true);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -575,10 +575,10 @@ export default function ChatPage() {
               <NavigationBar />
             </div>
 
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <button
                 onClick={() => setShowMissions(true)}
-                className="header-action-btn"
+                className="header-action-btn mobile-hidden"
                 style={{
                   background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.1))',
                   border: '1px solid rgba(139, 92, 246, 0.4)',
@@ -604,22 +604,22 @@ export default function ChatPage() {
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="3"></circle>
-                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 1 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
                 </svg>
               </button>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 14px', borderRadius: '100px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'linear-gradient(135deg, #8b5cf6, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: '900', boxShadow: '0 2px 10px rgba(139, 92, 246, 0.3)' }}>
+              <div className="profile-badge" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 10px', borderRadius: '100px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)' }}>
+                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'linear-gradient(135deg, #8b5cf6, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: '900', boxShadow: '0 2px 10px rgba(139, 92, 246, 0.3)' }}>
                   {user?.primaryEmailAddress?.emailAddress?.charAt(0).toUpperCase() || 'U'}
                 </div>
-                <span style={{ fontSize: '0.75rem', opacity: 0.7, maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: '600' }}>{user?.primaryEmailAddress?.emailAddress || 'User'}</span>
+                <span className="mobile-hidden" style={{ fontSize: '0.7rem', opacity: 0.7, maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: '600' }}>{user?.primaryEmailAddress?.emailAddress || 'User'}</span>
                 <button
                   onClick={signOut}
                   title="Sign Out"
                   className="logout-btn"
-                  style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.9rem', padding: '0 4px', transition: 'color 0.2s' }}
+                  style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.8rem', padding: '0 2px', transition: 'color 0.2s' }}
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                     <polyline points="16 17 21 12 16 7"></polyline>
                     <line x1="21" y1="12" x2="9" y2="12"></line>
@@ -812,7 +812,7 @@ export default function ChatPage() {
                     <p style={{ fontSize: '0.7rem', opacity: 0.6, fontWeight: '700', textTransform: 'uppercase' }}>Current Task</p>
                     <p style={{ fontWeight: '800' }}>{task.name}</p>
                     <p style={{ fontSize: '0.65rem', opacity: 0.5, marginTop: '2px' }}>
-                      Active: {formatTime(activeTime)} | Paused: {formatTime(pausedTime)}
+                      Active: {formatTime(activeTime, false)} | Paused: {formatTime(pausedTime, false)}
                     </p>
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>

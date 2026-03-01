@@ -86,7 +86,7 @@ input[type="checkbox"]:checked::after {
   background: white;
   border-radius: 2px;
   transform: rotate(45deg);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 /* Mission Checkbox Overrides */
@@ -129,7 +129,7 @@ input[type="checkbox"]:checked::after {
   background: white;
   border-radius: 2px;
   transform: rotate(45deg);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 body {
@@ -675,18 +675,53 @@ textarea {
     font-size: 0.85rem;
   }
 
+  .nav-item {
+    padding: 6px 14px !important;
+    font-size: 0.65rem !important;
+  }
+
   .chat-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-    padding: 1rem;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    gap: 0.5rem;
+  }
+
+  .chat-header__left {
+    gap: 0.6rem !important;
+  }
+
+  .app-title__brand {
+    font-size: 0.9rem;
+  }
+
+  .mood-pill {
+    padding: 2px 6px;
+    font-size: 0.55rem;
+  }
+
+  .session-subtitle {
+    display: none;
   }
 
   .chat-header .header-controls {
-    width: 100%;
-    justify-content: space-between;
-    overflow-x: auto;
-    padding-bottom: 0.5rem;
+    width: auto;
+    gap: 0.6rem;
+    padding-bottom: 0;
+  }
+
+  .nav-center-wrapper {
+    position: fixed;
+    bottom: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    z-index: 1000;
+  }
+
+  .mobile-hidden {
+    display: none !important;
   }
 
   .input-area {
@@ -953,8 +988,8 @@ textarea {
     border-right: 1px solid var(--border) !important;
     background: rgba(10, 10, 15, 0.98) !important;
     backdrop-filter: blur(20px) !important;
-    transform: translateX(-110%) !important;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    transform: translateX(-100%) !important;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
     box-shadow: none !important;
   }
 
@@ -980,168 +1015,191 @@ textarea {
 
   .input-area {
     padding: 0.75rem 1rem;
+    padding-bottom: 5rem;
+    /* Space for bottom nav */
   }
 }
 
 /* Enhanced Auth System Styles */
 .auth-container {
-    animation: fadeInUp 0.6s ease-out;
+  animation: fadeInUp 0.6s ease-out;
 }
 
 @keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Enhanced input focus states */
 input:focus-visible {
-    border-color: var(--accent) !important;
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
-    background: rgba(139, 92, 246, 0.05) !important;
+  border-color: var(--accent) !important;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+  background: rgba(139, 92, 246, 0.05) !important;
 }
 
 input:active {
-    transform: scale(0.99);
+  transform: scale(0.99);
 }
 
 /* Enhanced button states */
 button:active {
-    transform: scale(0.98);
-    filter: brightness(0.9);
+  transform: scale(0.98);
+  filter: brightness(0.9);
 }
 
 button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none !important;
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
 }
 
 /* Ensure tap targets are at least 48px for iOS */
-button, input {
-    min-height: 48px;
+button,
+input {
+  min-height: 48px;
 }
 
 /* Loading spinner animation */
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Auth screen specific animations */
 .auth-logo {
-    animation: pulse 2s infinite;
+  animation: pulse 2s infinite;
 }
 
 @keyframes pulse {
-    0%, 100% { 
-        transform: scale(1); 
-        opacity: 1; 
-    }
-    50% { 
-        transform: scale(1.05); 
-        opacity: 0.8; 
-    }
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
 }
 
 /* Glassmorphism enhancement */
 .glass-panel {
-    background: rgba(255, 255, 255, 0.02);
-    backdrop-filter: blur(40px);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    box-shadow: 0 40px 120px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(40px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 40px 120px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.02);
 }
 
 /* Mobile-friendly hover states */
 @media (hover: hover) {
-    .auth-button:hover {
-        background: linear-gradient(135deg, #9333ea 0%, #a855f7 50%, #c084fc 100%);
-        transform: translateY(-2px);
-        box-shadow: 0 10px 30px rgba(139, 92, 246, 0.3);
-    }
-    
-    .guest-button:hover {
-        background: rgba(255, 255, 255, 0.08);
-        color: white;
-        transform: translateY(-1px);
-    }
+  .auth-button:hover {
+    background: linear-gradient(135deg, #9333ea 0%, #a855f7 50%, #c084fc 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(139, 92, 246, 0.3);
+  }
+
+  .guest-button:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: white;
+    transform: translateY(-1px);
+  }
 }
 
 /* Error and success message animations */
 .message-slide {
-    animation: slideIn 0.3s ease-out;
+  animation: slideIn 0.3s ease-out;
 }
 
 @keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Tab switching animation */
 .tab-indicator {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Password visibility toggle */
 .password-toggle {
-    transition: all 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .password-toggle:hover {
-    color: rgba(255, 255, 255, 0.8) !important;
-    transform: scale(1.1);
+  color: rgba(255, 255, 255, 0.8) !important;
+  transform: scale(1.1);
 }
 
 /* Background mesh animation */
 .bg-mesh {
-    background-image: 
-        radial-gradient(circle at 25% 25%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 75% 75%, rgba(168, 85, 247, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 50% 50%, rgba(192, 132, 252, 0.05) 0%, transparent 50%);
-    animation: meshFloat 20s ease-in-out infinite;
+  background-image:
+    radial-gradient(circle at 25% 25%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(168, 85, 247, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(192, 132, 252, 0.05) 0%, transparent 50%);
+  animation: meshFloat 20s ease-in-out infinite;
 }
 
 @keyframes meshFloat {
-    0%, 100% { transform: translate(0, 0) rotate(0deg); }
-    33% { transform: translate(-20px, -20px) rotate(120deg); }
-    66% { transform: translate(20px, -10px) rotate(240deg); }
+
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+
+  33% {
+    transform: translate(-20px, -20px) rotate(120deg);
+  }
+
+  66% {
+    transform: translate(20px, -10px) rotate(240deg);
+  }
 }
 
 /* Mobile optimizations */
 @media (max-width: 768px) {
-    .auth-container {
-        padding: 1rem;
-        margin: 1rem;
-    }
-    
-    .auth-panel {
-        padding: 2rem !important;
-        border-radius: 24px !important;
-    }
-    
-    .auth-title {
-        font-size: 1.5rem !important;
-    }
-    
-    .auth-input {
-        padding: 16px 18px !important;
-        font-size: 0.9rem !important;
-    }
-    
-    .auth-button {
-        padding: 16px !important;
-        font-size: 0.85rem !important;
-    }
+  .auth-container {
+    padding: 1rem;
+    margin: 1rem;
+  }
+
+  .auth-panel {
+    padding: 2rem !important;
+    border-radius: 24px !important;
+  }
+
+  .auth-title {
+    font-size: 1.5rem !important;
+  }
+
+  .auth-input {
+    padding: 16px 18px !important;
+    font-size: 0.9rem !important;
+  }
+
+  .auth-button {
+    padding: 16px !important;
+    font-size: 0.85rem !important;
+  }
 }
