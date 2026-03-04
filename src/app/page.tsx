@@ -15,67 +15,64 @@ import { useUser } from '@clerk/nextjs';
 import '@/lib/manualMigration';
 import { supabase } from '@/lib/supabase';
 
-// Custom hook for realtime sync
+// ─── Cross-platform real-time message sync ─────────────────────────────────
+// Subscribes to Supabase Realtime on disciplinist_daily_chats.
+// When any device saves new messages (after every send/receive),
+// the UPDATE event fires and all other devices instantly merge the new messages.
 function useRealtimeSync(
   userId: string | undefined,
-  messages: Message[],
+  currentDate: string,
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>
 ) {
-  const [sessionId] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('chat_session_id');
-      if (stored) return stored;
-      const newId = crypto.randomUUID();
-      localStorage.setItem('chat_session_id', newId);
-      return newId;
-    }
-    return '';
-  });
-  const [syncStatus, setSyncStatus] = useState<string>('INIT');
+  const [syncStatus, setSyncStatus] = useState<'LIVE' | 'CONNECTING' | 'LOCAL'>('LOCAL');
 
   useEffect(() => {
-    if (!sessionId || !userId) return;
+    if (!userId || !currentDate) return;
 
-    let isMounted = true;
-    const fetchExisting = async () => {
-      const { data } = await supabase
-        .from('ai_messages')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('session_id', sessionId)
-        .order('created_at', { ascending: true });
-      if (isMounted) {
-        setMessages((data as (Message & { id?: string })[]) ?? []);
-      }
-    };
-    fetchExisting();
+    setSyncStatus('CONNECTING');
 
     const channel = supabase
-      .channel(`chat-${sessionId}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'ai_messages',
-        filter: `session_id=eq.${sessionId}`,
-      }, (payload) => {
-        setMessages((prev) => {
-          const newMsg = payload.new as Message & { id?: string };
-          const exists = prev.some((m: Message & { id?: string }) => m.id === newMsg.id);
-          return exists ? prev : [...prev, newMsg];
-        });
-      })
+      .channel(`chat-sync-${userId}-${currentDate}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'disciplinist_daily_chats',
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          const updated = payload.new as { date: string; data: DailyChat };
+          // Only apply if this update is for today's date
+          if (updated.date !== currentDate) return;
+
+          const incomingMessages: Message[] = updated.data?.messages ?? [];
+          if (incomingMessages.length === 0) return;
+
+          setMessages((prev) => {
+            // Merge: keep all local messages, append any incoming messages
+            // that are beyond what we already have (keyed by position/index)
+            if (incomingMessages.length <= prev.length) return prev;
+            // New messages arrived from another device — take the full array
+            // (it includes everything: local + remote additions)
+            return incomingMessages;
+          });
+        }
+      )
       .subscribe((status) => {
-        if (isMounted) setSyncStatus(status);
+        setSyncStatus(status === 'SUBSCRIBED' ? 'LIVE' : status === 'CHANNEL_ERROR' ? 'LOCAL' : 'CONNECTING');
       });
 
     return () => {
-      isMounted = false;
       supabase.removeChannel(channel);
+      setSyncStatus('LOCAL');
     };
-  }, [sessionId, userId, setMessages]);
+  }, [userId, currentDate, setMessages]);
 
-  return { sessionId, syncStatus };
+  return { syncStatus };
 }
+
+
 
 // Strip model's internal reasoning tags before displaying
 function cleanBotMessage(text: string): string {
@@ -136,7 +133,7 @@ export default function ChatPage() {
   const { allChats, preferences: globalPrefs, updatePreferences: updateContextPrefs, setLocalChat, isSettingsOpen, setIsSettingsOpen } = useData();
   const saveDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useRealtimeSync(user?.id, messages, setMessages);
+  useRealtimeSync(user?.id, currentDate, setMessages);
 
   useEffect(() => {
     if (isInitialized || !globalPrefs || !allChats) return;

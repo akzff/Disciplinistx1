@@ -54,14 +54,14 @@ export const cloudStorage = {
             .select('data')
             .eq('user_id', currentUserId)
             .eq('date', date)
-            .single();
+            .maybeSingle();
 
         if (error) {
             console.error('Cloud fetch chat error:', error);
             return null;
         }
 
-        return data.data as DailyChat;
+        return data ? data.data as DailyChat : null;
     },
 
     saveChat: async (date: string, chatData: Partial<DailyChat>, userId?: string, skipFetch: boolean = false): Promise<void> => {
@@ -106,14 +106,14 @@ export const cloudStorage = {
             .from('disciplinist_preferences')
             .select('data')
             .eq('user_id', currentUserId)
-            .single();
+            .maybeSingle();
 
         if (error) {
             console.error('Cloud fetch prefs error:', error);
             return null;
         }
 
-        return data.data as UserPreferences;
+        return data ? data.data as UserPreferences : null;
     },
 
     savePreferences: async (prefs: UserPreferences, userId?: string): Promise<void> => {
