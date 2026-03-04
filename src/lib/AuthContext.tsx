@@ -16,7 +16,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const { isLoaded, userId } = useAuth();
+    const { isLoaded, userId, signOut: clerkSignOut } = useAuth();
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState<{ id: string } | null>(null);
 
@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const signOut = async (): Promise<void> => {
         try {
-            // Clerk handles sign-out through their components
+            await clerkSignOut();
             triggerHaptic('light');
         } catch (err: unknown) {
             console.error('Sign out error:', err);

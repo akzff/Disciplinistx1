@@ -169,11 +169,17 @@ body {
 main {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100dvh;
   padding: 1.5rem 2rem;
   max-width: 1400px;
   margin: 0 auto;
   position: relative;
+}
+
+@media (max-width: 768px) {
+  main {
+    padding: 0;
+  }
 }
 
 .block-card {
@@ -216,6 +222,12 @@ main {
   -webkit-backdrop-filter: blur(24px);
 }
 
+@media (max-width: 768px) {
+  .chat-header {
+    padding: 1rem 1rem;
+  }
+}
+
 .chat-header::before {
   display: none;
 }
@@ -239,16 +251,7 @@ main {
   gap: 1.25rem;
 }
 
-@media (min-width: 769px) {
-  .nav-center-wrapper {
-    position: absolute;
-    top: 2rem;
-    /* Align with header center */
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 100;
-  }
-}
+
 
 .status-indicator {
   width: 10px;
@@ -1034,6 +1037,14 @@ textarea {
   .mobile-only {
     display: flex !important;
   }
+
+  .desktop-only {
+    display: none !important;
+  }
+}
+
+.mobile-only {
+  display: none !important;
 }
 
 /* Enhanced Auth System Styles */

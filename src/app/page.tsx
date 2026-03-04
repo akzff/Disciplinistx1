@@ -13,6 +13,69 @@ import { useAuthContext } from '@/lib/AuthContext';
 import { useData } from '@/lib/DataContext';
 import { useUser } from '@clerk/nextjs';
 import '@/lib/manualMigration';
+import { supabase } from '@/lib/supabase';
+
+// Custom hook for realtime sync
+function useRealtimeSync(
+  userId: string | undefined,
+  messages: Message[],
+  setMessages: React.Dispatch<React.SetStateAction<Message[]>>
+) {
+  const [sessionId] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('chat_session_id');
+      if (stored) return stored;
+      const newId = crypto.randomUUID();
+      localStorage.setItem('chat_session_id', newId);
+      return newId;
+    }
+    return '';
+  });
+  const [syncStatus, setSyncStatus] = useState<string>('INIT');
+
+  useEffect(() => {
+    if (!sessionId || !userId) return;
+
+    let isMounted = true;
+    const fetchExisting = async () => {
+      const { data } = await supabase
+        .from('ai_messages')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('session_id', sessionId)
+        .order('created_at', { ascending: true });
+      if (isMounted) {
+        setMessages((data as (Message & { id?: string })[]) ?? []);
+      }
+    };
+    fetchExisting();
+
+    const channel = supabase
+      .channel(`chat-${sessionId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'ai_messages',
+        filter: `session_id=eq.${sessionId}`,
+      }, (payload) => {
+        setMessages((prev) => {
+          const newMsg = payload.new as Message & { id?: string };
+          const exists = prev.some((m: Message & { id?: string }) => m.id === newMsg.id);
+          return exists ? prev : [...prev, newMsg];
+        });
+      })
+      .subscribe((status) => {
+        if (isMounted) setSyncStatus(status);
+      });
+
+    return () => {
+      isMounted = false;
+      supabase.removeChannel(channel);
+    };
+  }, [sessionId, userId, setMessages]);
+
+  return { sessionId, syncStatus };
+}
 
 // Strip model's internal reasoning tags before displaying
 function cleanBotMessage(text: string): string {
@@ -73,6 +136,8 @@ export default function ChatPage() {
   const { user } = useUser();
   const { allChats, preferences: globalPrefs, updatePreferences: updateContextPrefs, setLocalChat } = useData();
   const saveDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useRealtimeSync(user?.id, messages, setMessages);
 
   useEffect(() => {
     if (isInitialized || !globalPrefs || !allChats) return;
@@ -570,30 +635,13 @@ export default function ChatPage() {
             </div>
           </div>
 
+          <div className="desktop-only" style={{ flex: 2, display: 'flex', justifyContent: 'center' }}>
+            <NavigationBar />
+          </div>
+
           <div className="header-controls">
 
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <button
-                onClick={() => setShowMissions(true)}
-                className="header-action-btn mobile-hidden"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.1))',
-                  border: '1px solid rgba(139, 92, 246, 0.4)',
-                  color: '#d8b4fe',
-                  padding: '8px 18px',
-                  borderRadius: '100px',
-                  cursor: 'pointer',
-                  fontSize: '0.75rem',
-                  fontWeight: '800',
-                  letterSpacing: '0.05em',
-                  boxShadow: '0 4px 15px rgba(139, 92, 246, 0.15)',
-                  transition: 'all 0.3s',
-                  textTransform: 'uppercase'
-                }}
-              >
-                Tasks
-              </button>
-
               <button
                 onClick={() => setShowSettings(!showSettings)}
                 className="header-action-btn"
@@ -634,19 +682,23 @@ export default function ChatPage() {
             <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />
           )}
 
-          {sidebarOpen && (
-            <MissionChecklist
-              todos={todos}
-              dailies={dailies}
-              sidebarOpen={sidebarOpen}
-              onClose={() => setSidebarOpen(false)}
-              onToggleTodo={(id: string) => setTodos(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t))}
-              onToggleDaily={(id: string) => setDailies(prev => prev.map(d => d.id === id ? { ...d, completed: !d.completed } : d))}
-              onReorderTodo={(newTodos: DailyChat['todos']) => setTodos(newTodos)}
-              onReorderDaily={(newDailies: DailyChat['dailies']) => setDailies(newDailies)}
-              onStartLiveMission={startManualTask}
-            />
-          )}
+          <MissionChecklist
+            todos={todos}
+            dailies={dailies}
+            sidebarOpen={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+            onToggleTodo={(id: string) => setTodos(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t))}
+            onToggleDaily={(id: string) => setDailies(prev => prev.map(d => d.id === id ? { ...d, completed: !d.completed } : d))}
+            onReorderTodo={(newTodos: DailyChat['todos']) => setTodos(newTodos)}
+            onReorderDaily={(newDailies: DailyChat['dailies']) => setDailies(newDailies)}
+            onStartLiveMission={startManualTask}
+            onAddDaily={(text) => setDailies(prev => [...prev, { id: Date.now().toString(), text, completed: false }])}
+            onEditDaily={(id, text) => setDailies(prev => prev.map(d => d.id === id ? { ...d, text } : d))}
+            onDeleteDaily={(id) => setDailies(prev => prev.filter(d => d.id !== id))}
+            onAddTodo={(text) => setTodos(prev => [...prev, { id: Date.now().toString(), text, completed: false }])}
+            onEditTodo={(id, text) => setTodos(prev => prev.map(t => t.id === id ? { ...t, text } : t))}
+            onDeleteTodo={(id) => setTodos(prev => prev.filter(t => t.id !== id))}
+          />
 
           {isPreviousDayOpen && !hideOverlay && (
             <div className="overlay">
@@ -1056,8 +1108,28 @@ export default function ChatPage() {
           onClose={() => setShowMissions(false)}
         />
       )}
-      <div className="nav-center-wrapper">
+      <div className="nav-center-wrapper mobile-only">
         <NavigationBar />
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="nav-item"
+          style={{
+            padding: '8px 24px',
+            borderRadius: '100px',
+            fontSize: '0.75rem',
+            fontWeight: '800',
+            color: 'white',
+            background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.1))',
+            border: '1px solid rgba(139, 92, 246, 0.3)',
+            boxShadow: '0 4px 15px rgba(139, 92, 246, 0.15)',
+            letterSpacing: '0.06em',
+            cursor: 'pointer',
+            marginLeft: '6px',
+            flexShrink: 0
+          }}
+        >
+          TASKS
+        </button>
       </div>
     </main>
   );

@@ -17,13 +17,37 @@ interface MissionChecklistProps {
     onStartLiveMission: (name: string) => void;
     onAddExpense?: (amount: number, text: string) => void;
     onRemoveExpense?: (id: string) => void;
+    onAddDaily?: (text: string) => void;
+    onEditDaily?: (id: string, text: string) => void;
+    onDeleteDaily?: (id: string) => void;
+    onAddTodo?: (text: string) => void;
+    onEditTodo?: (id: string, text: string) => void;
+    onDeleteTodo?: (id: string) => void;
 }
 
-export default function MissionChecklist({ todos, dailies, sidebarOpen, onClose, onToggleTodo, onToggleDaily, onReorderTodo, onReorderDaily, onStartLiveMission }: MissionChecklistProps) {
+export default function MissionChecklist({ todos, dailies, sidebarOpen, onClose, onToggleTodo, onToggleDaily, onReorderTodo, onReorderDaily, onStartLiveMission, onAddDaily, onEditDaily, onDeleteDaily, onAddTodo, onEditTodo, onDeleteTodo }: MissionChecklistProps) {
 
     const [dragInfo, setDragInfo] = useState<{ index: number; type: 'DAILIES' | 'TODOS' } | null>(null);
     const [isStartingLive, setIsStartingLive] = useState(false);
     const [liveInput, setLiveInput] = useState('');
+    const [addingType, setAddingType] = useState<'DAILIES' | 'TODOS' | null>(null);
+    const [addingText, setAddingText] = useState('');
+    const [editingItem, setEditingItem] = useState<{ id: string; type: 'DAILIES' | 'TODOS'; text: string } | null>(null);
+
+    const handleSaveAdd = () => {
+        if (!addingText.trim()) return;
+        if (addingType === 'DAILIES' && onAddDaily) onAddDaily(addingText);
+        if (addingType === 'TODOS' && onAddTodo) onAddTodo(addingText);
+        setAddingType(null);
+        setAddingText('');
+    };
+
+    const handleSaveEdit = () => {
+        if (!editingItem?.text.trim()) return;
+        if (editingItem.type === 'DAILIES' && onEditDaily) onEditDaily(editingItem.id, editingItem.text);
+        if (editingItem.type === 'TODOS' && onEditTodo) onEditTodo(editingItem.id, editingItem.text);
+        setEditingItem(null);
+    };
 
     const handleDragStart = (e: React.DragEvent, index: number, type: 'DAILIES' | 'TODOS') => {
         setDragInfo({ index, type });
@@ -169,7 +193,23 @@ export default function MissionChecklist({ todos, dailies, sidebarOpen, onClose,
                 )}
             </section>
             <section>
-                <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: '#10b981', letterSpacing: '0.1em', marginBottom: '1rem', textTransform: 'uppercase' }}>Dailies</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: '#10b981', letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0 }}>Dailies</h3>
+                    <button onClick={() => { setAddingType('DAILIES'); setAddingText(''); }} style={{ background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', fontSize: '1.2rem', padding: '0 5px', fontWeight: 'bold' }}>+</button>
+                </div>
+                {addingType === 'DAILIES' && (
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                        <input
+                            autoFocus
+                            value={addingText}
+                            onChange={(e) => setAddingText(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') handleSaveAdd(); else if (e.key === 'Escape') setAddingType(null); }}
+                            placeholder="New daily..."
+                            style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '6px', color: 'white', padding: '8px', fontSize: '0.8rem', outline: 'none' }}
+                        />
+                        <button onClick={handleSaveAdd} style={{ background: 'var(--accent)', border: 'none', borderRadius: '6px', color: 'white', padding: '0 12px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer' }}>ADD</button>
+                    </div>
+                )}
                 <div
                     style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
                 >
@@ -200,15 +240,26 @@ export default function MissionChecklist({ todos, dailies, sidebarOpen, onClose,
                                     onChange={() => onToggleDaily(daily.id)}
                                     variant="daily"
                                 />
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                    <span style={{
-                                        fontSize: '0.85rem',
-                                        fontWeight: '600',
-                                        opacity: daily.completed ? 0.4 : 1,
-                                        textDecoration: daily.completed ? 'line-through' : 'none'
-                                    }}>
-                                        {daily.text}
-                                    </span>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
+                                    {editingItem?.id === daily.id ? (
+                                        <input
+                                            autoFocus
+                                            value={editingItem.text}
+                                            onChange={(e) => setEditingItem({ ...editingItem, text: e.target.value })}
+                                            onKeyDown={(e) => { if (e.key === 'Enter') handleSaveEdit(); else if (e.key === 'Escape') setEditingItem(null); }}
+                                            onBlur={handleSaveEdit}
+                                            style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px', color: 'white', padding: '4px 6px', fontSize: '0.85rem', width: '100%', outline: 'none' }}
+                                        />
+                                    ) : (
+                                        <span onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingItem({ id: daily.id, type: 'DAILIES', text: daily.text }); }} style={{
+                                            fontSize: '0.85rem',
+                                            fontWeight: '600',
+                                            opacity: daily.completed ? 0.4 : 1,
+                                            textDecoration: daily.completed ? 'line-through' : 'none'
+                                        }}>
+                                            {daily.text}
+                                        </span>
+                                    )}
                                     {(daily.recurringDays && daily.recurringDays.length > 0) && (
                                         <span style={{ fontSize: '0.65rem', fontWeight: '800', color: '#10b981', opacity: daily.completed ? 0.4 : 0.7 }}>🔁 {daily.recurringDays.join(', ')}</span>
                                     )}
@@ -217,13 +268,32 @@ export default function MissionChecklist({ todos, dailies, sidebarOpen, onClose,
                                     )}
                                 </div>
                             </label>
+                            {onDeleteDaily && (
+                                <button onClick={() => onDeleteDaily(daily.id)} className="delete-btn" style={{ background: 'none', border: 'none', color: '#ff4444', opacity: 0.6, cursor: 'pointer', fontSize: '1rem', padding: '0 4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                            )}
                         </div>
                     ))}
                 </div>
             </section>
 
             <section>
-                <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: 'var(--accent)', letterSpacing: '0.1em', marginBottom: '1rem', textTransform: 'uppercase' }}>To-Do&apos;s</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: 'var(--accent)', letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0 }}>To-Do&apos;s</h3>
+                    <button onClick={() => { setAddingType('TODOS'); setAddingText(''); }} style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '1.2rem', padding: '0 5px', fontWeight: 'bold' }}>+</button>
+                </div>
+                {addingType === 'TODOS' && (
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                        <input
+                            autoFocus
+                            value={addingText}
+                            onChange={(e) => setAddingText(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') handleSaveAdd(); else if (e.key === 'Escape') setAddingType(null); }}
+                            placeholder="New to-do..."
+                            style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(139, 92, 246, 0.3)', borderRadius: '6px', color: 'white', padding: '8px', fontSize: '0.8rem', outline: 'none' }}
+                        />
+                        <button onClick={handleSaveAdd} style={{ background: 'var(--accent)', border: 'none', borderRadius: '6px', color: 'white', padding: '0 12px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer' }}>ADD</button>
+                    </div>
+                )}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {todos.length === 0 && <p style={{ fontSize: '0.8rem', opacity: 0.3 }}>No to-dos added.</p>}
                     {todos.map((todo, idx) => (
@@ -252,15 +322,26 @@ export default function MissionChecklist({ todos, dailies, sidebarOpen, onClose,
                                     onChange={() => onToggleTodo(todo.id)}
                                     variant="todo"
                                 />
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                    <span style={{
-                                        fontSize: '0.85rem',
-                                        fontWeight: '600',
-                                        opacity: todo.completed ? 0.4 : 1,
-                                        textDecoration: todo.completed ? 'line-through' : 'none'
-                                    }}>
-                                        {todo.text}
-                                    </span>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
+                                    {editingItem?.id === todo.id ? (
+                                        <input
+                                            autoFocus
+                                            value={editingItem.text}
+                                            onChange={(e) => setEditingItem({ ...editingItem, text: e.target.value })}
+                                            onKeyDown={(e) => { if (e.key === 'Enter') handleSaveEdit(); else if (e.key === 'Escape') setEditingItem(null); }}
+                                            onBlur={handleSaveEdit}
+                                            style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px', color: 'white', padding: '4px 6px', fontSize: '0.85rem', width: '100%', outline: 'none' }}
+                                        />
+                                    ) : (
+                                        <span onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingItem({ id: todo.id, type: 'TODOS', text: todo.text }); }} style={{
+                                            fontSize: '0.85rem',
+                                            fontWeight: '600',
+                                            opacity: todo.completed ? 0.4 : 1,
+                                            textDecoration: todo.completed ? 'line-through' : 'none'
+                                        }}>
+                                            {todo.text}
+                                        </span>
+                                    )}
                                     {todo.isTimed && (
                                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                                             {todo.date && <span style={{ fontSize: '0.65rem', fontWeight: '800', opacity: todo.completed ? 0.4 : 0.6 }}>📅 {todo.date}</span>}
@@ -269,6 +350,9 @@ export default function MissionChecklist({ todos, dailies, sidebarOpen, onClose,
                                     )}
                                 </div>
                             </label>
+                            {onDeleteTodo && (
+                                <button onClick={() => onDeleteTodo(todo.id)} className="delete-btn" style={{ background: 'none', border: 'none', color: '#ff4444', opacity: 0.6, cursor: 'pointer', fontSize: '1rem', padding: '0 4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                            )}
                         </div>
                     ))}
                 </div>
