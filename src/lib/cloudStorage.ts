@@ -64,25 +64,26 @@ export const cloudStorage = {
         return data.data as DailyChat;
     },
 
-    saveChat: async (date: string, chatData: Partial<DailyChat>, userId?: string): Promise<void> => {
+    saveChat: async (date: string, chatData: Partial<DailyChat>, userId?: string, skipFetch: boolean = false): Promise<void> => {
         const currentUserId = userId;
         if (!currentUserId) return;
 
-        // LOAD EXISTING THEN MERGE (Critical for multi-device sync)
-        const existing = await cloudStorage.getChat(date, currentUserId);
-        const defaults: DailyChat = {
-            date,
-            messages: [],
-            status: 'OPEN',
-            activeTasks: [],
-            distractions: [],
-            todos: [],
-            dailies: [],
-            expenses: []
-        };
-
-        // Deep merge logic simplified: overwrite if present, defaults if new
-        const merged = { ...(existing || defaults), ...chatData };
+        let merged = chatData;
+        if (!skipFetch) {
+            // Upsert: load existing then merge
+            const existing = await cloudStorage.getChat(date, currentUserId);
+            const defaults: DailyChat = {
+                date,
+                messages: [],
+                status: 'OPEN',
+                activeTasks: [],
+                distractions: [],
+                todos: [],
+                dailies: [],
+                expenses: []
+            };
+            merged = { ...(existing || defaults), ...chatData };
+        }
 
         const { error } = await supabase
             .from('disciplinist_daily_chats')

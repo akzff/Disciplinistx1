@@ -10,7 +10,7 @@ interface DataContextType {
     allChats: Record<string, DailyChat>;
     preferences: UserPreferences | null;
     isLoadingData: boolean;
-    refreshData: () => Promise<{ success: boolean; message: string; syncedItems: number }>;
+    refreshData: () => Promise<void>;
     updatePreferences: (updates: Partial<UserPreferences>) => Promise<void>;
     setLocalChat: (date: string, chatData: Partial<DailyChat>) => void;
 }
@@ -31,49 +31,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
     });
     const [isLoadingData, setIsLoadingData] = useState(false); // No longer blocks by default
 
-    const refreshData = useCallback(async (): Promise<{ success: boolean; message: string; syncedItems: number }> => {
-        if (!userId) return { success: false, message: 'No user logged in', syncedItems: 0 };
+    const refreshData = useCallback(async () => {
+        if (!userId) return;
 
         try {
-            console.log("Manual sync starting for user:", userId);
+            console.log("Sudden data sync starting for user:", userId);
 
-            // Fetch in background - no limit for full sync
+            // Fetch in background
             const [fetchedChats, fetchedPrefs] = await Promise.all([
-                cloudStorage.getAllChats(userId),
+                cloudStorage.getAllChats(userId, 30),
                 cloudStorage.getPreferences(userId)
             ]) as [Record<string, DailyChat>, UserPreferences | null];
 
-            let syncedItems = 0;
-            const previousChatCount = Object.keys(allChats).length;
-
-            // UI Refresh: Merge cloud data into local state carefully
-            setAllChats(prev => {
-                const merged = { ...prev };
-                if (fetchedChats) {
-                    Object.entries(fetchedChats).forEach(([date, cloudChat]) => {
-                        const localChat = prev[date];
-                        if (!localChat) {
-                            merged[date] = cloudChat;
-                            syncedItems++;
-                        } else {
-                            // Merge logic: If cloud has more messages, it's likely newer from another device
-                            const cloudMsgCount = cloudChat.messages?.length || 0;
-                            const localMsgCount = localChat.messages?.length || 0;
-
-                            if (cloudMsgCount >= localMsgCount) {
-                                merged[date] = cloudChat;
-                                syncedItems++;
-                            }
-                        }
-                    });
-                }
-                return merged;
-            });
-            
-            if (fetchedPrefs) {
-                setPreferences(fetchedPrefs);
-                syncedItems++;
-            }
+            // Update state silently
+            if (fetchedChats) setAllChats(prev => ({ ...prev, ...fetchedChats }));
+            if (fetchedPrefs) setPreferences(fetchedPrefs);
 
             // Background migration
             setTimeout(async () => {
@@ -93,32 +65,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 }
             }, 100);
 
-            const finalChatCount = Object.keys(fetchedChats || {}).length;
-            const message = syncedItems > 0 
-                ? `Synced ${syncedItems} items (${finalChatCount} chats, preferences: ${!!fetchedPrefs})`
-                : 'No new data to sync';
-
-            return { success: true, message, syncedItems };
-
         } catch (err) {
-            console.error('Manual sync failed:', err);
-            return { success: false, message: `Sync failed: ${err instanceof Error ? err.message : 'Unknown error'}`, syncedItems: 0 };
+            console.error('Background sync failed:', err);
         }
-    }, [userId, preferences, allChats]);
+    }, [userId, preferences]);
 
     useEffect(() => {
-        if (!userId) return;
-
-        const syncInterval = setInterval(() => {
-            console.log("Periodic sync triggered for user:", userId);
-            refreshData();
-        }, 30000); // Sync every 30 seconds
-
-        return () => clearInterval(syncInterval);
-    }, [userId, refreshData]);
-
-    useEffect(() => {
-        setIsLoadingData(true);
         refreshData();
     }, [userId, refreshData]);
 

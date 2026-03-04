@@ -4,12 +4,12 @@ import { useState, useEffect } from 'react';
 import { storage, DailyChat, formatTime } from '@/lib/storage';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { NavigationBar } from '@/components/NavigationBar';
 import { cloudStorage } from '@/lib/cloudStorage';
 import { useData } from '@/lib/DataContext';
 import { useUser } from '@clerk/nextjs';
 import Image from 'next/image';
 import { EnhancedExportImport } from '@/lib/enhancedExportImport';
-import UniversalLayout from '@/components/UniversalLayout';
 
 
 interface ReportBlocks {
@@ -57,7 +57,7 @@ function parseBlocks(summary: string): ReportBlocks {
 }
 
 export default function RecordsPage() {
-    const { allChats, preferences, setLocalChat, refreshData } = useData();
+    const { allChats, preferences, setLocalChat } = useData();
     const { user } = useUser();
     const [selectedDate, setSelectedDate] = useState('');
     const [chat, setChat] = useState<DailyChat | null>(null);
@@ -187,26 +187,12 @@ IMPORTANT: For each completed task, check if there's an abandonmentReason. If pr
     const handleExport = async () => {
         setIsExporting(true);
         try {
-            console.log('Starting export from records page...');
-            console.log('Available chats count:', Object.keys(allChats).length);
-            console.log('Available dates:', Object.keys(allChats).sort());
-            
             const exportData = await EnhancedExportImport.exportAllData(user?.id);
             const filename = EnhancedExportImport.generateFilename();
-            
-            console.log('Export completed, downloading file:', filename);
             EnhancedExportImport.downloadFile(exportData, filename);
-            
-            // Show success message with details
-            const exportInfo = JSON.parse(exportData);
-            const totalDays = exportInfo.data.summary.totalChats;
-            const dateRange = exportInfo.data.summary.dateRange;
-            
-            alert(`✅ Export successful!\n\n📊 Export Summary:\n• Total days: ${totalDays}\n• Date range: ${dateRange.earliest} to ${dateRange.latest}\n• File: ${filename}`);
-            
         } catch (error) {
             console.error('Export failed:', error);
-            alert(`❌ Export failed: ${error instanceof Error ? error.message : String(error)}`);
+            alert(`Export failed: ${error instanceof Error ? error.message : String(error)}`);
         } finally {
             setIsExporting(false);
         }
@@ -296,7 +282,7 @@ This will ${user?.id ? 'sync to cloud storage' : 'import to local storage'}. Con
     ];
 
     return (
-        <UniversalLayout showTaskSidebar={false} showNavigationBar={true}>
+        <main>
             <div className="bg-mesh"></div>
 
             <div className="chat-container" style={{ maxHeight: '95vh', overflow: 'hidden' }}>
@@ -306,80 +292,9 @@ This will ${user?.id ? 'sync to cloud storage' : 'import to local storage'}. Con
                         <p style={{ fontSize: '0.7rem', opacity: 0.6 }}>PREVIOUS MISSIONS & AI INTELLIGENCE</p>
                     </div>
                     <div className="header-controls" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                        <button
-                            onClick={async () => {
-                                console.log("Manual sync triggered from records page");
-                                try {
-                                    setIsGenerating(true);
-                                    const result = await refreshData();
-                                    
-                                    // Force a refresh of the current chat data
-                                    if (selectedDate) {
-                                        const refreshedChat = allChats[selectedDate];
-                                        setChat(refreshedChat || null);
-                                    }
-                                    
-                                    if (result.success) {
-                                        alert(`✅ ${result.message}`);
-                                    } else {
-                                        alert(`❌ ${result.message}`);
-                                    }
-                                } catch (error) {
-                                    console.error('Sync failed:', error);
-                                    alert('❌ Sync failed. Please try again.');
-                                } finally {
-                                    setIsGenerating(false);
-                                }
-                            }}
-                            aria-label="Sync data across devices"
-                            title="Sync data across mobile and PC"
-                            style={{
-                                background: 'rgba(139, 92, 246, 0.2)',
-                                border: '1px solid var(--accent)',
-                                color: 'var(--accent)',
-                                padding: '8px 16px',
-                                borderRadius: '8px',
-                                fontSize: '0.8rem',
-                                fontWeight: '700',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                transition: 'all 0.2s ease',
-                                opacity: isGenerating ? 0.7 : 1
-                            }}
-                            onMouseEnter={(e) => {
-                                if (!isGenerating) {
-                                    e.currentTarget.style.background = 'rgba(139, 92, 246, 0.3)';
-                                    e.currentTarget.style.transform = 'translateY(-1px)';
-                                }
-                            }}
-                            onMouseLeave={(e) => {
-                                if (!isGenerating) {
-                                    e.currentTarget.style.background = 'rgba(139, 92, 246, 0.2)';
-                                    e.currentTarget.style.transform = 'translateY(0)';
-                                }
-                            }}
-                            disabled={isGenerating}
-                        >
-                            {isGenerating ? (
-                                <>
-                                    <div style={{
-                                        width: '12px',
-                                        height: '12px',
-                                        border: '2px solid var(--accent)',
-                                        borderTop: '2px solid transparent',
-                                        borderRadius: '50%',
-                                        animation: 'spin 1s linear infinite'
-                                    }}></div>
-                                    Syncing...
-                                </>
-                            ) : (
-                                <>
-                                    🔄 Sync Data
-                                </>
-                            )}
-                        </button>
+                        <div className="nav-center-wrapper">
+                            <NavigationBar />
+                        </div>
                     </div>
                 </header>
 
@@ -622,72 +537,44 @@ This will ${user?.id ? 'sync to cloud storage' : 'import to local storage'}. Con
                 .progress-fill { height: 100%; transition: width 0.6s ease; background: var(--accent); }
                 
                 .block-card {
-                    background: rgba(255,255,255,0.03);
+                    background: rgba(255,255,255,0.02);
                     border: 1px solid var(--border);
                     border-radius: 16px;
-                    padding: 1.5rem;
-                    position: relative;
-                    overflow: hidden;
-                }
-                .block-card.detailed {
-                    background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(34, 197, 94, 0.02));
-                    border: 1px solid rgba(16, 185, 129, 0.2);
-                }
-                .block-card.concise {
-                    background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(168, 85, 247, 0.02));
-                    border: 1px solid rgba(139, 92, 246, 0.2);
-                }
-                .block-card.refinement {
-                    background: linear-gradient(135deg, rgba(245, 158, 11, 0.05), rgba(251, 191, 36, 0.02));
-                    border: 1px solid rgba(245, 158, 11, 0.2);
-                }
-                .block-header {
+                    padding: 1.25rem;
+                    min-height: 280px;
                     display: flex;
-                    align-items: center;
-                    gap: 12px;
-                    margin-bottom: 1.5rem;
-                    padding-bottom: 1rem;
-                    border-bottom: 1px solid rgba(255,255,255,0.1);
+                    flex-direction: column;
                 }
-                .block-icon {
-                    font-size: 2rem;
+                .block-markdown {
+                    font-size: 0.82rem;
+                    line-height: 1.7;
+                    flex: 1;
                 }
-                .block-title {
-                    font-size: 0.9rem;
-                    font-weight: 800;
-                    color: white;
-                    letter-spacing: 0.1em;
-                    text-transform: uppercase;
+                .detailed-markdown {
+                    font-size: 0.88rem;
                 }
-                .block-subtitle {
-                    font-size: 0.65rem;
-                    opacity: 0.6;
-                    margin-top: 2px;
-                }
-                .block-content {
-                    font-size: 0.85rem;
-                    line-height: 1.6;
-                    color: rgba(255,255,255,0.8);
+                .detailed-markdown :global(li) {
+                    margin-bottom: 0.8rem !important;
+                    font-weight: 500;
+                    color: rgba(255,255,255,0.9);
                 }
                 .block-markdown p {
-                    margin: 0 0 1em 0;
-                }
-                .block-markdown p:last-child {
-                    margin-bottom: 0;
+                    opacity: 0.75;
+                    margin-bottom: 0.5rem;
                 }
                 .block-markdown ul, .block-markdown ol {
-                    margin: 0 0 1em 0;
-                    padding-left: 1.5em;
+                    padding-left: 1.2rem;
+                    margin: 0;
                 }
                 .block-markdown li {
-                    margin-bottom: 0.5em;
+                    opacity: 0.8;
+                    margin-bottom: 0.4rem;
+                    font-size: 0.8rem;
+                    line-height: 1.5;
                 }
-                .block-markdown code {
-                    background: rgba(255,255,255,0.1);
-                    padding: 2px 6px;
-                    border-radius: 4px;
-                    font-family: monospace;
-                    font-size: 0.8em;
+                .block-markdown strong {
+                    color: white;
+                    font-weight: 700;
                 }
                 .block-markdown h3, .block-markdown h4 {
                     font-size: 0.75rem;
@@ -697,6 +584,6 @@ This will ${user?.id ? 'sync to cloud storage' : 'import to local storage'}. Con
                     letter-spacing: 0.05em;
                 }
             `}</style>
-        </UniversalLayout>
+        </main>
     );
 }
