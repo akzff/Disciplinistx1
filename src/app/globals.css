@@ -1,13 +1,16 @@
 :root {
   --background: #050505;
   --foreground: #ffffff;
-  --accent: #8b5cf6;
-  --accent-glow: rgba(139, 92, 246, 0.4);
+  --accent: #d4a017;
+  --accent-glow: rgba(212, 160, 23, 0.4);
   --surface: rgba(255, 255, 255, 0.05);
   --border: rgba(255, 255, 255, 0.1);
   --glass: rgba(15, 15, 20, 0.7);
-  --ai-bubble: rgba(139, 92, 246, 0.15);
+  --ai-bubble: rgba(212, 160, 23, 0.08);
   --user-bubble: rgba(255, 255, 255, 0.1);
+  --gold: #d4a017;
+  --gold-light: #f5c842;
+  --gold-dark: #b8860b;
 }
 
 * {
@@ -21,22 +24,21 @@
 
 /* Custom scrollbar for Chrome, Safari and Edge */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 3px;
+  height: 3px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: #0a0a0a;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 10px;
-  transition: background 0.2s;
+  background: #d4a017;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--accent);
+  background: #f5c842;
 }
 
 .no-scrollbar::-webkit-scrollbar {
@@ -68,7 +70,7 @@ input[type="checkbox"]:checked {
 
 input[type="checkbox"]:hover {
   border-color: var(--accent);
-  background: rgba(139, 92, 246, 0.1);
+  background: rgba(212, 160, 23, 0.1);
 }
 
 input[type="checkbox"]:disabled {
@@ -105,12 +107,12 @@ input[type="checkbox"]:checked::after {
 .mission-check:checked {
   background: var(--accent);
   border-color: var(--accent);
-  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.3);
+  box-shadow: 0 0 0 4px rgba(212, 160, 23, 0.3);
 }
 
 .mission-check:hover {
   border-color: var(--accent);
-  background: rgba(139, 92, 246, 0.1);
+  background: rgba(212, 160, 23, 0.1);
   transform: translateY(-1px);
 }
 
@@ -579,17 +581,17 @@ main {
 
 .input-wrapper {
   flex: 1;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 0.8rem 1.2rem;
+  background: #0f0f0f;
+  border: 1px solid rgba(212, 160, 23, 0.15);
+  border-radius: 100px;
+  padding: 0.8rem 1.5rem;
   display: flex;
   transition: border-color 0.2s;
 }
 
 .input-wrapper:focus-within {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-glow);
+  border-color: rgba(212, 160, 23, 0.4);
+  box-shadow: 0 0 0 2px rgba(212, 160, 23, 0.1);
 }
 
 textarea {
@@ -606,27 +608,29 @@ textarea {
 }
 
 .send-button {
-  background: var(--accent);
+  background: #d4a017;
   border: none;
   width: 48px;
   height: 48px;
-  border-radius: 12px;
-  color: white;
+  border-radius: 50%;
+  color: black;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
-  box-shadow: 0 10px 15px -3px var(--accent-glow);
+  box-shadow: 0 0 16px rgba(212, 160, 23, 0.4);
+  flex-shrink: 0;
 }
 
 .send-button:hover:not(:disabled) {
+  background: #b8860b;
   transform: scale(1.05);
-  filter: brightness(1.1);
+  box-shadow: 0 0 24px rgba(212, 160, 23, 0.6);
 }
 
 .send-button:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
   box-shadow: none;
 }
@@ -741,7 +745,12 @@ textarea {
 
   .input-area {
     padding: 1rem;
+    padding-bottom: 7.5rem !important;
     gap: 0.5rem;
+  }
+
+  .chat-messages {
+    padding-bottom: 2rem !important;
   }
 
   .input-wrapper {
@@ -832,28 +841,28 @@ textarea {
 }
 
 .start-day-btn {
-  background: linear-gradient(135deg, var(--accent) 0%, #a855f7 100%);
-  color: white;
+  background: #d4a017;
+  color: black;
   border: none;
   padding: 1.25rem 3rem;
   border-radius: 100px;
   font-size: 1.25rem;
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: 0.1em;
   cursor: pointer;
-  box-shadow: 0 10px 30px var(--accent-glow), inset 0 0 15px rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 40px rgba(212, 160, 23, 0.5), inset 0 0 15px rgba(255, 255, 255, 0.1);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   text-transform: uppercase;
 }
 
 .start-day-btn:hover {
-  transform: translateY(-4px) scale(1.02);
-  box-shadow: 0 15px 40px var(--accent-glow);
-  filter: brightness(1.1);
+  transform: translateY(-4px) scale(1.03);
+  box-shadow: 0 0 60px rgba(212, 160, 23, 0.7);
+  background: #b8860b;
 }
 
 .active-tasks-card {
-  background: rgba(139, 92, 246, 0.1);
+  background: rgba(212, 160, 23, 0.08);
   border: 1px solid var(--accent);
   padding: 1rem;
   border-radius: 12px;
@@ -873,7 +882,7 @@ textarea {
   }
 
   50% {
-    border-color: #d8b4fe;
+    border-color: #f5c842;
     box-shadow: 0 0 15px var(--accent-glow);
   }
 }
@@ -1030,8 +1039,8 @@ textarea {
 
   .input-area {
     padding: 0.75rem 1rem;
-    padding-bottom: 6rem;
-    /* Extra padding to clear bottom navigation */
+    padding-bottom: 5.5rem !important;
+    /* Ensure it stays above bottom nav */
   }
 
   .mobile-only {
@@ -1228,5 +1237,76 @@ input {
   .auth-button {
     padding: 16px !important;
     font-size: 0.85rem !important;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   GOLD THEME UTILITIES
+═══════════════════════════════════════════ */
+
+/* Gold text gradient */
+.gold-text {
+  background: linear-gradient(135deg, #f5c842 0%, #d4a017 60%, #b8860b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Subtle gold grid overlay for content areas */
+.gold-grid {
+  background-image:
+    linear-gradient(rgba(212, 160, 23, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(212, 160, 23, 0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* Safe area padding for mobile bottom (iOS + Android) */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+
+.mb-safe {
+  margin-bottom: env(safe-area-inset-bottom, 16px);
+}
+
+/* Mobile nav tab gold hover */
+.nav-item:hover {
+  color: rgba(245, 200, 66, 0.8) !important;
+}
+
+/* ═══════════════════════════════════════════
+   MOBILE INPUT — PINNED TO BOTTOM
+═══════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* Pin the input area to the bottom of the viewport */
+  .input-area {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 50 !important;
+    padding: 0.75rem 1rem !important;
+    padding-bottom: calc(env(safe-area-inset-bottom, 16px) + 4.5rem) !important;
+    background: linear-gradient(to top, #0a0a0a 70%, rgba(10, 10, 10, 0.95) 85%, transparent 100%) !important;
+    gap: 0.75rem !important;
+  }
+
+  /* Extra bottom space on messages so last message stays above input */
+  .chat-messages {
+    padding-bottom: 9rem !important;
+  }
+
+  /* Round send button on mobile */
+  .send-button {
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 50% !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Make input fill remaining width */
+  .input-wrapper {
+    border-radius: 100px !important;
   }
 }

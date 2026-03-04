@@ -8,6 +8,7 @@ import { NavigationBar } from '@/components/NavigationBar';
 import { cloudStorage } from '@/lib/cloudStorage';
 import { useData } from '@/lib/DataContext';
 import { useUser } from '@clerk/nextjs';
+import { useAuthContext } from '@/lib/AuthContext';
 import Image from 'next/image';
 import { EnhancedExportImport } from '@/lib/enhancedExportImport';
 
@@ -57,8 +58,9 @@ function parseBlocks(summary: string): ReportBlocks {
 }
 
 export default function RecordsPage() {
-    const { allChats, preferences, setLocalChat } = useData();
+    const { allChats, preferences, setLocalChat, isSettingsOpen, setIsSettingsOpen } = useData();
     const { user } = useUser();
+    const { signOut } = useAuthContext();
     const [selectedDate, setSelectedDate] = useState('');
     const [chat, setChat] = useState<DailyChat | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -287,13 +289,53 @@ This will ${user?.id ? 'sync to cloud storage' : 'import to local storage'}. Con
 
             <div className="chat-container" style={{ maxHeight: '95vh', overflow: 'hidden' }}>
                 <header className="chat-header">
-                    <div style={{ flex: 1 }}>
-                        <h1 style={{ fontSize: '1.2rem', fontWeight: '900', letterSpacing: '0.1em', color: 'var(--accent)' }}>THE ARCHIVES</h1>
-                        <p style={{ fontSize: '0.7rem', opacity: 0.6 }}>PREVIOUS MISSIONS & AI INTELLIGENCE</p>
+                    <div className="chat-header__left" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <div
+                            className="status-indicator"
+                            style={{
+                                '--mood-color': selectedDate === storage.getCurrentDate() ? (chat?.botMood === 'DISAPPOINTED' ? '#ef4444' : chat?.botMood === 'HOPEFUL' ? '#10b981' : chat?.botMood === 'DOMINATOR' ? '#8b5cf6' : '#6b7280') : '#6b7280'
+                            } as React.CSSProperties}
+                        ></div>
+                        <h1 className="app-title">
+                            <span className="app-title__brand">DISCIPLINIST</span>
+                        </h1>
                     </div>
-                    <div className="header-controls" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                        <div className="nav-center-wrapper">
-                            <NavigationBar />
+
+                    <div className="nav-center-wrapper desktop-only" style={{ flex: 2, display: 'flex', justifyContent: 'center' }}>
+                        <NavigationBar />
+                    </div>
+
+                    <div className="header-controls" style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <button
+                                onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                                className="header-action-btn"
+                                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '10px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}
+                            >
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 1 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                                </svg>
+                            </button>
+
+                            <div className="profile-badge" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 10px', borderRadius: '100px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)' }}>
+                                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'linear-gradient(135deg, #8b5cf6, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: '900', boxShadow: '0 2px 10px rgba(139, 92, 246, 0.3)' }}>
+                                    {user?.primaryEmailAddress?.emailAddress?.charAt(0).toUpperCase() || 'U'}
+                                </div>
+                                <span className="mobile-hidden" style={{ fontSize: '0.7rem', opacity: 0.7, maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: '600' }}>{user?.primaryEmailAddress?.emailAddress || 'User'}</span>
+                                <button
+                                    onClick={signOut}
+                                    title="Sign Out"
+                                    className="logout-btn"
+                                    style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.8rem', padding: '0 2px', transition: 'color 0.2s' }}
+                                >
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                        <polyline points="16 17 21 12 16 7"></polyline>
+                                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </header>
@@ -310,14 +352,15 @@ This will ${user?.id ? 'sync to cloud storage' : 'import to local storage'}. Con
                                     style={{
                                         padding: '10px 12px',
                                         borderRadius: '8px',
-                                        background: selectedDate === date ? 'var(--accent)' : 'transparent',
-                                        border: 'none',
-                                        color: 'white',
+                                        background: selectedDate === date ? '#d4a017' : 'transparent',
+                                        border: selectedDate === date ? 'none' : '1px solid transparent',
+                                        color: selectedDate === date ? 'black' : 'white',
                                         textAlign: 'left',
                                         fontSize: '0.82rem',
-                                        fontWeight: selectedDate === date ? '800' : '500',
+                                        fontWeight: selectedDate === date ? '900' : '500',
                                         cursor: 'pointer',
-                                        transition: 'all 0.2s'
+                                        transition: 'all 0.2s',
+                                        boxShadow: selectedDate === date ? '0 0 12px rgba(212,160,23,0.3)' : 'none'
                                     }}
                                 >
                                     {date}{date === storage.getCurrentDate() && <span style={{ fontSize: '0.6rem', marginLeft: '6px', opacity: 0.7 }}>TODAY</span>}
@@ -333,13 +376,14 @@ This will ${user?.id ? 'sync to cloud storage' : 'import to local storage'}. Con
                                 style={{
                                     padding: '9px',
                                     borderRadius: '8px',
-                                    background: isExporting ? 'rgba(139, 92, 246, 0.2)' : 'rgba(255,255,255,0.05)',
-                                    border: '1px solid var(--border)',
-                                    color: 'white',
+                                    background: isExporting ? 'rgba(212, 160, 23, 0.15)' : 'transparent',
+                                    border: '1px solid rgba(212, 160, 23, 0.25)',
+                                    color: 'rgba(212, 160, 23, 0.7)',
                                     fontSize: '0.72rem',
                                     fontWeight: '800',
                                     cursor: isExporting ? 'not-allowed' : 'pointer',
-                                    opacity: isExporting ? 0.7 : 1
+                                    opacity: isExporting ? 0.7 : 1,
+                                    transition: 'all 0.2s'
                                 }}
                             >
                                 {isExporting ? '📤 EXPORTING...' : '📤 EXPORT'}
@@ -347,15 +391,16 @@ This will ${user?.id ? 'sync to cloud storage' : 'import to local storage'}. Con
                             <label style={{
                                 padding: '9px',
                                 borderRadius: '8px',
-                                background: isImporting ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255,255,255,0.05)',
-                                border: '1px solid var(--border)',
-                                color: 'white',
+                                background: isImporting ? 'rgba(239, 68, 68, 0.2)' : 'transparent',
+                                border: '1px solid rgba(212, 160, 23, 0.25)',
+                                color: 'rgba(212, 160, 23, 0.7)',
                                 fontSize: '0.72rem',
                                 fontWeight: '800',
                                 cursor: isImporting ? 'not-allowed' : 'pointer',
                                 textAlign: 'center',
                                 display: 'block',
-                                opacity: isImporting ? 0.7 : 1
+                                opacity: isImporting ? 0.7 : 1,
+                                transition: 'all 0.2s'
                             }}>
                                 <input
                                     type="file"
@@ -408,10 +453,10 @@ This will ${user?.id ? 'sync to cloud storage' : 'import to local storage'}. Con
                                         <span className="stat-value">{todoStats.completed}/{todoStats.total}</span>
                                         <div className="progress-bar"><div className="progress-fill" style={{ width: `${todoStats.percent}%` }}></div></div>
                                     </div>
-                                    <div className="stat-box" style={{ background: 'var(--accent)' }}>
-                                        <span className="stat-label" style={{ color: 'rgba(255,255,255,0.7)' }}>DISCIPLINE SCORE</span>
-                                        <span className="stat-value">{Math.round((todoStats.percent + dailyStats.percent) / 2)}%</span>
-                                        <p style={{ fontSize: '0.6rem', fontWeight: '800', opacity: 0.8 }}>OVERALL LEVEL</p>
+                                    <div className="stat-box" style={{ background: 'linear-gradient(135deg, #d4a017 0%, #8b6508 100%)' }}>
+                                        <span className="stat-label" style={{ color: 'rgba(0,0,0,0.6)' }}>DISCIPLINE SCORE</span>
+                                        <span className="stat-value" style={{ color: 'black' }}>{Math.round((todoStats.percent + dailyStats.percent) / 2)}%</span>
+                                        <p style={{ fontSize: '0.6rem', fontWeight: '900', color: 'rgba(0,0,0,0.5)' }}>OVERALL LEVEL</p>
                                     </div>
                                 </div>
 

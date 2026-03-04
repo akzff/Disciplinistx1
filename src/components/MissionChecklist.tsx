@@ -171,8 +171,8 @@ export default function MissionChecklist({ todos, dailies, sidebarOpen, onClose,
                         className="live-mission-trigger"
                         style={{
                             width: '100%',
-                            background: 'var(--accent)',
-                            color: 'white',
+                            background: '#d4a017',
+                            color: 'black',
                             border: 'none',
                             borderRadius: '12px',
                             padding: '10px',
@@ -184,7 +184,7 @@ export default function MissionChecklist({ todos, dailies, sidebarOpen, onClose,
                             alignItems: 'center',
                             justifyContent: 'center',
                             gap: '8px',
-                            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)',
+                            boxShadow: '0 0 24px rgba(212, 160, 23, 0.4)',
                             transition: 'all 0.2s'
                         }}
                     >
@@ -194,8 +194,8 @@ export default function MissionChecklist({ todos, dailies, sidebarOpen, onClose,
             </section>
             <section>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: '#10b981', letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0 }}>Dailies</h3>
-                    <button onClick={() => { setAddingType('DAILIES'); setAddingText(''); }} style={{ background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', fontSize: '1.2rem', padding: '0 5px', fontWeight: 'bold' }}>+</button>
+                    <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: '#d4a017', letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0 }}>Dailies</h3>
+                    <button onClick={() => { setAddingType('DAILIES'); setAddingText(''); }} style={{ background: 'none', border: 'none', color: '#d4a017', cursor: 'pointer', fontSize: '1.2rem', padding: '0 5px', fontWeight: 'bold' }}>+</button>
                 </div>
                 {addingType === 'DAILIES' && (
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
@@ -278,8 +278,8 @@ export default function MissionChecklist({ todos, dailies, sidebarOpen, onClose,
 
             <section>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: 'var(--accent)', letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0 }}>To-Do&apos;s</h3>
-                    <button onClick={() => { setAddingType('TODOS'); setAddingText(''); }} style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '1.2rem', padding: '0 5px', fontWeight: 'bold' }}>+</button>
+                    <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: '#d4a017', letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0 }}>To-Do&apos;s</h3>
+                    <button onClick={() => { setAddingType('TODOS'); setAddingText(''); }} style={{ background: 'none', border: 'none', color: '#d4a017', cursor: 'pointer', fontSize: '1.2rem', padding: '0 5px', fontWeight: 'bold' }}>+</button>
                 </div>
                 {addingType === 'TODOS' && (
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
@@ -368,7 +368,8 @@ export default function MissionChecklist({ todos, dailies, sidebarOpen, onClose,
         }
         .live-mission-trigger:hover {
           transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+          box-shadow: 0 6px 20px rgba(212, 160, 23, 0.6);
+          background: #b8860b;
         }
         .live-mission-trigger:active {
           transform: translateY(0);

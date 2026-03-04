@@ -13,6 +13,8 @@ interface DataContextType {
     refreshData: () => Promise<void>;
     updatePreferences: (updates: Partial<UserPreferences>) => Promise<void>;
     setLocalChat: (date: string, chatData: Partial<DailyChat>) => void;
+    isSettingsOpen: boolean;
+    setIsSettingsOpen: (open: boolean) => void;
 }
 
 const DataContext = createContext<DataContextType | null>(null);
@@ -30,6 +32,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         return null;
     });
     const [isLoadingData, setIsLoadingData] = useState(false); // No longer blocks by default
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
     const refreshData = useCallback(async () => {
         if (!userId) return;
@@ -94,7 +97,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }, []);
 
     return (
-        <DataContext.Provider value={{ allChats, preferences, isLoadingData, refreshData, updatePreferences, setLocalChat }}>
+        <DataContext.Provider value={{ allChats, preferences, isLoadingData, refreshData, updatePreferences, setLocalChat, isSettingsOpen, setIsSettingsOpen }}>
             {children}
         </DataContext.Provider>
     );

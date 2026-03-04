@@ -99,7 +99,6 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const [currentDate, setCurrentDate] = useState('');
   const [chatStatus, setChatStatus] = useState<'OPEN' | 'CLOSED'>('OPEN');
   const [isPreviousDayOpen, setIsPreviousDayOpen] = useState(false);
@@ -134,7 +133,7 @@ export default function ChatPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { signOut } = useAuthContext();
   const { user } = useUser();
-  const { allChats, preferences: globalPrefs, updatePreferences: updateContextPrefs, setLocalChat } = useData();
+  const { allChats, preferences: globalPrefs, updatePreferences: updateContextPrefs, setLocalChat, isSettingsOpen, setIsSettingsOpen } = useData();
   const saveDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useRealtimeSync(user?.id, messages, setMessages);
@@ -578,21 +577,7 @@ export default function ChatPage() {
     }
   }, []);
 
-  const updateProfile = (updates: Partial<UserPreferences>) => {
-    const newPrefs = { ...preferences, ...updates };
-    setPreferences(newPrefs);
-    updateContextPrefs(updates);
-  };
 
-  const handlePfpUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      updateProfile({ pfp: reader.result as string });
-    };
-    reader.readAsDataURL(file);
-  };
 
   return (
     <main>
@@ -635,15 +620,14 @@ export default function ChatPage() {
             </div>
           </div>
 
-          <div className="desktop-only" style={{ flex: 2, display: 'flex', justifyContent: 'center' }}>
+          <div className="nav-center-wrapper desktop-only" style={{ flex: 2, display: 'flex', justifyContent: 'center' }}>
             <NavigationBar />
           </div>
 
-          <div className="header-controls">
-
+          <div className="header-controls" style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <button
-                onClick={() => setShowSettings(!showSettings)}
+                onClick={() => setIsSettingsOpen(!isSettingsOpen)}
                 className="header-action-btn"
                 style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '10px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}
               >
@@ -879,118 +863,7 @@ export default function ChatPage() {
             })}
           </div>
 
-          {showSettings && (
-            <div className="settings-sidebar" style={{
-              width: '320px',
-              background: 'rgba(0,0,0,0.5)',
-              backdropFilter: 'blur(30px)',
-              borderLeft: '1px solid var(--border)',
-              padding: '1.5rem',
-              overflowY: 'auto',
-              animation: 'slideIn 0.3s ease-out',
-              zIndex: 10
-            }}>
-              <h3 style={{ fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1.5rem', opacity: 0.7 }}>Profile Settings</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                <div className="setting-item" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <div style={{ position: 'relative' }}>
-                    {preferences.pfp ? (
-                      <Image src={preferences.pfp} alt="pfp" style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover' }} width={60} height={60} />
-                    ) : (
-                      <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>👤</div>
-                    )}
-                    <label className="pfp-upload-btn" style={{ position: 'absolute', bottom: -5, right: -5, width: '24px', height: '24px', padding: 0, borderRadius: '50%' }}>
-                      <input type="file" hidden onChange={handlePfpUpload} accept="image/*" />
-                      <span style={{ fontSize: '0.6rem' }}>+</span>
-                    </label>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <input
-                      className="settings-input"
-                      style={{ marginBottom: '8px', fontSize: '1rem', fontWeight: '900' }}
-                      placeholder="Your Name"
-                      value={preferences.name}
-                      onChange={(e) => updateProfile({ name: e.target.value })}
-                    />
-                    <input
-                      className="settings-input"
-                      style={{ fontSize: '0.75rem', opacity: 0.6 }}
-                      placeholder="Add a bio..."
-                      value={preferences.bio}
-                      onChange={(e) => updateProfile({ bio: e.target.value })}
-                    />
-                  </div>
-                </div>
 
-
-
-                <div className="setting-item">
-                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--accent)', display: 'block', marginBottom: '8px' }}>MENTORING INTENSITY</label>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    {[1, 2, 3].map(lvl => (
-                      <button
-                        key={lvl}
-                        onClick={() => updateProfile({ mentorLevel: lvl as 1 | 2 | 3 })}
-                        style={{
-                          flex: 1,
-                          padding: '10px',
-                          borderRadius: '8px',
-                          border: '1px solid var(--border)',
-                          background: preferences.mentorLevel === lvl ? 'var(--accent)' : 'var(--surface)',
-                          color: 'white',
-                          fontSize: '0.7rem',
-                          fontWeight: '800',
-                          transition: 'all 0.2s',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        {lvl === 1 ? 'NOVICE' : lvl === 2 ? 'ELITE' : 'BEAST'}
-                      </button>
-                    ))}
-                  </div>
-                  <p style={{ fontSize: '0.65rem', opacity: 0.5, marginTop: '8px' }}>
-                    {preferences.mentorLevel === 1 && "Supportive coaching for starting out."}
-                    {preferences.mentorLevel === 2 && "Strict discipline for high performance."}
-                    {preferences.mentorLevel === 3 && "Ruthless intensity for the top 1%."}
-                  </p>
-                </div>
-
-                <div className="setting-item">
-                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--accent)', display: 'block', marginBottom: '8px' }}>DETAILED DAILY MODEL</label>
-                  <textarea
-                    className="settings-input"
-                    placeholder="Describe your perfect routine... (e.g., Deep work at 10am, Workout at 6pm)"
-                    style={{ minHeight: '100px' }}
-                    value={preferences.dailyModel}
-                    onChange={(e) => updateProfile({ dailyModel: e.target.value })}
-                  />
-                </div>
-
-                <div className="setting-item">
-                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#ffd700', display: 'block', marginBottom: '8px' }}>YOUR MOTIVATION</label>
-                  <textarea
-                    className="settings-input"
-                    placeholder="Why are you working this hard? (e.g., 'I want to be the best' or 'To prove my worth')"
-                    style={{ minHeight: '80px', borderLeft: '2px solid #ffd700' }}
-                    value={preferences.ambition}
-                    onChange={(e) => updateProfile({ ambition: e.target.value })}
-                  />
-                </div>
-                <div className="setting-item">
-                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#ff4444', display: 'block', marginBottom: '8px' }}>IDENTIFIED HABITS</label>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {preferences.habitNotes.length === 0 && <p style={{ fontSize: '0.7rem', opacity: 0.5 }}>No deep patterns found yet.</p>}
-                    {preferences.habitNotes.map(n => (
-                      <div key={n.id} style={{ fontSize: '0.75rem', padding: '8px', background: 'rgba(255,0,0,0.1)', borderRadius: '6px', border: '1px solid rgba(255,0,0,0.2)' }}>
-                        <p style={{ fontWeight: 'bold', color: '#ff8888' }}>{n.issue}</p>
-                        <p style={{ opacity: 0.6, fontSize: '0.65rem' }}>Detected on {n.date}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
         </div>
 
