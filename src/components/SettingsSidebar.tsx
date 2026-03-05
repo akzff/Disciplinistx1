@@ -5,6 +5,8 @@ import Image from 'next/image';
 import { UserPreferences } from '@/lib/storage';
 import { useData } from '@/lib/DataContext';
 import { useAuthContext } from '@/lib/AuthContext';
+import SyncMonitor from '@/components/settings/SyncMonitor';
+import DeleteAndSync from '@/components/settings/DeleteAndSync';
 
 // ─── Force Sync Step type ─────────────────────────
 type SyncStep = 'idle' | 'confirming' | 'wiping' | 'fetching' | 'done' | 'error';
@@ -317,6 +319,29 @@ export default function SettingsSidebar() {
                                 </div>
                             </div>
                         </div>
+
+                        {/* ════ CONNECTED DEVICES ════ */}
+                        {user?.id && (
+                            <div style={{ background: '#141414', border: '1px solid rgba(212,160,23,0.1)', borderRadius: '20px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                <div>
+                                    <p style={{ fontSize: '0.65rem', fontWeight: 800, color: '#d4a017', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '3px' }}>Connected Devices</p>
+                                    <p style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)' }}>All devices logged into your account right now</p>
+                                </div>
+                                <SyncMonitor userId={user.id} />
+                            </div>
+                        )}
+
+                        {/* ════ SYNC TROUBLESHOOT ════ */}
+                        {user?.id && (
+                            <div style={{ background: '#141414', border: '1px solid rgba(239,68,68,0.1)', borderRadius: '20px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                <div>
+                                    <p style={{ fontSize: '0.65rem', fontWeight: 800, color: 'rgba(239,68,68,0.7)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '3px' }}>Sync Troubleshoot</p>
+                                    <p style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)' }}>Use this if your data looks different across devices</p>
+                                </div>
+                                <DeleteAndSync userId={user.id} />
+                            </div>
+                        )}
+
                     </div>
 
                     {/* Sticky save button */}

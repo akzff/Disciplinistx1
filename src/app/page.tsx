@@ -126,17 +126,35 @@ export default function ChatPage() {
   const [now, setNow] = useState(Date.now());
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const { signOut } = useAuthContext();
   const { user } = useUser();
-  const { allChats, preferences: globalPrefs, updatePreferences: updateContextPrefs, setLocalChat, isSettingsOpen, setIsSettingsOpen } = useData();
+  const { allChats, preferences: globalPrefs, updatePreferences: updateContextPrefs, setLocalChat, isSettingsOpen, setIsSettingsOpen, isCloudSynced } = useData();
   const saveDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Always use the cloud-synced name so it matches across all devices
+  const displayName = globalPrefs?.name || preferences.name;
+
+  // Close profile dropdown when clicking outside
+  useEffect(() => {
+    if (!profileOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setProfileOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [profileOpen]);
 
   useRealtimeSync(user?.id, currentDate, setMessages);
 
   useEffect(() => {
-    if (isInitialized || !globalPrefs || !allChats) return;
+    // Wait for cloud data before initializing — prevents stale localStorage flash
+    if (isInitialized || !globalPrefs || !isCloudSynced) return;
     const init = async () => {
       setPreferences(globalPrefs);
 
@@ -203,7 +221,7 @@ export default function ChatPage() {
     };
     init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [globalPrefs, allChats, isInitialized]);
+  }, [globalPrefs, isCloudSynced, isInitialized]);
 
   // Debounced cloud save (500ms) to avoid hammering Supabase on every keystroke
   useEffect(() => {
@@ -319,11 +337,11 @@ export default function ChatPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: contextMessages,
-          model: preferences.selectedModel,
+          model: globalPrefs?.selectedModel || preferences.selectedModel,
           systemPrompt: `You are Disciplinist, a ruthless discipline coach.
-                    USER: ${preferences.name}
-                    AMBITION: ${preferences.ambition}
-                    VISION: ${preferences.dailyModel}
+                    USER: ${displayName}
+                    AMBITION: ${globalPrefs?.ambition || preferences.ambition}
+                    VISION: ${globalPrefs?.dailyModel || preferences.dailyModel}
                     STATUS_REPORT: 
                     - COMPLETED: ${completed}
                     - PENDING: ${pending}
@@ -336,12 +354,12 @@ export default function ChatPage() {
                     - Precision: LATENESS is a failure, but EARLY is excellent. Never critique early arrival.
                     - NO fake math/percentages.
                     - If user sends [Protocol Started], acknowledge it intensely and briefly (e.g., "Proceed.", "Do not fail.", "Acknowledged."). Do NOT say failed.
-                    - INTENSITY: ${preferences.mentorLevel === 1 ? 'Novice/Supportive' : preferences.mentorLevel === 2 ? 'Elite/Strict' : 'Beast/Ruthless'}.
+                    - INTENSITY: ${(globalPrefs?.mentorLevel || preferences.mentorLevel) === 1 ? 'Novice/Supportive' : (globalPrefs?.mentorLevel || preferences.mentorLevel) === 2 ? 'Elite/Strict' : 'Beast/Ruthless'}.
                     - Level 3 (Beast) requirement: Minimum words, maximum pressure, no mercy.
                     - Provide detailed, constructive feedback and guidance. Use bullet points when helpful.
                     - TRACK_EXPENSE: amount | description (Use if user mentions spending money)
                     - MOOD: 'HOPEFUL|DISAPPOINTED|DOMINATOR|NEUTRAL' (End with mood)
-                    - Level: ${preferences.mentorLevel} (1=Mid, 2=High, 3=Max)`
+                    - Level: ${globalPrefs?.mentorLevel || preferences.mentorLevel} (1=Mid, 2=High, 3=Max)`
         }),
       });
 
@@ -535,7 +553,7 @@ export default function ChatPage() {
   };
 
   const closePreviousDay = async () => {
-    await cloudStorage.closeChat(activeDay);
+    await cloudStorage.closeChat(activeDay, user?.id || undefined);
     setIsPreviousDayOpen(false);
     const today = storage.getCurrentDate();
     setActiveDay(today);
@@ -634,23 +652,45 @@ export default function ChatPage() {
                 </svg>
               </button>
 
-              <div className="profile-badge" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 10px', borderRadius: '100px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)' }}>
-                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'linear-gradient(135deg, #8b5cf6, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: '900', boxShadow: '0 2px 10px rgba(139, 92, 246, 0.3)' }}>
-                  {user?.primaryEmailAddress?.emailAddress?.charAt(0).toUpperCase() || 'U'}
-                </div>
-                <span className="mobile-hidden" style={{ fontSize: '0.7rem', opacity: 0.7, maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: '600' }}>{user?.primaryEmailAddress?.emailAddress || 'User'}</span>
+              {/* Profile dropdown */}
+              <div className="profile-dropdown-wrapper" ref={profileRef}>
                 <button
-                  onClick={signOut}
-                  title="Sign Out"
-                  className="logout-btn"
-                  style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.8rem', padding: '0 2px', transition: 'color 0.2s' }}
+                  onClick={() => setProfileOpen(v => !v)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                    padding: '4px 10px', borderRadius: '100px',
+                    background: profileOpen ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    backdropFilter: 'blur(10px)', cursor: 'pointer',
+                    transition: 'background 0.2s'
+                  }}
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                    <polyline points="16 17 21 12 16 7"></polyline>
-                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'linear-gradient(135deg, #8b5cf6, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: '900', boxShadow: '0 2px 10px rgba(139, 92, 246, 0.3)', flexShrink: 0 }}>
+                    {user?.primaryEmailAddress?.emailAddress?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                  <span className="mobile-hidden" style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: '700' }}>
+                    {displayName}
+                  </span>
+                  <svg className="mobile-hidden" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ transform: profileOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}>
+                    <polyline points="6 9 12 15 18 9"></polyline>
                   </svg>
                 </button>
+
+                {profileOpen && (
+                  <div className="profile-dropdown">
+                    <div className="profile-dropdown__header">
+                      <p className="profile-dropdown__email">{user?.primaryEmailAddress?.emailAddress}</p>
+                    </div>
+                    <button className="profile-dropdown__item" onClick={() => { setIsSettingsOpen(true); setProfileOpen(false); }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 1 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                      Settings
+                    </button>
+                    <button className="profile-dropdown__item profile-dropdown__item--danger" onClick={() => { setProfileOpen(false); signOut(); }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                      Sign Out
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -701,6 +741,15 @@ export default function ChatPage() {
           )}
 
           <div className="chat-messages" ref={scrollRef}>
+
+            {/* Loading spinner while waiting for cloud sync */}
+            {!isCloudSynced && (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '12px', opacity: 0.5 }}>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#d4a017', animation: 'dot-pulse 1.5s infinite' }} />
+                <p style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.4)' }}>SYNCING FROM CLOUD...</p>
+              </div>
+            )}
+
             {isInitialized && messages.length === 0 && (
               <div className="start-day-wrapper">
                 <div style={{ fontSize: '4rem', filter: 'drop-shadow(0 0 20px var(--accent-glow))' }}>🌅</div>
@@ -736,7 +785,7 @@ export default function ChatPage() {
                     <div className="message-meta">
                       {msg.role === 'user' ? (
                         <>
-                          <span className="profile-name">{preferences.name}</span>
+                          <span className="profile-name">{displayName}</span>
                           {preferences.pfp ? (
                             <Image src={preferences.pfp} alt="pfp" className="pfp-icon" width={32} height={32} />
                           ) : (
@@ -968,39 +1017,21 @@ export default function ChatPage() {
                   font-style: italic;
                 }
             `}</style>
-      {showMissions && (
-        <MissionsBoard
-          chat={{ date: activeDay, messages, status: chatStatus, activeTasks, distractions, botMood, todos, dailies, completedTasks }}
-          onUpdate={(updates) => {
-            if (updates.todos) setTodos(updates.todos);
-            if (updates.dailies) setDailies(updates.dailies);
-          }}
-          onClose={() => setShowMissions(false)}
-        />
-      )}
+      {
+        showMissions && (
+          <MissionsBoard
+            chat={{ date: activeDay, messages, status: chatStatus, activeTasks, distractions, botMood, todos, dailies, completedTasks }}
+            onUpdate={(updates) => {
+              if (updates.todos) setTodos(updates.todos);
+              if (updates.dailies) setDailies(updates.dailies);
+            }}
+            onClose={() => setShowMissions(false)}
+          />
+        )
+      }
       <div className="nav-center-wrapper mobile-only">
         <NavigationBar />
-        <button
-          onClick={() => setSidebarOpen(true)}
-          className="nav-item"
-          style={{
-            padding: '8px 24px',
-            borderRadius: '100px',
-            fontSize: '0.75rem',
-            fontWeight: '800',
-            color: 'white',
-            background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.1))',
-            border: '1px solid rgba(139, 92, 246, 0.3)',
-            boxShadow: '0 4px 15px rgba(139, 92, 246, 0.15)',
-            letterSpacing: '0.06em',
-            cursor: 'pointer',
-            marginLeft: '6px',
-            flexShrink: 0
-          }}
-        >
-          TASKS
-        </button>
       </div>
-    </main>
+    </main >
   );
 }

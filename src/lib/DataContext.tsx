@@ -5,11 +5,13 @@ import { DailyChat, UserPreferences, storage } from '@/lib/storage';
 import { cloudStorage } from '@/lib/cloudStorage';
 import { useAuth as useClerkAuth } from '@clerk/nextjs';
 import { useUser } from '@clerk/nextjs';
+import { useDeviceHeartbeat } from '@/hooks/useDeviceHeartbeat';
 
 interface DataContextType {
     allChats: Record<string, DailyChat>;
     preferences: UserPreferences | null;
     isLoadingData: boolean;
+    isCloudSynced: boolean;
     refreshData: () => Promise<void>;
     updatePreferences: (updates: Partial<UserPreferences>) => Promise<void>;
     setLocalChat: (date: string, chatData: Partial<DailyChat>) => void;
@@ -22,64 +24,110 @@ const DataContext = createContext<DataContextType | null>(null);
 export function DataProvider({ children }: { children: ReactNode }) {
     const { userId } = useClerkAuth();
     const { user } = useUser();
-    // Sudden loading: Start with local storage immediately if available
-    const [allChats, setAllChats] = useState<Record<string, DailyChat>>(() => {
-        if (typeof window !== 'undefined') return storage.getChats();
-        return {};
-    });
-    const [preferences, setPreferences] = useState<UserPreferences | null>(() => {
-        if (typeof window !== 'undefined') return storage.getUserPreferences();
-        return null;
-    });
-    const [isLoadingData, setIsLoadingData] = useState(false); // No longer blocks by default
+
+    // Start EMPTY — cloud is the source of truth.
+    // localStorage is only a write-through cache, never the initial source.
+    const [allChats, setAllChats] = useState<Record<string, DailyChat>>({});
+    const [preferences, setPreferences] = useState<UserPreferences | null>(null);
+    const [isLoadingData, setIsLoadingData] = useState(false);
+    const [isCloudSynced, setIsCloudSynced] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+    // Run device heartbeat on every page automatically
+    useDeviceHeartbeat(user?.id);
 
     const refreshData = useCallback(async () => {
         if (!userId) return;
 
         try {
-            console.log("Sudden data sync starting for user:", userId);
+            console.log('☁️ Cloud-first sync starting for user:', userId);
+            setIsCloudSynced(false);
 
-            // Fetch in background
+            // Step 1: Run one-time migration of old localStorage data up to cloud
+            const migrationKey = `disciplinist_migrated_v2_${userId}`;
+            if (typeof window !== 'undefined' && !localStorage.getItem(migrationKey)) {
+                console.log('🔄 Running one-time local→cloud migration...');
+                const localChats = storage.getChats();
+                const hasLocalData = Object.keys(localChats).length > 0;
+                if (hasLocalData) {
+                    await Promise.all(
+                        Object.entries(localChats).map(([date, chat]) =>
+                            cloudStorage.saveChat(date, chat, userId)
+                        )
+                    );
+                    console.log(`✅ Migrated ${Object.keys(localChats).length} local chats to cloud`);
+                }
+                const localPrefs = storage.getUserPreferences();
+                if (localPrefs?.name && localPrefs.name !== 'Disciple') {
+                    await cloudStorage.savePreferences(localPrefs, userId);
+                    console.log('✅ Migrated local preferences to cloud');
+                }
+                localStorage.setItem(migrationKey, 'true');
+            }
+
+            // Step 2: Fetch cloud data — ALWAYS. This is the source of truth.
             const [fetchedChats, fetchedPrefs] = await Promise.all([
                 cloudStorage.getAllChats(userId, 30),
                 cloudStorage.getPreferences(userId)
             ]) as [Record<string, DailyChat>, UserPreferences | null];
 
-            // Update state silently
-            if (fetchedChats) setAllChats(prev => ({ ...prev, ...fetchedChats }));
-            if (fetchedPrefs) setPreferences(fetchedPrefs);
-
-            // Background migration
-            setTimeout(async () => {
+            // Step 3: Cloud data WINS — replace state entirely (not merge into local)
+            if (fetchedChats && Object.keys(fetchedChats).length > 0) {
+                setAllChats(fetchedChats);
+                // Write-through cache: update localStorage so next load is fast
+                Object.entries(fetchedChats).forEach(([date, chat]) => {
+                    storage.saveChat(date, chat);
+                });
+                console.log(`✅ Loaded ${Object.keys(fetchedChats).length} chats from CLOUD`);
+            } else {
+                // Cloud empty — load from local as fallback, push up to cloud
                 const localChats = storage.getChats();
-                const hasLocalData = Object.keys(localChats).length > 0;
-                const hasCloudData = fetchedChats && Object.keys(fetchedChats).length > 0;
-
-                if (hasLocalData && !hasCloudData) {
-                    const migrationPromises = Object.entries(localChats).map(([date, lChat]) =>
-                        cloudStorage.saveChat(date, lChat, userId)
+                if (Object.keys(localChats).length > 0) {
+                    setAllChats(localChats);
+                    // Push local up to cloud silently
+                    Promise.all(
+                        Object.entries(localChats).map(([date, chat]) =>
+                            cloudStorage.saveChat(date, chat, userId)
+                        )
                     );
-                    await Promise.all(migrationPromises);
+                    console.log('📤 No cloud data — pushed local data to cloud');
                 }
+            }
 
-                if (!fetchedPrefs && preferences) {
-                    cloudStorage.savePreferences(preferences, userId);
-                }
-            }, 100);
+            if (fetchedPrefs) {
+                setPreferences(fetchedPrefs);
+                storage.saveUserPreferences(fetchedPrefs);
+                console.log('✅ Preferences loaded from CLOUD');
+            } else {
+                // Fallback to local prefs
+                const localPrefs = storage.getUserPreferences();
+                setPreferences(localPrefs);
+            }
 
         } catch (err) {
-            console.error('Background sync failed:', err);
+            console.error('Cloud sync failed — falling back to localStorage:', err);
+            // Only use localStorage when cloud is genuinely unreachable
+            const localChats = storage.getChats();
+            const localPrefs = storage.getUserPreferences();
+            if (Object.keys(localChats).length > 0) setAllChats(localChats);
+            setPreferences(localPrefs);
+        } finally {
+            // Mark cloud sync complete either way — page can now initialize
+            setIsCloudSynced(true);
         }
-    }, [userId, preferences]);
+    }, [userId]);
 
     useEffect(() => {
-        refreshData();
+        if (userId) {
+            refreshData();
+        }
     }, [userId, refreshData]);
 
     const updatePreferences = async (updates: Partial<UserPreferences>) => {
-        const newPrefs = { ...(preferences || storage.getUserPreferences()), ...updates };
+        const base = preferences || storage.getUserPreferences();
+        const newPrefs = { ...base, ...updates };
         setPreferences(newPrefs);
+        storage.saveUserPreferences(newPrefs);
         if (userId) {
             await cloudStorage.savePreferences(newPrefs, userId);
         }
@@ -97,7 +145,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }, []);
 
     return (
-        <DataContext.Provider value={{ allChats, preferences, isLoadingData, refreshData, updatePreferences, setLocalChat, isSettingsOpen, setIsSettingsOpen }}>
+        <DataContext.Provider value={{
+            allChats,
+            preferences,
+            isLoadingData,
+            isCloudSynced,
+            refreshData,
+            updatePreferences,
+            setLocalChat,
+            isSettingsOpen,
+            setIsSettingsOpen
+        }}>
             {children}
         </DataContext.Provider>
     );
