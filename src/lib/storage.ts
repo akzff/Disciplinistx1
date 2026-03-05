@@ -86,20 +86,18 @@ export interface UserPreferences {
     selectedModel: string;
 }
 
-const STORAGE_KEYS = {
-    CHATS: 'disciplinist_chats',
-    PREFERENCES: 'disciplinist_preferences',
-};
+const getChatsKey = (userId?: string) => userId ? `disciplinist_chats_${userId}` : 'disciplinist_chats';
+const getPrefsKey = (userId?: string) => userId ? `disciplinist_preferences_${userId}` : 'disciplinist_preferences';
 
 export const storage = {
-    getChats: (): Record<string, DailyChat> => {
+    getChats: (userId?: string): Record<string, DailyChat> => {
         if (typeof window === 'undefined') return {};
-        const stored = localStorage.getItem(STORAGE_KEYS.CHATS);
+        const stored = localStorage.getItem(getChatsKey(userId));
         return stored ? JSON.parse(stored) : {};
     },
 
-    getChat: (date: string): DailyChat | null => {
-        const chats = storage.getChats();
+    getChat: (date: string, userId?: string): DailyChat | null => {
+        const chats = storage.getChats(userId);
         const chat = chats[date];
         if (!chat) return null;
 
@@ -116,18 +114,18 @@ export const storage = {
         return { ...defaults, ...chat } as DailyChat;
     },
 
-    saveChat: (date: string, chatData: Partial<DailyChat>) => {
-        const chats = storage.getChats();
+    saveChat: (date: string, chatData: Partial<DailyChat>, userId?: string) => {
+        const chats = storage.getChats(userId);
         const existing = chats[date] || { date, messages: [], status: 'OPEN', activeTasks: [], distractions: [], todos: [], dailies: [] };
         chats[date] = { ...existing, ...chatData };
-        localStorage.setItem(STORAGE_KEYS.CHATS, JSON.stringify(chats));
+        localStorage.setItem(getChatsKey(userId), JSON.stringify(chats));
     },
 
-    closeChat: (date: string) => {
-        storage.saveChat(date, { status: 'CLOSED' });
+    closeChat: (date: string, userId?: string) => {
+        storage.saveChat(date, { status: 'CLOSED' }, userId);
     },
 
-    getUserPreferences: (): UserPreferences => {
+    getUserPreferences: (userId?: string): UserPreferences => {
         const defaults: UserPreferences = {
             name: 'Disciple',
             bio: '',
@@ -140,12 +138,12 @@ export const storage = {
             selectedModel: 'qwen/qwen3-32b'
         };
         if (typeof window === 'undefined') return defaults;
-        const stored = localStorage.getItem(STORAGE_KEYS.PREFERENCES);
+        const stored = localStorage.getItem(getPrefsKey(userId));
         return stored ? { ...defaults, ...JSON.parse(stored) } : defaults;
     },
 
-    saveUserPreferences: (prefs: UserPreferences) => {
-        localStorage.setItem(STORAGE_KEYS.PREFERENCES, JSON.stringify(prefs));
+    saveUserPreferences: (prefs: UserPreferences, userId?: string) => {
+        localStorage.setItem(getPrefsKey(userId), JSON.stringify(prefs));
     },
 
     getPreviousDay: (dateString: string): string => {
@@ -158,8 +156,8 @@ export const storage = {
         return new Date().toISOString().split('T')[0];
     },
 
-    initializeNewDay: (today: string): DailyChat => {
-        const chats = storage.getChats();
+    initializeNewDay: (today: string, userId?: string): DailyChat => {
+        const chats = storage.getChats(userId);
         if (chats[today]) return chats[today];
 
         const dates = Object.keys(chats).sort().reverse();
@@ -176,13 +174,13 @@ export const storage = {
             dailies: lastChat ? lastChat.dailies.map(d => ({ ...d, completed: false })) : []
         };
 
-        storage.saveChat(today, newChat);
+        storage.saveChat(today, newChat, userId);
         return newChat;
     },
 
-    exportData: () => {
-        const chats = localStorage.getItem(STORAGE_KEYS.CHATS);
-        const prefs = localStorage.getItem(STORAGE_KEYS.PREFERENCES);
+    exportData: (userId?: string) => {
+        const chats = localStorage.getItem(getChatsKey(userId));
+        const prefs = localStorage.getItem(getPrefsKey(userId));
         return JSON.stringify({
             chats: chats ? JSON.parse(chats) : {},
             preferences: prefs ? JSON.parse(prefs) : {},
@@ -190,14 +188,14 @@ export const storage = {
         }, null, 2);
     },
 
-    importData: (jsonStr: string) => {
+    importData: (jsonStr: string, userId?: string) => {
         try {
             const data = JSON.parse(jsonStr);
             if (data.chats) {
-                localStorage.setItem(STORAGE_KEYS.CHATS, JSON.stringify(data.chats));
+                localStorage.setItem(getChatsKey(userId), JSON.stringify(data.chats));
             }
             if (data.preferences) {
-                localStorage.setItem(STORAGE_KEYS.PREFERENCES, JSON.stringify(data.preferences));
+                localStorage.setItem(getPrefsKey(userId), JSON.stringify(data.preferences));
             }
             return true;
         } catch (e) {

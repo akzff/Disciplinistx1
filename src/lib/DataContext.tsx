@@ -47,7 +47,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             const migrationKey = `disciplinist_migrated_v2_${userId}`;
             if (typeof window !== 'undefined' && !localStorage.getItem(migrationKey)) {
                 console.log('🔄 Running one-time local→cloud migration...');
-                const localChats = storage.getChats();
+                const localChats = storage.getChats(); // No userId to get old data
                 const hasLocalData = Object.keys(localChats).length > 0;
                 if (hasLocalData) {
                     await Promise.all(
@@ -76,12 +76,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 setAllChats(fetchedChats);
                 // Write-through cache: update localStorage so next load is fast
                 Object.entries(fetchedChats).forEach(([date, chat]) => {
-                    storage.saveChat(date, chat);
+                    storage.saveChat(date, chat, userId);
                 });
                 console.log(`✅ Loaded ${Object.keys(fetchedChats).length} chats from CLOUD`);
             } else {
                 // Cloud empty — load from local as fallback, push up to cloud
-                const localChats = storage.getChats();
+                const localChats = storage.getChats(userId);
                 if (Object.keys(localChats).length > 0) {
                     setAllChats(localChats);
                     // Push local up to cloud silently
@@ -96,19 +96,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
             if (fetchedPrefs) {
                 setPreferences(fetchedPrefs);
-                storage.saveUserPreferences(fetchedPrefs);
+                storage.saveUserPreferences(fetchedPrefs, userId);
                 console.log('✅ Preferences loaded from CLOUD');
             } else {
                 // Fallback to local prefs
-                const localPrefs = storage.getUserPreferences();
+                const localPrefs = storage.getUserPreferences(userId);
                 setPreferences(localPrefs);
             }
 
         } catch (err) {
             console.error('Cloud sync failed — falling back to localStorage:', err);
             // Only use localStorage when cloud is genuinely unreachable
-            const localChats = storage.getChats();
-            const localPrefs = storage.getUserPreferences();
+            const localChats = storage.getChats(userId);
+            const localPrefs = storage.getUserPreferences(userId);
             if (Object.keys(localChats).length > 0) setAllChats(localChats);
             setPreferences(localPrefs);
         } finally {
@@ -124,10 +124,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }, [userId, refreshData]);
 
     const updatePreferences = async (updates: Partial<UserPreferences>) => {
-        const base = preferences || storage.getUserPreferences();
+        const base = preferences || storage.getUserPreferences(userId || undefined);
         const newPrefs = { ...base, ...updates };
         setPreferences(newPrefs);
-        storage.saveUserPreferences(newPrefs);
+        storage.saveUserPreferences(newPrefs, userId || undefined);
         if (userId) {
             await cloudStorage.savePreferences(newPrefs, userId);
         }
@@ -139,10 +139,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 ...prev,
                 [date]: { ...prev[date], ...chatData } as DailyChat
             };
-            storage.saveChat(date, chatData);
+            storage.saveChat(date, chatData, userId || undefined);
             return updated;
         });
-    }, []);
+    }, [userId]);
 
     return (
         <DataContext.Provider value={{

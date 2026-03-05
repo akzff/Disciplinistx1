@@ -22,7 +22,18 @@ import { supabase } from '@/lib/supabase';
 function useRealtimeSync(
   userId: string | undefined,
   currentDate: string,
-  setMessages: React.Dispatch<React.SetStateAction<Message[]>>
+  setters: {
+    setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
+    setChatStatus: React.Dispatch<React.SetStateAction<'OPEN' | 'CLOSED'>>;
+    setActiveTasks: React.Dispatch<React.SetStateAction<ActiveTask[]>>;
+    setDistractions: React.Dispatch<React.SetStateAction<string[]>>;
+    setBotMood: React.Dispatch<React.SetStateAction<'NEUTRAL' | 'DISAPPOINTED' | 'HOPEFUL' | 'DOMINATOR'>>;
+    setTodos: React.Dispatch<React.SetStateAction<DailyChat['todos']>>;
+    setDailies: React.Dispatch<React.SetStateAction<DailyChat['dailies']>>;
+    setCompletedTasks: React.Dispatch<React.SetStateAction<DailyChat['completedTasks']>>;
+    setExpenses: React.Dispatch<React.SetStateAction<DailyChat['expenses']>>;
+    setLocalChat: (date: string, chatData: Partial<DailyChat>) => void;
+  }
 ) {
   const [syncStatus, setSyncStatus] = useState<'LIVE' | 'CONNECTING' | 'LOCAL'>('LOCAL');
 
@@ -46,17 +57,23 @@ function useRealtimeSync(
           // Only apply if this update is for today's date
           if (updated.date !== currentDate) return;
 
-          const incomingMessages: Message[] = updated.data?.messages ?? [];
-          if (incomingMessages.length === 0) return;
+          const incomingData = updated.data;
 
-          setMessages((prev) => {
-            // Merge: keep all local messages, append any incoming messages
-            // that are beyond what we already have (keyed by position/index)
-            if (incomingMessages.length <= prev.length) return prev;
-            // New messages arrived from another device — take the full array
-            // (it includes everything: local + remote additions)
-            return incomingMessages;
-          });
+          console.log('🔄 Chat updated from another device:', incomingData);
+
+          // Update React state
+          setters.setMessages(incomingData.messages ?? []);
+          setters.setChatStatus(incomingData.status ?? 'OPEN');
+          if (incomingData.activeTasks) setters.setActiveTasks(incomingData.activeTasks);
+          if (incomingData.distractions) setters.setDistractions(incomingData.distractions);
+          if (incomingData.botMood) setters.setBotMood(incomingData.botMood);
+          if (incomingData.todos) setters.setTodos(incomingData.todos);
+          if (incomingData.dailies) setters.setDailies(incomingData.dailies);
+          if (incomingData.completedTasks) setters.setCompletedTasks(incomingData.completedTasks);
+          if (incomingData.expenses) setters.setExpenses(incomingData.expenses);
+
+          // Update local cache
+          setters.setLocalChat(currentDate, incomingData);
         }
       )
       .subscribe((status) => {
@@ -67,7 +84,7 @@ function useRealtimeSync(
       supabase.removeChannel(channel);
       setSyncStatus('LOCAL');
     };
-  }, [userId, currentDate, setMessages]);
+  }, [userId, currentDate, setters]);
 
   return { syncStatus };
 }
@@ -150,7 +167,18 @@ export default function ChatPage() {
     return () => document.removeEventListener('mousedown', handler);
   }, [profileOpen]);
 
-  useRealtimeSync(user?.id, currentDate, setMessages);
+  useRealtimeSync(user?.id, activeDay || currentDate, {
+    setMessages,
+    setChatStatus,
+    setActiveTasks,
+    setDistractions,
+    setBotMood,
+    setTodos,
+    setDailies,
+    setCompletedTasks,
+    setExpenses,
+    setLocalChat
+  });
 
   useEffect(() => {
     // Wait for cloud data before initializing — prevents stale localStorage flash
@@ -223,7 +251,7 @@ export default function ChatPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [globalPrefs, isCloudSynced, isInitialized]);
 
-  // Debounced cloud save (500ms) to avoid hammering Supabase on every keystroke
+  // Debounced cloud save (2000ms) to avoid hammering Supabase on every keystroke
   useEffect(() => {
     if (!activeDay || !isInitialized) return;
     if (saveDebounce.current) clearTimeout(saveDebounce.current);
@@ -231,7 +259,7 @@ export default function ChatPage() {
       const chatD = { messages, status: chatStatus, activeTasks, distractions, botMood, todos, dailies, completedTasks, expenses };
       cloudStorage.saveChat(activeDay, chatD, user?.id || undefined, true);
       setLocalChat(activeDay, chatD as DailyChat);
-    }, 500);
+    }, 2000);
     return () => { if (saveDebounce.current) clearTimeout(saveDebounce.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, chatStatus, activeDay, activeTasks, distractions, botMood, todos, dailies, completedTasks, expenses, isInitialized]);
