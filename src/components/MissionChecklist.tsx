@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { DailyChat } from '@/lib/storage';
-import { MissionCheckbox } from '@/components/Checkbox';
 
 interface MissionChecklistProps {
     todos: DailyChat['todos'];
@@ -25,12 +24,223 @@ interface MissionChecklistProps {
     onDeleteTodo?: (id: string) => void;
 }
 
+// ────────────────────────────────────────────────────────────────
+// Sub-components — all inline styles, zero Tailwind dependency
+// ────────────────────────────────────────────────────────────────
+
+function SectionHeader({
+    dot, label, completed, total, countLabel = '', onAdd
+}: {
+    dot: string; label: string; completed: number; total: number;
+    countLabel?: string; onAdd: () => void;
+}) {
+    const count = countLabel === 'left' ? total - completed : completed;
+    return (
+        <div style={{
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 16px',
+            borderBottom: '1px solid rgba(255,255,255,0.05)'
+        }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{
+                    width: '6px', height: '6px',
+                    borderRadius: '50%',
+                    backgroundColor: dot,
+                    boxShadow: `0 0 6px ${dot}`,
+                    flexShrink: 0,
+                }} />
+                <span style={{
+                    color: 'rgba(255,255,255,0.7)',
+                    fontWeight: 900,
+                    fontSize: '11px',
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase' as const,
+                }}>
+                    {label}
+                </span>
+                {total > 0 && (
+                    <span style={{
+                        fontSize: '10px',
+                        background: 'rgba(212,160,23,0.12)',
+                        color: '#d4a017',
+                        border: '1px solid rgba(212,160,23,0.25)',
+                        padding: '2px 6px',
+                        borderRadius: '20px',
+                        fontWeight: 700,
+                    }}>
+                        {count}{countLabel ? ` ${countLabel}` : `/${total}`}
+                    </span>
+                )}
+            </div>
+            <button
+                onClick={onAdd}
+                style={{
+                    width: '24px', height: '24px',
+                    borderRadius: '8px',
+                    background: 'rgba(212,160,23,0.1)',
+                    border: '1px solid rgba(212,160,23,0.2)',
+                    color: '#d4a017',
+                    fontSize: '18px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    lineHeight: 1,
+                    flexShrink: 0,
+                }}>
+                +
+            </button>
+        </div>
+    );
+}
+
+function CheckItem({
+    label, checked, onToggle, onEdit, onDelete, accentColor = '#34d399'
+}: {
+    label: string; checked: boolean; onToggle: () => void;
+    onEdit?: () => void; onDelete?: () => void; accentColor?: string;
+}) {
+    const [hovered, setHovered] = useState(false);
+    return (
+        <div
+            onClick={onToggle}
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+            style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '8px 10px',
+                borderRadius: '10px',
+                cursor: 'pointer',
+                background: hovered ? 'rgba(255,255,255,0.04)' : 'transparent',
+                opacity: checked ? 0.55 : 1,
+                transition: 'background 0.15s, opacity 0.15s',
+                overflow: 'hidden',
+            }}>
+            {/* Custom checkbox */}
+            <div style={{
+                width: '18px', height: '18px',
+                minWidth: '18px',
+                borderRadius: '5px',
+                border: checked ? `2px solid ${accentColor}` : '2px solid rgba(255,255,255,0.2)',
+                background: checked ? accentColor : 'transparent',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.15s',
+                flexShrink: 0,
+            }}>
+                {checked && (
+                    <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                        <path d="M1 4L3.5 6.5L9 1" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                )}
+            </div>
+
+            {/* Label */}
+            <span
+                onClick={(e) => { e.stopPropagation(); onEdit?.(); }}
+                style={{
+                    fontSize: '13px',
+                    color: checked ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.8)',
+                    textDecoration: checked ? 'line-through' : 'none',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap' as const,
+                    flex: 1,
+                    minWidth: 0,
+                }}>
+                {label}
+            </span>
+
+            {/* Delete */}
+            {onDelete && hovered && (
+                <button
+                    onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                    style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: 'rgba(248,113,113,0.5)',
+                        padding: '2px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        flexShrink: 0,
+                    }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            )}
+        </div>
+    );
+}
+
+function InlineInput({
+    placeholder, value, onChange, onSave, onCancel, accentColor = '#d4a017'
+}: {
+    placeholder: string; value: string;
+    onChange: (v: string) => void;
+    onSave: () => void; onCancel: () => void;
+    accentColor?: string;
+}) {
+    return (
+        <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '8px 10px',
+            background: '#1a1a1a',
+            borderRadius: '10px',
+            border: `1px solid ${accentColor}33`,
+            marginBottom: '4px',
+        }}>
+            <div style={{
+                width: '18px', height: '18px',
+                minWidth: '18px',
+                borderRadius: '5px',
+                border: '2px dashed rgba(255,255,255,0.2)',
+                flexShrink: 0,
+            }} />
+            <input
+                autoFocus
+                placeholder={placeholder}
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter') onSave();
+                    if (e.key === 'Escape') onCancel();
+                }}
+                onBlur={onSave}
+                style={{
+                    flex: 1,
+                    background: 'transparent',
+                    border: 'none',
+                    outline: 'none',
+                    color: 'rgba(255,255,255,0.8)',
+                    fontSize: '13px',
+                    minWidth: 0,
+                }}
+            />
+        </div>
+    );
+}
+
+// ────────────────────────────────────────────────────────────────
+// Main Component
+// ────────────────────────────────────────────────────────────────
+
 export default function MissionChecklist({
     todos, dailies, sidebarOpen, onClose,
     onToggleTodo, onToggleDaily, onReorderTodo, onReorderDaily,
     onStartLiveMission,
     onAddDaily, onEditDaily, onDeleteDaily,
-    onAddTodo, onEditTodo, onDeleteTodo
+    onAddTodo, onEditTodo, onDeleteTodo,
 }: MissionChecklistProps) {
 
     const [dragInfo, setDragInfo] = useState<{ index: number; type: 'DAILIES' | 'TODOS' } | null>(null);
@@ -44,19 +254,22 @@ export default function MissionChecklist({
     const completedTodos = todos.filter(t => t.completed).length;
     const totalDailies = dailies.length;
     const totalTodos = todos.length;
+    const totalAll = totalDailies + totalTodos;
+    const completedAll = completedDailies + completedTodos;
+    const pct = totalAll > 0 ? Math.round((completedAll / totalAll) * 100) : 0;
 
     const handleSaveAdd = () => {
-        if (!addingText.trim()) return;
-        if (addingType === 'DAILIES' && onAddDaily) onAddDaily(addingText);
-        if (addingType === 'TODOS' && onAddTodo) onAddTodo(addingText);
+        if (!addingText.trim()) { setAddingType(null); return; }
+        if (addingType === 'DAILIES' && onAddDaily) onAddDaily(addingText.trim());
+        if (addingType === 'TODOS' && onAddTodo) onAddTodo(addingText.trim());
         setAddingType(null);
         setAddingText('');
     };
 
     const handleSaveEdit = () => {
-        if (!editingItem?.text.trim()) return;
-        if (editingItem.type === 'DAILIES' && onEditDaily) onEditDaily(editingItem.id, editingItem.text);
-        if (editingItem.type === 'TODOS' && onEditTodo) onEditTodo(editingItem.id, editingItem.text);
+        if (!editingItem?.text.trim()) { setEditingItem(null); return; }
+        if (editingItem.type === 'DAILIES' && onEditDaily) onEditDaily(editingItem.id, editingItem.text.trim());
+        if (editingItem.type === 'TODOS' && onEditTodo) onEditTodo(editingItem.id, editingItem.text.trim());
         setEditingItem(null);
     };
 
@@ -64,48 +277,38 @@ export default function MissionChecklist({
         setDragInfo({ index, type });
         e.dataTransfer.effectAllowed = 'move';
     };
-
     const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); };
-
     const handleDrop = (e: React.DragEvent, targetIndex: number, type: 'DAILIES' | 'TODOS') => {
         e.preventDefault();
         if (!dragInfo || dragInfo.type !== type) return;
         const items = type === 'DAILIES' ? [...dailies] : [...todos];
-        const [reorderedItem] = items.splice(dragInfo.index, 1);
-        items.splice(targetIndex, 0, reorderedItem);
+        const [moved] = items.splice(dragInfo.index, 1);
+        items.splice(targetIndex, 0, moved);
         if (type === 'DAILIES') onReorderDaily(items);
         else onReorderTodo(items);
         setDragInfo(null);
     };
 
-    return (
+    // ── MOBILE DRAWER (unchanged CSS classes) ────────────────────
+    const MobileSidebar = (
         <>
             <style jsx global>{`
-                .sidebar-scroll::-webkit-scrollbar { width: 4px; }
-                .sidebar-scroll::-webkit-scrollbar-thumb {
-                    background: rgba(255, 255, 255, 0.1);
-                    border-radius: 2px;
-                }
-                .sidebar-scroll::-webkit-scrollbar-thumb:hover {
-                    background: rgba(255, 255, 255, 0.2);
-                }
+                .sidebar-desktop-scroll::-webkit-scrollbar { width: 4px; }
+                .sidebar-desktop-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+                .sidebar-desktop-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
             `}</style>
 
-            {/* Backdrop for mobile */}
             {sidebarOpen && (
                 <div className="mc-backdrop md:hidden" onClick={onClose} />
             )}
 
-            {/* ────────── MOBILE SIDEBAR (Untouched CSS classes) ────────── */}
             <aside className={`mission-checklist md:hidden no-scrollbar${sidebarOpen ? ' sidebar-open' : ''}`}>
                 <div className="mc-header">
                     <div className="mc-header__title">
                         <span className="mc-header__icon">🎯</span>
                         <div>
                             <p className="mc-header__label">MISSION BOARD</p>
-                            <p className="mc-header__sub">
-                                {completedDailies + completedTodos} / {totalDailies + totalTodos} complete
-                            </p>
+                            <p className="mc-header__sub">{completedAll} / {totalAll} complete</p>
                         </div>
                     </div>
                     {onClose && (
@@ -117,12 +320,9 @@ export default function MissionChecklist({
                     )}
                 </div>
 
-                {(totalDailies + totalTodos) > 0 && (
+                {totalAll > 0 && (
                     <div className="mc-progress-bar">
-                        <div
-                            className="mc-progress-fill"
-                            style={{ width: `${Math.round(((completedDailies + completedTodos) / (totalDailies + totalTodos)) * 100)}%` }}
-                        />
+                        <div className="mc-progress-fill" style={{ width: `${pct}%` }} />
                     </div>
                 )}
 
@@ -133,32 +333,15 @@ export default function MissionChecklist({
                                 <span>⚡ NAME YOUR MISSION</span>
                                 <button onClick={() => setIsStartingLive(false)} className="mc-task-cancel">✕</button>
                             </div>
-                            <input
-                                autoFocus
-                                placeholder="e.g. Deep work session..."
-                                value={liveInput}
+                            <input autoFocus placeholder="e.g. Deep work session..." value={liveInput}
                                 onChange={(e) => setLiveInput(e.target.value)}
                                 onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && liveInput.trim()) {
-                                        onStartLiveMission(liveInput);
-                                        setIsStartingLive(false);
-                                        setLiveInput('');
-                                    } else if (e.key === 'Escape') {
-                                        setIsStartingLive(false);
-                                    }
+                                    if (e.key === 'Enter' && liveInput.trim()) { onStartLiveMission(liveInput); setIsStartingLive(false); setLiveInput(''); }
+                                    else if (e.key === 'Escape') setIsStartingLive(false);
                                 }}
-                                className="mc-task-input"
-                            />
-                            <button
-                                onClick={() => {
-                                    if (liveInput.trim()) {
-                                        onStartLiveMission(liveInput);
-                                        setIsStartingLive(false);
-                                        setLiveInput('');
-                                    }
-                                }}
-                                className="mc-task-start-btn"
-                            >
+                                className="mc-task-input" />
+                            <button onClick={() => { if (liveInput.trim()) { onStartLiveMission(liveInput); setIsStartingLive(false); setLiveInput(''); } }}
+                                className="mc-task-start-btn">
                                 🔥 LAUNCH MISSION
                             </button>
                         </div>
@@ -170,25 +353,17 @@ export default function MissionChecklist({
                     )}
                 </div>
 
-                {/* Mobile Dailies Section */}
                 <section className="mc-section">
                     <div className="mc-section__header">
                         <div className="mc-section__title">
                             <span className="mc-section__dot mc-section__dot--daily" />
                             <span>DAILIES</span>
-                            {totalDailies > 0 && (
-                                <span className="mc-section__count">{completedDailies}/{totalDailies}</span>
-                            )}
+                            {totalDailies > 0 && <span className="mc-section__count">{completedDailies}/{totalDailies}</span>}
                         </div>
-                        <button
-                            onClick={() => { setAddingType('DAILIES'); setAddingText(''); }}
-                            className="mc-add-btn"
-                            aria-label="Add daily"
-                        >
+                        <button onClick={() => { setAddingType('DAILIES'); setAddingText(''); }} className="mc-add-btn" aria-label="Add daily">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
                         </button>
                     </div>
-
                     {addingType === 'DAILIES' && (
                         <div className="mc-add-row">
                             <input autoFocus value={addingText} onChange={(e) => setAddingText(e.target.value)}
@@ -197,30 +372,23 @@ export default function MissionChecklist({
                             <button onClick={handleSaveAdd} className="mc-add-confirm mc-add-confirm--daily">ADD</button>
                         </div>
                     )}
-
                     <div className="mc-item-list">
-                        {dailies.length === 0 && (
-                            <p className="mc-empty">No dailies yet. Add your recurring habits.</p>
-                        )}
+                        {dailies.length === 0 && <p className="mc-empty">No dailies yet.</p>}
                         {dailies.map((daily, idx) => (
                             <div key={daily.id} draggable onDragStart={(e) => handleDragStart(e, idx, 'DAILIES')}
                                 onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, idx, 'DAILIES')}
-                                className={`mc-item${dragInfo?.index === idx && dragInfo.type === 'DAILIES' ? ' mc-item--dragging' : ''}`}
-                            >
+                                className={`mc-item${dragInfo?.index === idx && dragInfo.type === 'DAILIES' ? ' mc-item--dragging' : ''}`}>
                                 <div className="mc-item__drag">⋮⋮</div>
-                                <MissionCheckbox checked={daily.completed} onChange={() => onToggleDaily(daily.id)} variant="daily" />
+                                <input type="checkbox" checked={daily.completed} onChange={() => onToggleDaily(daily.id)} className="mc-checkbox" />
                                 <div className="mc-item__content">
                                     {editingItem?.id === daily.id ? (
-                                        <input autoFocus value={editingItem.text} onChange={(e) => setEditingItem({ ...editingItem, text: e.target.value })}
+                                        <input autoFocus value={editingItem.text}
+                                            onChange={(e) => setEditingItem({ ...editingItem, text: e.target.value })}
                                             onKeyDown={(e) => { if (e.key === 'Enter') handleSaveEdit(); else if (e.key === 'Escape') setEditingItem(null); }}
                                             onBlur={handleSaveEdit} className="mc-item__edit-input" />
                                     ) : (
                                         <span onClick={(e) => { e.stopPropagation(); setEditingItem({ id: daily.id, type: 'DAILIES', text: daily.text }); }}
-                                            className={`mc-item__text${daily.completed ? ' mc-item__text--done' : ''}`}
-                                        >{daily.text}</span>
-                                    )}
-                                    {daily.recurringDays && daily.recurringDays.length > 0 && (
-                                        <span className="mc-item__tag mc-item__tag--green">🔁 {daily.recurringDays.join(', ')}</span>
+                                            className={`mc-item__text${daily.completed ? ' mc-item__text--done' : ''}`}>{daily.text}</span>
                                     )}
                                 </div>
                                 {onDeleteDaily && (
@@ -233,21 +401,17 @@ export default function MissionChecklist({
                     </div>
                 </section>
 
-                {/* Mobile To-Do Section */}
                 <section className="mc-section">
                     <div className="mc-section__header">
                         <div className="mc-section__title">
                             <span className="mc-section__dot mc-section__dot--todo" />
                             <span>TO-DO&apos;S</span>
-                            {totalTodos > 0 && (
-                                <span className="mc-section__count">{completedTodos}/{totalTodos}</span>
-                            )}
+                            {totalTodos > 0 && <span className="mc-section__count">{completedTodos}/{totalTodos}</span>}
                         </div>
                         <button onClick={() => { setAddingType('TODOS'); setAddingText(''); }} className="mc-add-btn" aria-label="Add todo">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
                         </button>
                     </div>
-
                     {addingType === 'TODOS' && (
                         <div className="mc-add-row">
                             <input autoFocus value={addingText} onChange={(e) => setAddingText(e.target.value)}
@@ -256,27 +420,23 @@ export default function MissionChecklist({
                             <button onClick={handleSaveAdd} className="mc-add-confirm mc-add-confirm--todo">ADD</button>
                         </div>
                     )}
-
                     <div className="mc-item-list">
-                        {todos.length === 0 && (
-                            <p className="mc-empty">No tasks yet. What needs to get done?</p>
-                        )}
+                        {todos.length === 0 && <p className="mc-empty">No tasks yet.</p>}
                         {todos.map((todo, idx) => (
                             <div key={todo.id} draggable onDragStart={(e) => handleDragStart(e, idx, 'TODOS')}
                                 onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, idx, 'TODOS')}
-                                className={`mc-item${dragInfo?.index === idx && dragInfo.type === 'TODOS' ? ' mc-item--dragging' : ''}`}
-                            >
+                                className={`mc-item${dragInfo?.index === idx && dragInfo.type === 'TODOS' ? ' mc-item--dragging' : ''}`}>
                                 <div className="mc-item__drag">⋮⋮</div>
-                                <MissionCheckbox checked={todo.completed} onChange={() => onToggleTodo(todo.id)} variant="todo" />
+                                <input type="checkbox" checked={todo.completed} onChange={() => onToggleTodo(todo.id)} className="mc-checkbox" />
                                 <div className="mc-item__content">
                                     {editingItem?.id === todo.id ? (
-                                        <input autoFocus value={editingItem.text} onChange={(e) => setEditingItem({ ...editingItem, text: e.target.value })}
+                                        <input autoFocus value={editingItem.text}
+                                            onChange={(e) => setEditingItem({ ...editingItem, text: e.target.value })}
                                             onKeyDown={(e) => { if (e.key === 'Enter') handleSaveEdit(); else if (e.key === 'Escape') setEditingItem(null); }}
                                             onBlur={handleSaveEdit} className="mc-item__edit-input" />
                                     ) : (
                                         <span onClick={(e) => { e.stopPropagation(); setEditingItem({ id: todo.id, type: 'TODOS', text: todo.text }); }}
-                                            className={`mc-item__text${todo.completed ? ' mc-item__text--done' : ''}`}
-                                        >{todo.text}</span>
+                                            className={`mc-item__text${todo.completed ? ' mc-item__text--done' : ''}`}>{todo.text}</span>
                                     )}
                                 </div>
                                 {onDeleteTodo && (
@@ -289,250 +449,348 @@ export default function MissionChecklist({
                     </div>
                 </section>
             </aside>
+        </>
+    );
 
+    // ── DESKTOP SIDEBAR — all inline styles, guaranteed containment ──
+    const DesktopSidebar = (
+        <div style={{
+            width: '300px',
+            minWidth: '300px',
+            maxWidth: '300px',
+            height: '100%',
+            overflow: 'hidden',
+            borderRight: '1px solid rgba(212,160,23,0.1)',
+            backgroundColor: '#0a0a0a',
+            display: 'flex',
+            flexDirection: 'column',
+            position: 'relative',
+            zIndex: 1,
+            boxSizing: 'border-box',
+        }}>
+            {/* Inner scroll container */}
+            <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+                width: '100%',
+                overflow: 'hidden',
+                padding: '16px',
+                gap: '12px',
+                boxSizing: 'border-box',
+            }}>
 
-            {/* ────────── DESKTOP SIDEBAR (Full Redesign) ────────── */}
-            <aside className="hidden md:flex flex-shrink-0 w-[300px] h-full border-r border-[#d4a017]/10 flex-col overflow-hidden bg-[#0a0a0a]">
-                <div className="flex flex-col h-full p-4 gap-3">
-
-                    {/* ZONE A — MISSION BOARD */}
-                    <div className="flex-shrink-0 bg-gradient-to-br from-[#1a1500] to-[#0f0f0f] border border-[#d4a017]/20 rounded-2xl p-4">
-                        <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-2.5">
-                                <div className="w-8 h-8 rounded-xl bg-[#d4a017]/15 border border-[#d4a017]/25 flex items-center justify-center text-base">
-                                    🎯
-                                </div>
-                                <div>
-                                    <p className="text-[#d4a017] font-black text-xs tracking-widest uppercase">Mission Board</p>
-                                    <p className="text-white/30 text-[10px] mt-0.5">Today&apos;s objectives</p>
-                                </div>
+                {/* ZONE A — MISSION BOARD */}
+                <div style={{
+                    flexShrink: 0,
+                    background: 'linear-gradient(135deg, #1a1500, #0f0f0f)',
+                    border: '1px solid rgba(212,160,23,0.2)',
+                    borderRadius: '16px',
+                    padding: '16px',
+                    overflow: 'hidden',
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{
+                                width: '32px', height: '32px',
+                                borderRadius: '12px',
+                                background: 'rgba(212,160,23,0.15)',
+                                border: '1px solid rgba(212,160,23,0.25)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: '16px', flexShrink: 0,
+                            }}>🎯</div>
+                            <div>
+                                <p style={{ color: '#d4a017', fontWeight: 900, fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase', margin: 0 }}>
+                                    Mission Board
+                                </p>
+                                <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', margin: '2px 0 0 0' }}>
+                                    Today&apos;s objectives
+                                </p>
                             </div>
-
-                            {onClose && (
-                                <button onClick={onClose} className="w-6 h-6 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/30 hover:text-white/60 transition-all active:scale-90 text-xs">
-                                    ✕
-                                </button>
-                            )}
                         </div>
-
-                        <div className="space-y-1.5">
-                            <div className="flex justify-between items-center">
-                                <span className="text-white/30 text-[10px]">
-                                    {completedDailies + completedTodos} / {totalDailies + totalTodos} complete
-                                </span>
-                                <span className="text-[#d4a017] text-[10px] font-bold">
-                                    {(totalDailies + totalTodos) > 0 ? Math.round(((completedDailies + completedTodos) / (totalDailies + totalTodos)) * 100) : 0}%
-                                </span>
-                            </div>
-
-                            <div className="h-1.5 bg-white/8 rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-gradient-to-r from-[#d4a017] to-[#f5c842] rounded-full transition-all duration-700"
-                                    style={{ width: `${(totalDailies + totalTodos) > 0 ? ((completedDailies + completedTodos) / (totalDailies + totalTodos)) * 100 : 0}%` }}
-                                />
-                            </div>
-                        </div>
+                        {onClose && (
+                            <button onClick={onClose} style={{
+                                width: '24px', height: '24px', borderRadius: '8px',
+                                background: 'rgba(255,255,255,0.05)', border: 'none',
+                                color: 'rgba(255,255,255,0.3)', cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: '12px', flexShrink: 0,
+                            }}>✕</button>
+                        )}
                     </div>
-
-                    {/* ZONE B — START TASK */}
-                    {isStartingLive ? (
-                        <div className="flex-shrink-0 w-full p-3 bg-[#10b981]/10 border border-[#10b981]/25 rounded-xl flex flex-col gap-2 shadow-[0_4px_20px_rgba(16,185,129,0.15)]">
-                            <div className="flex justify-between items-center text-[10px] font-black tracking-widest text-[#10b981]">
-                                <span>⚡ NAME YOUR MISSION</span>
-                                <button onClick={() => setIsStartingLive(false)} className="text-white/40 hover:text-white transition-colors">✕</button>
-                            </div>
-                            <input
-                                autoFocus
-                                placeholder="e.g. Deep work session..."
-                                value={liveInput}
-                                onChange={(e) => setLiveInput(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && liveInput.trim()) {
-                                        onStartLiveMission(liveInput);
-                                        setIsStartingLive(false);
-                                        setLiveInput('');
-                                    } else if (e.key === 'Escape') {
-                                        setIsStartingLive(false);
-                                    }
-                                }}
-                                className="bg-white/5 border border-white/10 rounded-lg text-white p-2 text-xs font-semibold w-full outline-none focus:border-[#10b981]/50 focus:bg-[#10b981]/5 transition-colors"
-                            />
-                            <button
-                                onClick={() => {
-                                    if (liveInput.trim()) {
-                                        onStartLiveMission(liveInput);
-                                        setIsStartingLive(false);
-                                        setLiveInput('');
-                                    }
-                                }}
-                                className="bg-gradient-to-br from-[#10b981] to-[#059669] text-white border-none rounded-lg p-2 text-[10px] font-black tracking-widest flex items-center justify-center cursor-pointer transition-all hover:shadow-[0_4px_16px_rgba(16,185,129,0.4)] hover:-translate-y-px"
-                            >
-                                🔥 LAUNCH MISSION
-                            </button>
+                    {/* Progress */}
+                    <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                            <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px' }}>
+                                {completedAll} / {totalAll} complete
+                            </span>
+                            <span style={{ color: '#d4a017', fontSize: '10px', fontWeight: 700 }}>{pct}%</span>
                         </div>
-                    ) : (
-                        <button
-                            onClick={() => setIsStartingLive(true)}
-                            className="flex-shrink-0 w-full py-3.5 bg-gradient-to-r from-[#d4a017] to-[#c49010] hover:from-[#e6b020] hover:to-[#d4a017] text-black font-black text-sm tracking-widest rounded-xl flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(212,160,23,0.3)] hover:shadow-[0_6px_28px_rgba(212,160,23,0.5)] active:scale-[0.97] transition-all duration-200 group"
-                        >
-                            <span className="group-hover:scale-110 transition-transform text-base">▶</span>
-                            START TASK
-                        </button>
-                    )}
-
-                    {/* ZONE C — DAILIES */}
-                    <div className="flex-1 flex flex-col min-h-0 bg-[#0f0f0f] border border-white/5 rounded-2xl overflow-hidden">
-                        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-white/5">
-                            <div className="flex items-center gap-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
-                                <span className="text-white/70 font-black text-xs tracking-widest uppercase">Dailies</span>
-                                {totalDailies > 0 && (
-                                    <span className="text-[10px] bg-[#d4a017]/15 text-[#d4a017] border border-[#d4a017]/25 px-1.5 py-0.5 rounded-full font-bold">
-                                        {completedDailies}/{totalDailies}
-                                    </span>
-                                )}
-                            </div>
-                            <button
-                                onClick={() => { setAddingType('DAILIES'); setAddingText(''); }}
-                                className="w-6 h-6 rounded-lg bg-[#d4a017]/10 hover:bg-[#d4a017]/20 border border-[#d4a017]/20 hover:border-[#d4a017]/40 flex items-center justify-center text-[#d4a017] text-sm font-bold transition-all active:scale-90"
-                            >
-                                +
-                            </button>
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto sidebar-scroll p-3 flex flex-col gap-1.5">
-                            {addingType === 'DAILIES' && (
-                                <div className="flex items-center gap-2 p-2 bg-[#1a1a1a] rounded-xl border border-[#d4a017]/20 focus-within:border-[#d4a017]/50 transition-all">
-                                    <div className="w-5 h-5 rounded-md border-2 border-dashed border-white/20 flex-shrink-0" />
-                                    <input
-                                        autoFocus placeholder="Add daily..."
-                                        value={addingText} onChange={(e) => setAddingText(e.target.value)}
-                                        className="flex-1 bg-transparent text-white/80 text-sm placeholder:text-white/20 outline-none"
-                                        onKeyDown={(e) => { if (e.key === 'Enter') handleSaveAdd(); if (e.key === 'Escape') setAddingType(null); }}
-                                        onBlur={handleSaveAdd}
-                                    />
-                                </div>
-                            )}
-
-                            {totalDailies === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-6 gap-2 opacity-40">
-                                    <span className="text-2xl">🌅</span>
-                                    <p className="text-white/40 text-xs text-center leading-relaxed">No dailies yet.<br />Add your recurring habits.</p>
-                                </div>
-                            ) : (
-                                dailies.map((daily, idx) => (
-                                    <div key={daily.id}
-                                        draggable onDragStart={(e) => handleDragStart(e, idx, 'DAILIES')}
-                                        onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, idx, 'DAILIES')}
-                                        className={`flex items-center gap-3 p-2.5 rounded-xl group cursor-pointer transition-all duration-200 hover:bg-white/5 active:scale-[0.98] ${daily.completed ? 'opacity-60' : 'opacity-100'} ${dragInfo?.index === idx && dragInfo.type === 'DAILIES' ? 'bg-white/10 opacity-70' : ''}`}
-                                        onClick={() => onToggleDaily(daily.id)}
-                                    >
-                                        <div className={`w-5 h-5 rounded-md flex-shrink-0 border-2 flex items-center justify-center transition-all duration-200 ${daily.completed ? 'bg-emerald-400 border-emerald-400' : 'border-white/20 group-hover:border-[#d4a017]/50'}`}>
-                                            {daily.completed && (
-                                                <svg className="w-3 h-3 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                                </svg>
-                                            )}
-                                        </div>
-                                        {editingItem?.id === daily.id ? (
-                                            <input autoFocus value={editingItem.text} onChange={(e) => setEditingItem({ ...editingItem, text: e.target.value })}
-                                                onClick={(e) => e.stopPropagation()}
-                                                onKeyDown={(e) => { if (e.key === 'Enter') handleSaveEdit(); else if (e.key === 'Escape') setEditingItem(null); }}
-                                                onBlur={handleSaveEdit} className="bg-white/10 border border-white/20 rounded text-white px-2 py-0.5 text-sm w-full outline-none" />
-                                        ) : (
-                                            <span onClick={(e) => { e.stopPropagation(); setEditingItem({ id: daily.id, type: 'DAILIES', text: daily.text }); }}
-                                                className={`text-sm flex-1 min-w-0 truncate transition-all duration-200 hover:text-white ${daily.completed ? 'line-through text-white/30' : 'text-white/80'}`}>
-                                                {daily.text}
-                                            </span>
-                                        )}
-                                        {onDeleteDaily && (
-                                            <button onClick={(e) => { e.stopPropagation(); onDeleteDaily(daily.id); }} className="opacity-0 group-hover:opacity-100 text-red-400/50 hover:text-red-400 hover:bg-red-400/10 rounded overflow-hidden p-1 transition-all flex-shrink-0">
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                                            </button>
-                                        )}
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </div>
-
-                    {/* ZONE D — TO-DO'S */}
-                    <div className="flex-1 flex flex-col min-h-0 bg-[#0f0f0f] border border-white/5 rounded-2xl overflow-hidden">
-                        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-white/5">
-                            <div className="flex items-center gap-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-violet-400 shadow-[0_0_6px_#a78bfa]" />
-                                <span className="text-white/70 font-black text-xs tracking-widest uppercase">To-Do&apos;s</span>
-                                {(totalTodos - completedTodos) > 0 && (
-                                    <span className="text-[10px] bg-violet-400/10 text-violet-400 border border-violet-400/20 px-1.5 py-0.5 rounded-full font-bold">
-                                        {totalTodos - completedTodos} left
-                                    </span>
-                                )}
-                            </div>
-                            <button
-                                onClick={() => { setAddingType('TODOS'); setAddingText(''); }}
-                                className="w-6 h-6 rounded-lg bg-violet-400/10 hover:bg-violet-400/20 border border-violet-400/20 hover:border-violet-400/40 flex items-center justify-center text-violet-400 text-sm font-bold transition-all active:scale-90"
-                            >
-                                +
-                            </button>
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto sidebar-scroll p-3 flex flex-col gap-1.5">
-                            {addingType === 'TODOS' && (
-                                <div className="flex items-center gap-2 p-2 bg-[#1a1a1a] rounded-xl border border-violet-400/20 focus-within:border-violet-400/50 transition-all">
-                                    <div className="w-5 h-5 rounded-md border-2 border-dashed border-white/20 flex-shrink-0" />
-                                    <input
-                                        autoFocus placeholder="Add todo..."
-                                        value={addingText} onChange={(e) => setAddingText(e.target.value)}
-                                        className="flex-1 bg-transparent text-white/80 text-sm placeholder:text-white/20 outline-none"
-                                        onKeyDown={(e) => { if (e.key === 'Enter') handleSaveAdd(); if (e.key === 'Escape') setAddingType(null); }}
-                                        onBlur={handleSaveAdd}
-                                    />
-                                </div>
-                            )}
-
-                            {totalTodos === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-6 gap-2 opacity-40">
-                                    <span className="text-2xl">📋</span>
-                                    <p className="text-white/40 text-xs text-center leading-relaxed">No tasks yet.<br />What needs to get done?</p>
-                                </div>
-                            ) : (
-                                todos.map((todo, idx) => (
-                                    <div key={todo.id}
-                                        draggable onDragStart={(e) => handleDragStart(e, idx, 'TODOS')}
-                                        onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, idx, 'TODOS')}
-                                        className={`flex items-center gap-3 p-2.5 rounded-xl group cursor-pointer transition-all duration-200 hover:bg-white/5 active:scale-[0.98] ${todo.completed ? 'opacity-60' : 'opacity-100'} ${dragInfo?.index === idx && dragInfo.type === 'TODOS' ? 'bg-white/10 opacity-70' : ''}`}
-                                        onClick={() => onToggleTodo(todo.id)}
-                                    >
-                                        <div className={`w-5 h-5 rounded-md flex-shrink-0 border-2 flex items-center justify-center transition-all duration-200 ${todo.completed ? 'bg-violet-400 border-violet-400' : 'border-white/20 group-hover:border-violet-400/50'}`}>
-                                            {todo.completed && (
-                                                <svg className="w-3 h-3 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                                </svg>
-                                            )}
-                                        </div>
-                                        {editingItem?.id === todo.id ? (
-                                            <input autoFocus value={editingItem.text} onChange={(e) => setEditingItem({ ...editingItem, text: e.target.value })}
-                                                onClick={(e) => e.stopPropagation()}
-                                                onKeyDown={(e) => { if (e.key === 'Enter') handleSaveEdit(); else if (e.key === 'Escape') setEditingItem(null); }}
-                                                onBlur={handleSaveEdit} className="bg-white/10 border border-white/20 rounded text-white px-2 py-0.5 text-sm w-full outline-none" />
-                                        ) : (
-                                            <span onClick={(e) => { e.stopPropagation(); setEditingItem({ id: todo.id, type: 'TODOS', text: todo.text }); }}
-                                                className={`text-sm flex-1 min-w-0 truncate transition-all duration-200 hover:text-white ${todo.completed ? 'line-through text-white/30' : 'text-white/80'}`}>
-                                                {todo.text}
-                                            </span>
-                                        )}
-                                        {onDeleteTodo && (
-                                            <button onClick={(e) => { e.stopPropagation(); onDeleteTodo(todo.id); }} className="opacity-0 group-hover:opacity-100 text-red-400/50 hover:text-red-400 hover:bg-red-400/10 rounded overflow-hidden p-1 transition-all flex-shrink-0">
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                                            </button>
-                                        )}
-                                    </div>
-                                ))
-                            )}
+                        <div style={{ height: '6px', background: 'rgba(255,255,255,0.08)', borderRadius: '6px', overflow: 'hidden' }}>
+                            <div style={{
+                                height: '100%',
+                                width: `${pct}%`,
+                                background: 'linear-gradient(90deg, #d4a017, #f5c842)',
+                                borderRadius: '6px',
+                                transition: 'width 0.7s ease',
+                            }} />
                         </div>
                     </div>
                 </div>
-            </aside>
+
+                {/* ZONE B — START TASK */}
+                {isStartingLive ? (
+                    <div style={{
+                        flexShrink: 0,
+                        background: 'rgba(16,185,129,0.1)',
+                        border: '1px solid rgba(16,185,129,0.25)',
+                        borderRadius: '12px',
+                        padding: '12px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px',
+                        overflow: 'hidden',
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ color: '#10b981', fontWeight: 900, fontSize: '10px', letterSpacing: '0.12em' }}>
+                                ⚡ NAME YOUR MISSION
+                            </span>
+                            <button onClick={() => setIsStartingLive(false)}
+                                style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '12px' }}>
+                                ✕
+                            </button>
+                        </div>
+                        <input
+                            autoFocus
+                            placeholder="e.g. Deep work session..."
+                            value={liveInput}
+                            onChange={(e) => setLiveInput(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && liveInput.trim()) { onStartLiveMission(liveInput); setIsStartingLive(false); setLiveInput(''); }
+                                else if (e.key === 'Escape') setIsStartingLive(false);
+                            }}
+                            style={{
+                                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                                borderRadius: '8px', color: 'white', padding: '8px', fontSize: '13px',
+                                outline: 'none', width: '100%', boxSizing: 'border-box',
+                            }}
+                        />
+                        <button
+                            onClick={() => { if (liveInput.trim()) { onStartLiveMission(liveInput); setIsStartingLive(false); setLiveInput(''); } }}
+                            style={{
+                                background: 'linear-gradient(135deg, #10b981, #059669)',
+                                border: 'none', borderRadius: '8px', color: 'white',
+                                padding: '8px', fontSize: '10px', fontWeight: 900,
+                                letterSpacing: '0.1em', cursor: 'pointer',
+                            }}>
+                            🔥 LAUNCH MISSION
+                        </button>
+                    </div>
+                ) : (
+                    <button
+                        onClick={() => setIsStartingLive(true)}
+                        style={{
+                            flexShrink: 0,
+                            width: '100%',
+                            padding: '14px',
+                            background: 'linear-gradient(90deg, #d4a017, #c49010)',
+                            border: 'none',
+                            borderRadius: '12px',
+                            color: '#000',
+                            fontWeight: 900,
+                            fontSize: '13px',
+                            letterSpacing: '0.1em',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            boxSizing: 'border-box',
+                            transition: 'box-shadow 0.2s, transform 0.1s',
+                        }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 28px rgba(212,160,23,0.5)'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none'; }}
+                        onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.97)'; }}
+                        onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
+                    >
+                        <span>▶</span> START TASK
+                    </button>
+                )}
+
+                {/* ZONE C — DAILIES */}
+                <div style={{
+                    flex: 1,
+                    minHeight: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    background: '#0f0f0f',
+                    border: '1px solid rgba(255,255,255,0.05)',
+                    borderRadius: '16px',
+                    overflow: 'hidden',
+                }}>
+                    <SectionHeader
+                        dot="#34d399"
+                        label="DAILIES"
+                        completed={completedDailies}
+                        total={totalDailies}
+                        onAdd={() => { setAddingType('DAILIES'); setAddingText(''); }}
+                    />
+                    <div className="sidebar-desktop-scroll" style={{
+                        flex: 1,
+                        overflowY: 'auto',
+                        overflowX: 'hidden',
+                        padding: '8px',
+                    }}>
+                        {addingType === 'DAILIES' && (
+                            <InlineInput
+                                placeholder="New daily habit..."
+                                value={addingText}
+                                onChange={setAddingText}
+                                onSave={handleSaveAdd}
+                                onCancel={() => setAddingType(null)}
+                                accentColor="#34d399"
+                            />
+                        )}
+                        {totalDailies === 0 && !addingType && (
+                            <div style={{ textAlign: 'center', padding: '24px 8px', opacity: 0.4 }}>
+                                <div style={{ fontSize: '24px', marginBottom: '8px' }}>🌅</div>
+                                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', lineHeight: 1.5 }}>
+                                    No dailies yet.<br />Add your recurring habits.
+                                </p>
+                            </div>
+                        )}
+                        {dailies.map((daily, idx) => (
+                            editingItem?.id === daily.id ? (
+                                <InlineInput key={daily.id}
+                                    placeholder="Edit daily..."
+                                    value={editingItem.text}
+                                    onChange={(v) => setEditingItem({ ...editingItem, text: v })}
+                                    onSave={handleSaveEdit}
+                                    onCancel={() => setEditingItem(null)}
+                                    accentColor="#34d399"
+                                />
+                            ) : (
+                                <div key={daily.id}
+                                    draggable
+                                    onDragStart={(e) => handleDragStart(e, idx, 'DAILIES')}
+                                    onDragOver={handleDragOver}
+                                    onDrop={(e) => handleDrop(e, idx, 'DAILIES')}
+                                    style={{ opacity: dragInfo?.index === idx && dragInfo.type === 'DAILIES' ? 0.4 : 1 }}>
+                                    <CheckItem
+                                        label={daily.text}
+                                        checked={daily.completed}
+                                        accentColor="#34d399"
+                                        onToggle={() => onToggleDaily(daily.id)}
+                                        onEdit={() => setEditingItem({ id: daily.id, type: 'DAILIES', text: daily.text })}
+                                        onDelete={onDeleteDaily ? () => onDeleteDaily(daily.id) : undefined}
+                                    />
+                                </div>
+                            )
+                        ))}
+                    </div>
+                </div>
+
+                {/* ZONE D — TO-DO'S */}
+                <div style={{
+                    flex: 1,
+                    minHeight: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    background: '#0f0f0f',
+                    border: '1px solid rgba(255,255,255,0.05)',
+                    borderRadius: '16px',
+                    overflow: 'hidden',
+                }}>
+                    <SectionHeader
+                        dot="#a78bfa"
+                        label="TO-DO'S"
+                        completed={completedTodos}
+                        total={totalTodos}
+                        countLabel="left"
+                        onAdd={() => { setAddingType('TODOS'); setAddingText(''); }}
+                    />
+                    <div className="sidebar-desktop-scroll" style={{
+                        flex: 1,
+                        overflowY: 'auto',
+                        overflowX: 'hidden',
+                        padding: '8px',
+                    }}>
+                        {addingType === 'TODOS' && (
+                            <InlineInput
+                                placeholder="New task..."
+                                value={addingText}
+                                onChange={setAddingText}
+                                onSave={handleSaveAdd}
+                                onCancel={() => setAddingType(null)}
+                                accentColor="#a78bfa"
+                            />
+                        )}
+                        {totalTodos === 0 && !addingType && (
+                            <div style={{ textAlign: 'center', padding: '24px 8px', opacity: 0.4 }}>
+                                <div style={{ fontSize: '24px', marginBottom: '8px' }}>📋</div>
+                                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', lineHeight: 1.5 }}>
+                                    No tasks yet.<br />What needs to get done?
+                                </p>
+                            </div>
+                        )}
+                        {todos.map((todo, idx) => (
+                            editingItem?.id === todo.id ? (
+                                <InlineInput key={todo.id}
+                                    placeholder="Edit task..."
+                                    value={editingItem.text}
+                                    onChange={(v) => setEditingItem({ ...editingItem, text: v })}
+                                    onSave={handleSaveEdit}
+                                    onCancel={() => setEditingItem(null)}
+                                    accentColor="#a78bfa"
+                                />
+                            ) : (
+                                <div key={todo.id}
+                                    draggable
+                                    onDragStart={(e) => handleDragStart(e, idx, 'TODOS')}
+                                    onDragOver={handleDragOver}
+                                    onDrop={(e) => handleDrop(e, idx, 'TODOS')}
+                                    style={{ opacity: dragInfo?.index === idx && dragInfo.type === 'TODOS' ? 0.4 : 1 }}>
+                                    <CheckItem
+                                        label={todo.text}
+                                        checked={todo.completed}
+                                        accentColor="#a78bfa"
+                                        onToggle={() => onToggleTodo(todo.id)}
+                                        onEdit={() => setEditingItem({ id: todo.id, type: 'TODOS', text: todo.text })}
+                                        onDelete={onDeleteTodo ? () => onDeleteTodo(todo.id) : undefined}
+                                    />
+                                </div>
+                            )
+                        ))}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    );
+
+    return (
+        <>
+            {/* Mobile: rendered via CSS classes (invisible on md+) */}
+            {MobileSidebar}
+            {/* Desktop: rendered with full inline styles (hidden on mobile via display:none @media) */}
+            <DesktopSidebarWrapper>{DesktopSidebar}</DesktopSidebarWrapper>
+        </>
+    );
+}
+
+// Wrapper that hides desktop sidebar on mobile using a style tag
+function DesktopSidebarWrapper({ children }: { children: React.ReactNode }) {
+    return (
+        <>
+            <style jsx global>{`
+                .desktop-sidebar-shell { display: none; }
+                @media (min-width: 768px) {
+                    .desktop-sidebar-shell { display: flex !important; }
+                }
+            `}</style>
+            <div className="desktop-sidebar-shell" style={{ width: '300px', minWidth: '300px', maxWidth: '300px', height: '100%', overflow: 'hidden' }}>
+                {children}
+            </div>
         </>
     );
 }
