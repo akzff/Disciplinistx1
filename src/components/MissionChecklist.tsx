@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { DailyChat, formatTime } from '@/lib/storage';
+import { DailyChat } from '@/lib/storage';
 import { MissionCheckbox } from '@/components/Checkbox';
 
 interface MissionChecklistProps {
@@ -25,7 +25,13 @@ interface MissionChecklistProps {
     onDeleteTodo?: (id: string) => void;
 }
 
-export default function MissionChecklist({ todos, dailies, sidebarOpen, onClose, onToggleTodo, onToggleDaily, onReorderTodo, onReorderDaily, onStartLiveMission, onAddDaily, onEditDaily, onDeleteDaily, onAddTodo, onEditTodo, onDeleteTodo }: MissionChecklistProps) {
+export default function MissionChecklist({
+    todos, dailies, sidebarOpen, onClose,
+    onToggleTodo, onToggleDaily, onReorderTodo, onReorderDaily,
+    onStartLiveMission,
+    onAddDaily, onEditDaily, onDeleteDaily,
+    onAddTodo, onEditTodo, onDeleteTodo
+}: MissionChecklistProps) {
 
     const [dragInfo, setDragInfo] = useState<{ index: number; type: 'DAILIES' | 'TODOS' } | null>(null);
     const [isStartingLive, setIsStartingLive] = useState(false);
@@ -33,6 +39,11 @@ export default function MissionChecklist({ todos, dailies, sidebarOpen, onClose,
     const [addingType, setAddingType] = useState<'DAILIES' | 'TODOS' | null>(null);
     const [addingText, setAddingText] = useState('');
     const [editingItem, setEditingItem] = useState<{ id: string; type: 'DAILIES' | 'TODOS'; text: string } | null>(null);
+
+    const completedDailies = dailies.filter(d => d.completed).length;
+    const completedTodos = todos.filter(t => t.completed).length;
+    const totalDailies = dailies.length;
+    const totalTodos = todos.length;
 
     const handleSaveAdd = () => {
         if (!addingText.trim()) return;
@@ -54,82 +65,82 @@ export default function MissionChecklist({ todos, dailies, sidebarOpen, onClose,
         e.dataTransfer.effectAllowed = 'move';
     };
 
-    const handleDragOver = (e: React.DragEvent) => {
-        e.preventDefault();
-    };
+    const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); };
 
     const handleDrop = (e: React.DragEvent, targetIndex: number, type: 'DAILIES' | 'TODOS') => {
         e.preventDefault();
         if (!dragInfo || dragInfo.type !== type) return;
-
         const items = type === 'DAILIES' ? [...dailies] : [...todos];
         const [reorderedItem] = items.splice(dragInfo.index, 1);
         items.splice(targetIndex, 0, reorderedItem);
-
         if (type === 'DAILIES') onReorderDaily(items);
         else onReorderTodo(items);
-
         setDragInfo(null);
     };
 
     return (
-        <div className={`mission-checklist no-scrollbar${sidebarOpen ? ' sidebar-open' : ''}`} style={{
-            width: '300px',
-            borderRight: '1px solid var(--border)',
-            background: 'rgba(255,255,255,0.02)',
-            display: 'flex',
-            flexDirection: 'column',
-            padding: '1.5rem',
-            overflowY: 'auto',
-            overflowX: 'hidden',
-            gap: '1.5rem'
-        }}>
-            {/* Mobile close button */}
-            {onClose && (
-                <button
-                    className="sidebar-toggle-btn"
-                    onClick={onClose}
-                    style={{ display: 'none', alignSelf: 'flex-end', background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', marginBottom: '-1rem' }}
-                    aria-label="Close"
-                >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                </button>
+        <>
+            {/* Backdrop for mobile */}
+            {sidebarOpen && (
+                <div className="mc-backdrop" onClick={onClose} />
             )}
-            <section style={{ marginBottom: '0.5rem' }}>
-                {isStartingLive ? (
-                    <div className="live-input-box" style={{
-                        background: 'rgba(16, 185, 129, 0.1)',
-                        border: '1px solid var(--accent)',
-                        borderRadius: '12px',
-                        padding: '10px',
-                        animation: 'fadeIn 0.2s ease-out'
-                    }}>
-                        <input
-                            autoFocus
-                            placeholder="Current Task..."
-                            value={liveInput}
-                            onChange={(e) => setLiveInput(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' && liveInput.trim()) {
-                                    onStartLiveMission(liveInput);
-                                    setIsStartingLive(false);
-                                    setLiveInput('');
-                                } else if (e.key === 'Escape') {
-                                    setIsStartingLive(false);
-                                }
-                            }}
-                            style={{
-                                background: 'none',
-                                border: 'none',
-                                color: 'white',
-                                width: '100%',
-                                outline: 'none',
-                                fontSize: '0.8rem',
-                                fontWeight: '700',
-                                marginBottom: '8px'
-                            }}
+
+            <aside className={`mission-checklist no-scrollbar${sidebarOpen ? ' sidebar-open' : ''}`}>
+
+                {/* ── Header ── */}
+                <div className="mc-header">
+                    <div className="mc-header__title">
+                        <span className="mc-header__icon">🎯</span>
+                        <div>
+                            <p className="mc-header__label">MISSION BOARD</p>
+                            <p className="mc-header__sub">
+                                {completedDailies + completedTodos} / {totalDailies + totalTodos} complete
+                            </p>
+                        </div>
+                    </div>
+                    {onClose && (
+                        <button onClick={onClose} className="mc-close-btn" aria-label="Close">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                        </button>
+                    )}
+                </div>
+
+                {/* ── Progress bar ── */}
+                {(totalDailies + totalTodos) > 0 && (
+                    <div className="mc-progress-bar">
+                        <div
+                            className="mc-progress-fill"
+                            style={{ width: `${Math.round(((completedDailies + completedTodos) / (totalDailies + totalTodos)) * 100)}%` }}
                         />
-                        <div style={{ display: 'flex', gap: '8px' }}>
+                    </div>
+                )}
+
+                {/* ── START TASK Button ── */}
+                <div className="mc-start-section">
+                    {isStartingLive ? (
+                        <div className="mc-task-input-box">
+                            <div className="mc-task-input-header">
+                                <span>⚡ NAME YOUR MISSION</span>
+                                <button onClick={() => setIsStartingLive(false)} className="mc-task-cancel">✕</button>
+                            </div>
+                            <input
+                                autoFocus
+                                placeholder="e.g. Deep work session..."
+                                value={liveInput}
+                                onChange={(e) => setLiveInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && liveInput.trim()) {
+                                        onStartLiveMission(liveInput);
+                                        setIsStartingLive(false);
+                                        setLiveInput('');
+                                    } else if (e.key === 'Escape') {
+                                        setIsStartingLive(false);
+                                    }
+                                }}
+                                className="mc-task-input"
+                            />
                             <button
                                 onClick={() => {
                                     if (liveInput.trim()) {
@@ -138,109 +149,71 @@ export default function MissionChecklist({ todos, dailies, sidebarOpen, onClose,
                                         setLiveInput('');
                                     }
                                 }}
-                                style={{
-                                    flex: 1,
-                                    background: 'var(--accent)',
-                                    border: 'none',
-                                    borderRadius: '6px',
-                                    color: 'white',
-                                    padding: '4px',
-                                    fontSize: '0.65rem',
-                                    fontWeight: '900',
-                                    cursor: 'pointer'
-                                }}
-                            >START</button>
-                            <button
-                                onClick={() => setIsStartingLive(false)}
-                                style={{
-                                    background: 'rgba(255,255,255,0.05)',
-                                    border: 'none',
-                                    borderRadius: '6px',
-                                    color: 'white',
-                                    padding: '4px 8px',
-                                    fontSize: '0.65rem',
-                                    fontWeight: '900',
-                                    cursor: 'pointer'
-                                }}
-                            >×</button>
+                                className="mc-task-start-btn"
+                            >
+                                🔥 LAUNCH MISSION
+                            </button>
                         </div>
-                    </div>
-                ) : (
-                    <button
-                        onClick={() => setIsStartingLive(true)}
-                        className="live-mission-trigger"
-                        style={{
-                            width: '100%',
-                            background: '#d4a017',
-                            color: 'black',
-                            border: 'none',
-                            borderRadius: '12px',
-                            padding: '10px',
-                            fontWeight: '900',
-                            fontSize: '0.7rem',
-                            letterSpacing: '0.1em',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '8px',
-                            boxShadow: '0 0 24px rgba(212, 160, 23, 0.4)',
-                            transition: 'all 0.2s'
-                        }}
-                    >
-                        <span>🔥</span> START TASK
-                    </button>
-                )}
-            </section>
-            <section>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: '#d4a017', letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0 }}>Dailies</h3>
-                    <button onClick={() => { setAddingType('DAILIES'); setAddingText(''); }} style={{ background: 'none', border: 'none', color: '#d4a017', cursor: 'pointer', fontSize: '1.2rem', padding: '0 5px', fontWeight: 'bold' }}>+</button>
+                    ) : (
+                        <button onClick={() => setIsStartingLive(true)} className="mc-start-btn">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+                            START TASK
+                        </button>
+                    )}
                 </div>
-                {addingType === 'DAILIES' && (
-                    <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                        <input
-                            autoFocus
-                            value={addingText}
-                            onChange={(e) => setAddingText(e.target.value)}
-                            onKeyDown={(e) => { if (e.key === 'Enter') handleSaveAdd(); else if (e.key === 'Escape') setAddingType(null); }}
-                            placeholder="New daily..."
-                            style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '6px', color: 'white', padding: '8px', fontSize: '0.8rem', outline: 'none' }}
-                        />
-                        <button onClick={handleSaveAdd} style={{ background: 'var(--accent)', border: 'none', borderRadius: '6px', color: 'white', padding: '0 12px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer' }}>ADD</button>
-                    </div>
-                )}
-                <div
-                    style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
-                >
-                    {dailies.length === 0 && <p style={{ fontSize: '0.8rem', opacity: 0.3 }}>No dailies added.</p>}
-                    {dailies.map((daily, idx) => (
-                        <div
-                            key={daily.id}
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, idx, 'DAILIES')}
-                            onDragOver={handleDragOver}
-                            onDrop={(e) => handleDrop(e, idx, 'DAILIES')}
-                            className="draggable-item"
-                            style={{
-                                display: 'flex',
-                                gap: '10px',
-                                alignItems: 'flex-start',
-                                cursor: 'grab',
-                                padding: '6px 8px',
-                                borderRadius: '8px',
-                                background: dragInfo?.index === idx && dragInfo.type === 'DAILIES' ? 'rgba(255,255,255,0.05)' : 'transparent',
-                                transition: 'background 0.2s'
-                            }}
+
+                {/* ── Dailies Section ── */}
+                <section className="mc-section">
+                    <div className="mc-section__header">
+                        <div className="mc-section__title">
+                            <span className="mc-section__dot mc-section__dot--daily" />
+                            <span>DAILIES</span>
+                            {totalDailies > 0 && (
+                                <span className="mc-section__count">{completedDailies}/{totalDailies}</span>
+                            )}
+                        </div>
+                        <button
+                            onClick={() => { setAddingType('DAILIES'); setAddingText(''); }}
+                            className="mc-add-btn"
+                            aria-label="Add daily"
                         >
-                            <div style={{ opacity: 0.3, marginTop: '4px', fontSize: '0.7rem' }}>⋮⋮</div>
-                            <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', cursor: 'pointer', flex: 1 }}>
-                                <MissionCheckbox
-                                    checked={daily.completed}
-                                    onChange={() => onToggleDaily(daily.id)}
-                                    variant="daily"
-                                />
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                        </button>
+                    </div>
+
+                    {addingType === 'DAILIES' && (
+                        <div className="mc-add-row">
+                            <input
+                                autoFocus
+                                value={addingText}
+                                onChange={(e) => setAddingText(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleSaveAdd();
+                                    else if (e.key === 'Escape') setAddingType(null);
+                                }}
+                                placeholder="New daily habit..."
+                                className="mc-add-input mc-add-input--daily"
+                            />
+                            <button onClick={handleSaveAdd} className="mc-add-confirm mc-add-confirm--daily">ADD</button>
+                        </div>
+                    )}
+
+                    <div className="mc-item-list">
+                        {dailies.length === 0 && (
+                            <p className="mc-empty">No dailies yet. Add your recurring habits.</p>
+                        )}
+                        {dailies.map((daily, idx) => (
+                            <div
+                                key={daily.id}
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, idx, 'DAILIES')}
+                                onDragOver={handleDragOver}
+                                onDrop={(e) => handleDrop(e, idx, 'DAILIES')}
+                                className={`mc-item${dragInfo?.index === idx && dragInfo.type === 'DAILIES' ? ' mc-item--dragging' : ''}`}
+                            >
+                                <div className="mc-item__drag">⋮⋮</div>
+                                <MissionCheckbox checked={daily.completed} onChange={() => onToggleDaily(daily.id)} variant="daily" />
+                                <div className="mc-item__content">
                                     {editingItem?.id === daily.id ? (
                                         <input
                                             autoFocus
@@ -248,81 +221,82 @@ export default function MissionChecklist({ todos, dailies, sidebarOpen, onClose,
                                             onChange={(e) => setEditingItem({ ...editingItem, text: e.target.value })}
                                             onKeyDown={(e) => { if (e.key === 'Enter') handleSaveEdit(); else if (e.key === 'Escape') setEditingItem(null); }}
                                             onBlur={handleSaveEdit}
-                                            style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px', color: 'white', padding: '4px 6px', fontSize: '0.85rem', width: '100%', outline: 'none' }}
+                                            className="mc-item__edit-input"
                                         />
                                     ) : (
-                                        <span onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingItem({ id: daily.id, type: 'DAILIES', text: daily.text }); }} style={{
-                                            fontSize: '0.85rem',
-                                            fontWeight: '600',
-                                            opacity: daily.completed ? 0.4 : 1,
-                                            textDecoration: daily.completed ? 'line-through' : 'none'
-                                        }}>
+                                        <span
+                                            onClick={(e) => { e.stopPropagation(); setEditingItem({ id: daily.id, type: 'DAILIES', text: daily.text }); }}
+                                            className={`mc-item__text${daily.completed ? ' mc-item__text--done' : ''}`}
+                                        >
                                             {daily.text}
                                         </span>
                                     )}
-                                    {(daily.recurringDays && daily.recurringDays.length > 0) && (
-                                        <span style={{ fontSize: '0.65rem', fontWeight: '800', color: '#10b981', opacity: daily.completed ? 0.4 : 0.7 }}>🔁 {daily.recurringDays.join(', ')}</span>
-                                    )}
-                                    {daily.frequency && (
-                                        <span style={{ fontSize: '0.65rem', fontWeight: '800', color: '#10b981', opacity: daily.completed ? 0.4 : 0.7 }}>📉 {daily.frequency.count}x / {daily.frequency.period}</span>
+                                    {daily.recurringDays && daily.recurringDays.length > 0 && (
+                                        <span className="mc-item__tag mc-item__tag--green">🔁 {daily.recurringDays.join(', ')}</span>
                                     )}
                                 </div>
-                            </label>
-                            {onDeleteDaily && (
-                                <button onClick={() => onDeleteDaily(daily.id)} className="delete-btn" style={{ background: 'none', border: 'none', color: '#ff4444', opacity: 0.6, cursor: 'pointer', fontSize: '1rem', padding: '0 4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                                {onDeleteDaily && (
+                                    <button onClick={() => onDeleteDaily(daily.id)} className="mc-item__delete" aria-label="Delete">
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
+                {/* ── To-Do Section ── */}
+                <section className="mc-section">
+                    <div className="mc-section__header">
+                        <div className="mc-section__title">
+                            <span className="mc-section__dot mc-section__dot--todo" />
+                            <span>TO-DO&apos;S</span>
+                            {totalTodos > 0 && (
+                                <span className="mc-section__count">{completedTodos}/{totalTodos}</span>
                             )}
                         </div>
-                    ))}
-                </div>
-            </section>
-
-            <section>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: '#d4a017', letterSpacing: '0.1em', textTransform: 'uppercase', margin: 0 }}>To-Do&apos;s</h3>
-                    <button onClick={() => { setAddingType('TODOS'); setAddingText(''); }} style={{ background: 'none', border: 'none', color: '#d4a017', cursor: 'pointer', fontSize: '1.2rem', padding: '0 5px', fontWeight: 'bold' }}>+</button>
-                </div>
-                {addingType === 'TODOS' && (
-                    <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                        <input
-                            autoFocus
-                            value={addingText}
-                            onChange={(e) => setAddingText(e.target.value)}
-                            onKeyDown={(e) => { if (e.key === 'Enter') handleSaveAdd(); else if (e.key === 'Escape') setAddingType(null); }}
-                            placeholder="New to-do..."
-                            style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(139, 92, 246, 0.3)', borderRadius: '6px', color: 'white', padding: '8px', fontSize: '0.8rem', outline: 'none' }}
-                        />
-                        <button onClick={handleSaveAdd} style={{ background: 'var(--accent)', border: 'none', borderRadius: '6px', color: 'white', padding: '0 12px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer' }}>ADD</button>
-                    </div>
-                )}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {todos.length === 0 && <p style={{ fontSize: '0.8rem', opacity: 0.3 }}>No to-dos added.</p>}
-                    {todos.map((todo, idx) => (
-                        <div
-                            key={todo.id}
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, idx, 'TODOS')}
-                            onDragOver={handleDragOver}
-                            onDrop={(e) => handleDrop(e, idx, 'TODOS')}
-                            className="draggable-item"
-                            style={{
-                                display: 'flex',
-                                gap: '10px',
-                                alignItems: 'flex-start',
-                                cursor: 'grab',
-                                padding: '6px 8px',
-                                borderRadius: '8px',
-                                background: dragInfo?.index === idx && dragInfo.type === 'TODOS' ? 'rgba(255,255,255,0.05)' : 'transparent',
-                                transition: 'background 0.2s'
-                            }}
+                        <button
+                            onClick={() => { setAddingType('TODOS'); setAddingText(''); }}
+                            className="mc-add-btn"
+                            aria-label="Add todo"
                         >
-                            <div style={{ opacity: 0.3, marginTop: '4px', fontSize: '0.7rem' }}>⋮⋮</div>
-                            <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', cursor: 'pointer', flex: 1 }}>
-                                <MissionCheckbox
-                                    checked={todo.completed}
-                                    onChange={() => onToggleTodo(todo.id)}
-                                    variant="todo"
-                                />
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                        </button>
+                    </div>
+
+                    {addingType === 'TODOS' && (
+                        <div className="mc-add-row">
+                            <input
+                                autoFocus
+                                value={addingText}
+                                onChange={(e) => setAddingText(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleSaveAdd();
+                                    else if (e.key === 'Escape') setAddingType(null);
+                                }}
+                                placeholder="New task..."
+                                className="mc-add-input mc-add-input--todo"
+                            />
+                            <button onClick={handleSaveAdd} className="mc-add-confirm mc-add-confirm--todo">ADD</button>
+                        </div>
+                    )}
+
+                    <div className="mc-item-list">
+                        {todos.length === 0 && (
+                            <p className="mc-empty">No tasks yet. What needs to get done?</p>
+                        )}
+                        {todos.map((todo, idx) => (
+                            <div
+                                key={todo.id}
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, idx, 'TODOS')}
+                                onDragOver={handleDragOver}
+                                onDrop={(e) => handleDrop(e, idx, 'TODOS')}
+                                className={`mc-item${dragInfo?.index === idx && dragInfo.type === 'TODOS' ? ' mc-item--dragging' : ''}`}
+                            >
+                                <div className="mc-item__drag">⋮⋮</div>
+                                <MissionCheckbox checked={todo.completed} onChange={() => onToggleTodo(todo.id)} variant="todo" />
+                                <div className="mc-item__content">
                                     {editingItem?.id === todo.id ? (
                                         <input
                                             autoFocus
@@ -330,55 +304,33 @@ export default function MissionChecklist({ todos, dailies, sidebarOpen, onClose,
                                             onChange={(e) => setEditingItem({ ...editingItem, text: e.target.value })}
                                             onKeyDown={(e) => { if (e.key === 'Enter') handleSaveEdit(); else if (e.key === 'Escape') setEditingItem(null); }}
                                             onBlur={handleSaveEdit}
-                                            style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px', color: 'white', padding: '4px 6px', fontSize: '0.85rem', width: '100%', outline: 'none' }}
+                                            className="mc-item__edit-input"
                                         />
                                     ) : (
-                                        <span onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingItem({ id: todo.id, type: 'TODOS', text: todo.text }); }} style={{
-                                            fontSize: '0.85rem',
-                                            fontWeight: '600',
-                                            opacity: todo.completed ? 0.4 : 1,
-                                            textDecoration: todo.completed ? 'line-through' : 'none'
-                                        }}>
+                                        <span
+                                            onClick={(e) => { e.stopPropagation(); setEditingItem({ id: todo.id, type: 'TODOS', text: todo.text }); }}
+                                            className={`mc-item__text${todo.completed ? ' mc-item__text--done' : ''}`}
+                                        >
                                             {todo.text}
                                         </span>
                                     )}
                                     {todo.isTimed && (
-                                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                            {todo.date && <span style={{ fontSize: '0.65rem', fontWeight: '800', opacity: todo.completed ? 0.4 : 0.6 }}>📅 {todo.date}</span>}
-                                            {todo.time && <span style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--accent)', opacity: todo.completed ? 0.4 : 0.8 }}>⏰ {todo.time}</span>}
+                                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '2px' }}>
+                                            {todo.date && <span className="mc-item__tag">📅 {todo.date}</span>}
+                                            {todo.time && <span className="mc-item__tag mc-item__tag--accent">⏰ {todo.time}</span>}
                                         </div>
                                     )}
                                 </div>
-                            </label>
-                            {onDeleteTodo && (
-                                <button onClick={() => onDeleteTodo(todo.id)} className="delete-btn" style={{ background: 'none', border: 'none', color: '#ff4444', opacity: 0.6, cursor: 'pointer', fontSize: '1rem', padding: '0 4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
-                            )}
-                        </div>
-                    ))}
-                </div>
-            </section>
-
-
-            <style jsx>{`
-        .draggable-item:hover {
-          background: rgba(255,255,255,0.03) !important;
-        }
-        .draggable-item:active {
-          cursor: grabbing;
-        }
-        .live-mission-trigger:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(212, 160, 23, 0.6);
-          background: #b8860b;
-        }
-        .live-mission-trigger:active {
-          transform: translateY(0);
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-5px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
-        </div>
+                                {onDeleteTodo && (
+                                    <button onClick={() => onDeleteTodo(todo.id)} className="mc-item__delete" aria-label="Delete">
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            </aside>
+        </>
     );
 }

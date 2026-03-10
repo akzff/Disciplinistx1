@@ -8,6 +8,7 @@ import MissionChecklist from '@/components/MissionChecklist';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { NavigationBar } from '@/components/NavigationBar';
+import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { cloudStorage } from '@/lib/cloudStorage';
 import { useAuthContext } from '@/lib/AuthContext';
 import { useData } from '@/lib/DataContext';
@@ -630,17 +631,6 @@ export default function ChatPage() {
 
       <div className="chat-container">
         <header className="chat-header">
-          <button
-            className="sidebar-toggle-btn mobile-only"
-            onClick={() => setSidebarOpen(v => !v)}
-            aria-label="Open mission panel"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="3" y1="6" x2="21" y2="6"></line>
-              <line x1="3" y1="12" x2="21" y2="12"></line>
-              <line x1="3" y1="18" x2="21" y2="18"></line>
-            </svg>
-          </button>
 
           <div className="chat-header__left" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <div
@@ -793,11 +783,6 @@ export default function ChatPage() {
 
           {/* ── AI Chat Tab ────────────────────────────────────── */}
           <div style={{ display: liveTab ? 'none' : 'flex', flex: 1, flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
-
-            {/* Mobile backdrop — closes sidebar when tapped */}
-            {sidebarOpen && (
-              <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />
-            )}
 
             <MissionChecklist
               todos={todos}
@@ -1127,9 +1112,10 @@ export default function ChatPage() {
             />
           )
         }
-        <div className="nav-center-wrapper mobile-only">
-          <NavigationBar />
-        </div>
+        <MobileBottomNav
+          onTasksPress={() => setSidebarOpen(v => !v)}
+          tasksActive={sidebarOpen}
+        />
       </div>
     </main >
   );
