@@ -5,6 +5,7 @@ import { storage, DailyChat, formatTime } from '@/lib/storage';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { NavigationBar } from '@/components/NavigationBar';
+import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { cloudStorage } from '@/lib/cloudStorage';
 import { useData } from '@/lib/DataContext';
 import { useUser } from '@clerk/nextjs';
@@ -565,6 +566,7 @@ This will ${user?.id ? 'sync to cloud storage' : 'import to local storage'}. Con
                         )}
                     </div>
                 </div>
+                <MobileBottomNav />
             </div>
 
             <style jsx>{`

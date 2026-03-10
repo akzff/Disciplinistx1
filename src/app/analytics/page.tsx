@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { DailyChat } from '@/lib/storage';
 import { NavigationBar } from '@/components/NavigationBar';
+import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { useData } from '@/lib/DataContext';
 import { useUser } from '@clerk/nextjs';
 import { useAuthContext } from '@/lib/AuthContext';
@@ -267,6 +268,7 @@ export default function AnalyticsPage() {
                         )}
                     </div>
                 </div>
+                <MobileBottomNav />
             </div>
 
             <style jsx>{`

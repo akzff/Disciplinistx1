@@ -5,6 +5,7 @@ import { storage } from '@/lib/storage';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { NavigationBar } from '@/components/NavigationBar';
+import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { cloudStorage } from '@/lib/cloudStorage';
 import { useData } from '@/lib/DataContext';
 import { useUser } from '@clerk/nextjs';
@@ -337,6 +338,7 @@ export default function ExpensesPage() {
                         </div>
                     </div>
                 </div>
+                <MobileBottomNav />
             </div>
 
             <style jsx>{`
