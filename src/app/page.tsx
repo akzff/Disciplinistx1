@@ -782,7 +782,7 @@ export default function ChatPage() {
           )}
 
           {/* ── AI Chat Tab ────────────────────────────────────── */}
-          <div style={{ display: liveTab ? 'none' : 'flex', flex: 1, flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+          <div className="flex flex-col md:flex-row w-full h-full overflow-hidden relative flex-1" style={{ display: liveTab ? 'none' : 'flex' }}>
 
             <MissionChecklist
               todos={todos}
@@ -802,215 +802,218 @@ export default function ChatPage() {
               onDeleteTodo={(id) => setTodos(prev => prev.filter(t => t.id !== id))}
             />
 
-            {isPreviousDayOpen && !hideOverlay && (
-              <div className="overlay">
-                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⏳</div>
-                <h2 style={{ marginBottom: '1rem' }}>Yesterday Not Closed</h2>
-                <p style={{ maxWidth: '400px', opacity: 0.8, marginBottom: '2rem' }}>
-                  You haven&apos;t told the bot how you spent the end of <b>{previousDate}</b>.
-                  Complete the details before starting today.
-                </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%', maxWidth: '300px' }}>
-                  <button className="start-day-btn" style={{ fontSize: '0.9rem', padding: '1rem' }} onClick={closePreviousDay}>
-                    I&apos;ve Told Everything
-                  </button>
-                  <button className="start-day-btn" style={{ fontSize: '0.8rem', padding: '0.8rem', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', boxShadow: 'none', color: 'rgba(255,255,255,0.6)' }} onClick={() => setHideOverlay(true)}>
-                    I have things left to say
-                  </button>
-                </div>
-              </div>
-            )}
+            <main className="flex-1 flex flex-col h-full overflow-hidden min-w-0 relative">
 
-            <div className="chat-messages" ref={scrollRef}>
-
-              {/* Loading spinner while waiting for cloud sync */}
-              {!isCloudSynced && (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '12px', opacity: 0.5 }}>
-                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#d4a017', animation: 'dot-pulse 1.5s infinite' }} />
-                  <p style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.4)' }}>SYNCING FROM CLOUD...</p>
-                </div>
-              )}
-
-              {isInitialized && messages.length === 0 && (
-                <div className="start-day-wrapper">
-                  <div style={{ fontSize: '4rem', filter: 'drop-shadow(0 0 20px var(--accent-glow))' }}>🌅</div>
-                  <div>
-                    <h2 style={{ fontSize: '2rem', fontWeight: '900', marginBottom: '0.5rem' }}>A New Day Begins</h2>
-                    <p style={{ opacity: 0.6 }}>Your day starts fresh. What will you do today?</p>
+              {isPreviousDayOpen && !hideOverlay && (
+                <div className="overlay">
+                  <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⏳</div>
+                  <h2 style={{ marginBottom: '1rem' }}>Yesterday Not Closed</h2>
+                  <p style={{ maxWidth: '400px', opacity: 0.8, marginBottom: '2rem' }}>
+                    You haven&apos;t told the bot how you spent the end of <b>{previousDate}</b>.
+                    Complete the details before starting today.
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%', maxWidth: '300px' }}>
+                    <button className="start-day-btn" style={{ fontSize: '0.9rem', padding: '1rem' }} onClick={closePreviousDay}>
+                      I&apos;ve Told Everything
+                    </button>
+                    <button className="start-day-btn" style={{ fontSize: '0.8rem', padding: '0.8rem', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', boxShadow: 'none', color: 'rgba(255,255,255,0.6)' }} onClick={() => setHideOverlay(true)}>
+                      I have things left to say
+                    </button>
                   </div>
-                  <button className="start-day-btn" onClick={startMyDay}>
-                    Start My Day
-                  </button>
                 </div>
               )}
 
+              <div className="chat-messages" ref={scrollRef}>
 
-              {messages.map((msg, i) => (
-                <div key={i} className={`message-wrapper ${msg.role}`}>
-                  {editingIndex === i ? (
-                    <div style={{ width: '100%', maxWidth: '80%' }}>
-                      <textarea
-                        className="edit-textarea"
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveEdit(); } }}
-                        autoFocus
-                      />
-                      <div className="edit-actions">
-                        <button className="edit-save" onClick={saveEdit}>Save & Resend</button>
-                        <button className="edit-cancel" onClick={() => setEditingIndex(null)}>Cancel</button>
-                      </div>
+                {/* Loading spinner while waiting for cloud sync */}
+                {!isCloudSynced && (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '12px', opacity: 0.5 }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#d4a017', animation: 'dot-pulse 1.5s infinite' }} />
+                    <p style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.4)' }}>SYNCING FROM CLOUD...</p>
+                  </div>
+                )}
+
+                {isInitialized && messages.length === 0 && (
+                  <div className="start-day-wrapper">
+                    <div style={{ fontSize: '4rem', filter: 'drop-shadow(0 0 20px var(--accent-glow))' }}>🌅</div>
+                    <div>
+                      <h2 style={{ fontSize: '2rem', fontWeight: '900', marginBottom: '0.5rem' }}>A New Day Begins</h2>
+                      <p style={{ opacity: 0.6 }}>Your day starts fresh. What will you do today?</p>
                     </div>
-                  ) : (
-                    <>
-                      <div className="message-meta">
-                        {msg.role === 'user' ? (
-                          <>
-                            <span className="profile-name">{displayName}</span>
-                            {preferences.pfp ? (
-                              <Image src={preferences.pfp} alt="pfp" className="pfp-icon" width={32} height={32} />
-                            ) : (
-                              <div className="pfp-icon" style={{ background: 'var(--accent)', opacity: 0.5 }}></div>
-                            )}
-                          </>
-                        ) : (
-                          <>
-                            <div className="pfp-icon" style={{ background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem' }}>🧘</div>
-                            <span className="profile-name">DISCIPLINIST</span>
-                          </>
-                        )}
+                    <button className="start-day-btn" onClick={startMyDay}>
+                      Start My Day
+                    </button>
+                  </div>
+                )}
+
+
+                {messages.map((msg, i) => (
+                  <div key={i} className={`message-wrapper ${msg.role}`}>
+                    {editingIndex === i ? (
+                      <div style={{ width: '100%', maxWidth: '80%' }}>
+                        <textarea
+                          className="edit-textarea"
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveEdit(); } }}
+                          autoFocus
+                        />
+                        <div className="edit-actions">
+                          <button className="edit-save" onClick={saveEdit}>Save & Resend</button>
+                          <button className="edit-cancel" onClick={() => setEditingIndex(null)}>Cancel</button>
+                        </div>
                       </div>
-                      <div className={`message ${msg.role}`}>
-                        {msg.completedMission ? (
-                          <div className="mission-complete-card">
-                            <div className="mc-header">
-                              <span className="mc-icon">✅</span>
-                              <div>
-                                <p className="mc-label">TASK COMPLETE</p>
-                                <p className="mc-title">{msg.completedMission.name}</p>
+                    ) : (
+                      <>
+                        <div className="message-meta">
+                          {msg.role === 'user' ? (
+                            <>
+                              <span className="profile-name">{displayName}</span>
+                              {preferences.pfp ? (
+                                <Image src={preferences.pfp} alt="pfp" className="pfp-icon" width={32} height={32} />
+                              ) : (
+                                <div className="pfp-icon" style={{ background: 'var(--accent)', opacity: 0.5 }}></div>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <div className="pfp-icon" style={{ background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem' }}>🧘</div>
+                              <span className="profile-name">DISCIPLINIST</span>
+                            </>
+                          )}
+                        </div>
+                        <div className={`message ${msg.role}`}>
+                          {msg.completedMission ? (
+                            <div className="mission-complete-card">
+                              <div className="mc-header">
+                                <span className="mc-icon">✅</span>
+                                <div>
+                                  <p className="mc-label">TASK COMPLETE</p>
+                                  <p className="mc-title">{msg.completedMission.name}</p>
+                                </div>
                               </div>
+                              <div className="mc-grid">
+                                <div className="mc-stat">
+                                  <span className="mc-stat-label">START TIME</span>
+                                  <span className="mc-stat-value">{new Date(msg.completedMission.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                                </div>
+                                <div className="mc-stat">
+                                  <span className="mc-stat-label">END TIME</span>
+                                  <span className="mc-stat-value">{new Date(msg.completedMission.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                                </div>
+                                <div className="mc-stat mc-accent">
+                                  <span className="mc-stat-label">⚡ ACTIVE TIME</span>
+                                  <span className="mc-stat-value">{formatTime(msg.completedMission.activeTime)}</span>
+                                </div>
+                                <div className="mc-stat">
+                                  <span className="mc-stat-label">⏸ PAUSED TIME</span>
+                                  <span className="mc-stat-value">{formatTime(msg.completedMission.pausedTime)}</span>
+                                </div>
+                                <div className="mc-stat mc-wide">
+                                  <span className="mc-stat-label">⏱ TOTAL DURATION</span>
+                                  <span className="mc-stat-value">{formatTime(msg.completedMission.endTime - msg.completedMission.startTime)}</span>
+                                </div>
+                              </div>
+                              <p className="mc-prompt">{msg.content}</p>
                             </div>
-                            <div className="mc-grid">
-                              <div className="mc-stat">
-                                <span className="mc-stat-label">START TIME</span>
-                                <span className="mc-stat-value">{new Date(msg.completedMission.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
-                              </div>
-                              <div className="mc-stat">
-                                <span className="mc-stat-label">END TIME</span>
-                                <span className="mc-stat-value">{new Date(msg.completedMission.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
-                              </div>
-                              <div className="mc-stat mc-accent">
-                                <span className="mc-stat-label">⚡ ACTIVE TIME</span>
-                                <span className="mc-stat-value">{formatTime(msg.completedMission.activeTime)}</span>
-                              </div>
-                              <div className="mc-stat">
-                                <span className="mc-stat-label">⏸ PAUSED TIME</span>
-                                <span className="mc-stat-value">{formatTime(msg.completedMission.pausedTime)}</span>
-                              </div>
-                              <div className="mc-stat mc-wide">
-                                <span className="mc-stat-label">⏱ TOTAL DURATION</span>
-                                <span className="mc-stat-value">{formatTime(msg.completedMission.endTime - msg.completedMission.startTime)}</span>
-                              </div>
-                            </div>
-                            <p className="mc-prompt">{msg.content}</p>
-                          </div>
-                        ) : msg.role === 'assistant' ? (
-                          <div className="chat-md">
-                            <ReactMarkdown
-                              remarkPlugins={[remarkGfm]}
-                              components={{
-                                img: ({ src, ...props }) => src && typeof src === 'string' ? <Image src={src} {...props} style={{ maxWidth: '100%', borderRadius: '12px', marginTop: '10px' }} alt="AI generated" width={0} height={0} sizes="100vw" /> : null,
-                                a: ({ href, ...props }) => {
-                                  const isImage = href?.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i);
-                                  if (isImage && href && typeof href === 'string') {
-                                    return <Image src={href} style={{ maxWidth: '100%', borderRadius: '12px', marginTop: '10px', display: 'block' }} alt="AI generated" width={0} height={0} sizes="100vw" />;
+                          ) : msg.role === 'assistant' ? (
+                            <div className="chat-md">
+                              <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                components={{
+                                  img: ({ src, ...props }) => src && typeof src === 'string' ? <Image src={src} {...props} style={{ maxWidth: '100%', borderRadius: '12px', marginTop: '10px' }} alt="AI generated" width={0} height={0} sizes="100vw" /> : null,
+                                  a: ({ href, ...props }) => {
+                                    const isImage = href?.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i);
+                                    if (isImage && href && typeof href === 'string') {
+                                      return <Image src={href} style={{ maxWidth: '100%', borderRadius: '12px', marginTop: '10px', display: 'block' }} alt="AI generated" width={0} height={0} sizes="100vw" />;
+                                    }
+                                    return <a href={href} {...props} target="_blank" rel="noopener noreferrer" />;
                                   }
-                                  return <a href={href} {...props} target="_blank" rel="noopener noreferrer" />;
-                                }
-                              }}
-                            >
-                              {cleanBotMessage(msg.content)}
-                            </ReactMarkdown>
-                          </div>
-                        ) : (
-                          msg.content
-                        )}
+                                }}
+                              >
+                                {cleanBotMessage(msg.content)}
+                              </ReactMarkdown>
+                            </div>
+                          ) : (
+                            msg.content
+                          )}
 
-                        {msg.taskRequest?.status === 'PENDING' && (
-                          <div className="task-request-inline">
-                            <h4>Start task?</h4>
-                            <p>{msg.taskRequest.name}</p>
-                            <button className="approve-btn" onClick={() => approveTask(i)}>Start</button>
-                          </div>
+                          {msg.taskRequest?.status === 'PENDING' && (
+                            <div className="task-request-inline">
+                              <h4>Start task?</h4>
+                              <p>{msg.taskRequest.name}</p>
+                              <button className="approve-btn" onClick={() => approveTask(i)}>Start</button>
+                            </div>
+                          )}
+                        </div>
+                        {msg.role === 'user' && (
+                          <button className="edit-btn" onClick={() => startEdit(i, msg.content)}>Edit</button>
                         )}
+                      </>
+                    )}
+                  </div>
+                ))}
+                {isLoading && (
+                  <div className="message ai">
+                    <div className="typing-indicator">
+                      <div className="dot"></div><div className="dot"></div><div className="dot"></div>
+                    </div>
+                  </div>
+                )}
+
+                {activeTasks.map(task => {
+                  const activeTime = task.status === 'RUNNING'
+                    ? (task.totalActiveTime || 0) + Math.max(0, now - (task.lastStartedAt || task.startTime || now))
+                    : (task.totalActiveTime || 0);
+                  const pausedTime = task.status === 'PAUSED'
+                    ? (task.totalPausedTime || 0) + Math.max(0, now - (task.lastPausedAt || task.startTime || now))
+                    : (task.totalPausedTime || 0);
+
+                  return (
+                    <div key={task.id} className="active-tasks-card">
+                      <div style={{ fontSize: '1.5rem' }}>{task.status === 'RUNNING' ? '🔥' : '⏸️'}</div>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ fontSize: '0.7rem', opacity: 0.6, fontWeight: '700', textTransform: 'uppercase' }}>Current Task</p>
+                        <p style={{ fontWeight: '800' }}>{task.name}</p>
+                        <p style={{ fontSize: '0.65rem', opacity: 0.5, marginTop: '2px' }}>
+                          Active: {formatTime(activeTime, false)} | Paused: {formatTime(pausedTime, false)}
+                        </p>
                       </div>
-                      {msg.role === 'user' && (
-                        <button className="edit-btn" onClick={() => startEdit(i, msg.content)}>Edit</button>
-                      )}
-                    </>
-                  )}
-                </div>
-              ))}
-              {isLoading && (
-                <div className="message ai">
-                  <div className="typing-indicator">
-                    <div className="dot"></div><div className="dot"></div><div className="dot"></div>
-                  </div>
-                </div>
-              )}
-
-              {activeTasks.map(task => {
-                const activeTime = task.status === 'RUNNING'
-                  ? (task.totalActiveTime || 0) + Math.max(0, now - (task.lastStartedAt || task.startTime || now))
-                  : (task.totalActiveTime || 0);
-                const pausedTime = task.status === 'PAUSED'
-                  ? (task.totalPausedTime || 0) + Math.max(0, now - (task.lastPausedAt || task.startTime || now))
-                  : (task.totalPausedTime || 0);
-
-                return (
-                  <div key={task.id} className="active-tasks-card">
-                    <div style={{ fontSize: '1.5rem' }}>{task.status === 'RUNNING' ? '🔥' : '⏸️'}</div>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ fontSize: '0.7rem', opacity: 0.6, fontWeight: '700', textTransform: 'uppercase' }}>Current Task</p>
-                      <p style={{ fontWeight: '800' }}>{task.name}</p>
-                      <p style={{ fontSize: '0.65rem', opacity: 0.5, marginTop: '2px' }}>
-                        Active: {formatTime(activeTime, false)} | Paused: {formatTime(pausedTime, false)}
-                      </p>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button onClick={() => toggleTask(task.id)} className="edit-cancel" style={{ fontSize: '0.7rem' }}>
+                          {task.status === 'RUNNING' ? 'Pause' : 'Resume'}
+                        </button>
+                        <button onClick={() => closeTask(task.id)} className="edit-save" style={{ fontSize: '0.7rem' }}>
+                          Finish
+                        </button>
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button onClick={() => toggleTask(task.id)} className="edit-cancel" style={{ fontSize: '0.7rem' }}>
-                        {task.status === 'RUNNING' ? 'Pause' : 'Resume'}
-                      </button>
-                      <button onClick={() => closeTask(task.id)} className="edit-save" style={{ fontSize: '0.7rem' }}>
-                        Finish
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Input area (AI chat only) */}
-            <div className="input-area">
-              <div className="input-wrapper">
-                <textarea
-                  placeholder="Message your coach..."
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  rows={1}
-                  onInput={(e) => {
-                    const target = e.target as HTMLTextAreaElement;
-                    target.style.height = 'auto';
-                    target.style.height = `${target.scrollHeight}px`;
-                  }}
-                />
+                  );
+                })}
               </div>
-              <button className="send-button" onClick={() => handleSend()} disabled={!input.trim() || isLoading}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
-              </button>
-            </div>
 
+              {/* Input area (AI chat only) */}
+              <div className="input-area">
+                <div className="input-wrapper">
+                  <textarea
+                    placeholder="Message your coach..."
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    rows={1}
+                    onInput={(e) => {
+                      const target = e.target as HTMLTextAreaElement;
+                      target.style.height = 'auto';
+                      target.style.height = `${target.scrollHeight}px`;
+                    }}
+                  />
+                </div>
+                <button className="send-button" onClick={() => handleSend()} disabled={!input.trim() || isLoading}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
+                </button>
+              </div>
+
+            </main>
             {/* ── closes AI Chat Tab wrapper ── */}
           </div>
 
