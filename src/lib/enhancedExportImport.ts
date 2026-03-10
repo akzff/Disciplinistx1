@@ -411,8 +411,4 @@ export class EnhancedExportImport {
     }
 }
 
-// Make available globally for manual use
-if (typeof window !== 'undefined') {
-    (window as { enhancedExportImport?: typeof EnhancedExportImport }).enhancedExportImport = EnhancedExportImport;
-    console.log('Enhanced export/import available at window.enhancedExportImport');
-}
+// EnhancedExportImport class — import and use directly, not exposed on window

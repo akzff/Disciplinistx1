@@ -42,58 +42,35 @@ function SectionHeader({
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '12px 16px',
-            borderBottom: '1px solid rgba(255,255,255,0.05)'
+            borderBottom: '1px solid rgba(255,255,255,0.05)',
         }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <div style={{
-                    width: '6px', height: '6px',
-                    borderRadius: '50%',
-                    backgroundColor: dot,
-                    boxShadow: `0 0 6px ${dot}`,
-                    flexShrink: 0,
+                    width: '6px', height: '6px', borderRadius: '50%',
+                    backgroundColor: dot, boxShadow: `0 0 6px ${dot}`, flexShrink: 0,
                 }} />
                 <span style={{
-                    color: 'rgba(255,255,255,0.7)',
-                    fontWeight: 900,
-                    fontSize: '11px',
-                    letterSpacing: '0.12em',
-                    textTransform: 'uppercase' as const,
+                    color: 'rgba(255,255,255,0.7)', fontWeight: 900, fontSize: '11px',
+                    letterSpacing: '0.12em', textTransform: 'uppercase' as const,
                 }}>
                     {label}
                 </span>
                 {total > 0 && (
                     <span style={{
-                        fontSize: '10px',
-                        background: 'rgba(212,160,23,0.12)',
-                        color: '#d4a017',
-                        border: '1px solid rgba(212,160,23,0.25)',
-                        padding: '2px 6px',
-                        borderRadius: '20px',
-                        fontWeight: 700,
+                        fontSize: '10px', background: 'rgba(212,160,23,0.12)', color: '#d4a017',
+                        border: '1px solid rgba(212,160,23,0.25)', padding: '2px 6px',
+                        borderRadius: '20px', fontWeight: 700,
                     }}>
                         {count}{countLabel ? ` ${countLabel}` : `/${total}`}
                     </span>
                 )}
             </div>
-            <button
-                onClick={onAdd}
-                style={{
-                    width: '24px', height: '24px',
-                    borderRadius: '8px',
-                    background: 'rgba(212,160,23,0.1)',
-                    border: '1px solid rgba(212,160,23,0.2)',
-                    color: '#d4a017',
-                    fontSize: '18px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    lineHeight: 1,
-                    flexShrink: 0,
-                }}>
-                +
-            </button>
+            <button onClick={onAdd} style={{
+                width: '24px', height: '24px', borderRadius: '8px', background: 'rgba(212,160,23,0.1)',
+                border: '1px solid rgba(212,160,23,0.2)', color: '#d4a017', fontSize: '18px',
+                fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center',
+                justifyContent: 'center', lineHeight: 1, flexShrink: 0,
+            }}>+</button>
         </div>
     );
 }
@@ -111,29 +88,19 @@ function CheckItem({
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
             style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                padding: '8px 10px',
-                borderRadius: '10px',
-                cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px',
+                borderRadius: '10px', cursor: 'pointer',
                 background: hovered ? 'rgba(255,255,255,0.04)' : 'transparent',
                 opacity: checked ? 0.55 : 1,
                 transition: 'background 0.15s, opacity 0.15s',
                 overflow: 'hidden',
             }}>
-            {/* Custom checkbox */}
             <div style={{
-                width: '18px', height: '18px',
-                minWidth: '18px',
-                borderRadius: '5px',
+                width: '18px', height: '18px', minWidth: '18px', borderRadius: '5px',
                 border: checked ? `2px solid ${accentColor}` : '2px solid rgba(255,255,255,0.2)',
                 background: checked ? accentColor : 'transparent',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 0.15s',
-                flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'all 0.15s', flexShrink: 0,
             }}>
                 {checked && (
                     <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
@@ -141,37 +108,21 @@ function CheckItem({
                     </svg>
                 )}
             </div>
-
-            {/* Label */}
-            <span
-                onClick={(e) => { e.stopPropagation(); onEdit?.(); }}
-                style={{
-                    fontSize: '13px',
-                    color: checked ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.8)',
-                    textDecoration: checked ? 'line-through' : 'none',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap' as const,
-                    flex: 1,
-                    minWidth: 0,
-                }}>
+            <span onClick={(e) => { e.stopPropagation(); onEdit?.(); }} style={{
+                fontSize: '13px',
+                color: checked ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.8)',
+                textDecoration: checked ? 'line-through' : 'none',
+                overflow: 'hidden', textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap' as const, flex: 1, minWidth: 0,
+            }}>
                 {label}
             </span>
-
-            {/* Delete */}
             {onDelete && hovered && (
-                <button
-                    onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                    style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: 'rgba(248,113,113,0.5)',
-                        padding: '2px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        flexShrink: 0,
-                    }}>
+                <button onClick={(e) => { e.stopPropagation(); onDelete(); }} style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: 'rgba(248,113,113,0.5)', padding: '2px',
+                    display: 'flex', alignItems: 'center', flexShrink: 0,
+                }}>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                         <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                     </svg>
@@ -191,21 +142,13 @@ function InlineInput({
 }) {
     return (
         <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '8px 10px',
-            background: '#1a1a1a',
-            borderRadius: '10px',
-            border: `1px solid ${accentColor}33`,
-            marginBottom: '4px',
+            display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px',
+            background: '#1a1a1a', borderRadius: '10px',
+            border: `1px solid ${accentColor}33`, marginBottom: '4px',
         }}>
             <div style={{
-                width: '18px', height: '18px',
-                minWidth: '18px',
-                borderRadius: '5px',
-                border: '2px dashed rgba(255,255,255,0.2)',
-                flexShrink: 0,
+                width: '18px', height: '18px', minWidth: '18px', borderRadius: '5px',
+                border: '2px dashed rgba(255,255,255,0.2)', flexShrink: 0,
             }} />
             <input
                 autoFocus
@@ -218,13 +161,8 @@ function InlineInput({
                 }}
                 onBlur={onSave}
                 style={{
-                    flex: 1,
-                    background: 'transparent',
-                    border: 'none',
-                    outline: 'none',
-                    color: 'rgba(255,255,255,0.8)',
-                    fontSize: '13px',
-                    minWidth: 0,
+                    flex: 1, background: 'transparent', border: 'none',
+                    outline: 'none', color: 'rgba(255,255,255,0.8)', fontSize: '13px', minWidth: 0,
                 }}
             />
         </div>
@@ -232,9 +170,10 @@ function InlineInput({
 }
 
 // ────────────────────────────────────────────────────────────────
-// Main Component
+// Main — returns a SINGLE root element that IS the sidebar column.
+// On mobile it uses a CSS class for the slide-over behaviour.
+// On desktop it fills the 300px grid column from page.tsx.
 // ────────────────────────────────────────────────────────────────
-
 export default function MissionChecklist({
     todos, dailies, sidebarOpen, onClose,
     onToggleTodo, onToggleDaily, onReorderTodo, onReorderDaily,
@@ -262,8 +201,7 @@ export default function MissionChecklist({
         if (!addingText.trim()) { setAddingType(null); return; }
         if (addingType === 'DAILIES' && onAddDaily) onAddDaily(addingText.trim());
         if (addingType === 'TODOS' && onAddTodo) onAddTodo(addingText.trim());
-        setAddingType(null);
-        setAddingText('');
+        setAddingType(null); setAddingText('');
     };
 
     const handleSaveEdit = () => {
@@ -274,35 +212,239 @@ export default function MissionChecklist({
     };
 
     const handleDragStart = (e: React.DragEvent, index: number, type: 'DAILIES' | 'TODOS') => {
-        setDragInfo({ index, type });
-        e.dataTransfer.effectAllowed = 'move';
+        setDragInfo({ index, type }); e.dataTransfer.effectAllowed = 'move';
     };
-    const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); };
+    const handleDragOver = (e: React.DragEvent) => e.preventDefault();
     const handleDrop = (e: React.DragEvent, targetIndex: number, type: 'DAILIES' | 'TODOS') => {
         e.preventDefault();
         if (!dragInfo || dragInfo.type !== type) return;
         const items = type === 'DAILIES' ? [...dailies] : [...todos];
         const [moved] = items.splice(dragInfo.index, 1);
         items.splice(targetIndex, 0, moved);
-        if (type === 'DAILIES') onReorderDaily(items);
-        else onReorderTodo(items);
+        if (type === 'DAILIES') onReorderDaily(items); else onReorderTodo(items);
         setDragInfo(null);
     };
 
-    // ── MOBILE DRAWER (unchanged CSS classes) ────────────────────
-    const MobileSidebar = (
-        <>
-            <style jsx global>{`
-                .sidebar-desktop-scroll::-webkit-scrollbar { width: 4px; }
-                .sidebar-desktop-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
-                .sidebar-desktop-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
-            `}</style>
+    // The inner content — shared logic, rendered into the right container below
+    const renderContent = () => (
+        <div style={{
+            display: 'flex', flexDirection: 'column', height: '100%', width: '100%',
+            overflow: 'hidden', padding: '16px', gap: '12px', boxSizing: 'border-box',
+        }}>
+            {/* ZONE A — MISSION BOARD */}
+            <div style={{
+                flexShrink: 0, background: 'linear-gradient(135deg, #1a1500, #0f0f0f)',
+                border: '1px solid rgba(212,160,23,0.2)', borderRadius: '16px',
+                padding: '16px', overflow: 'hidden',
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{
+                            width: '32px', height: '32px', borderRadius: '12px',
+                            background: 'rgba(212,160,23,0.15)', border: '1px solid rgba(212,160,23,0.25)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '16px', flexShrink: 0,
+                        }}>🎯</div>
+                        <div>
+                            <p style={{ color: '#d4a017', fontWeight: 900, fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase', margin: 0 }}>
+                                Mission Board
+                            </p>
+                            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', margin: '2px 0 0 0' }}>
+                                Today&apos;s objectives
+                            </p>
+                        </div>
+                    </div>
+                    {onClose && (
+                        <button onClick={onClose} style={{
+                            width: '24px', height: '24px', borderRadius: '8px',
+                            background: 'rgba(255,255,255,0.05)', border: 'none',
+                            color: 'rgba(255,255,255,0.3)', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '12px', flexShrink: 0,
+                        }}>✕</button>
+                    )}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px' }}>{completedAll} / {totalAll} complete</span>
+                    <span style={{ color: '#d4a017', fontSize: '10px', fontWeight: 700 }}>{pct}%</span>
+                </div>
+                <div style={{ height: '6px', background: 'rgba(255,255,255,0.08)', borderRadius: '6px', overflow: 'hidden' }}>
+                    <div style={{
+                        height: '100%', width: `${pct}%`,
+                        background: 'linear-gradient(90deg, #d4a017, #f5c842)',
+                        borderRadius: '6px', transition: 'width 0.7s ease',
+                    }} />
+                </div>
+            </div>
 
-            {sidebarOpen && (
-                <div className="mc-backdrop md:hidden" onClick={onClose} />
+            {/* ZONE B — START TASK */}
+            {isStartingLive ? (
+                <div style={{
+                    flexShrink: 0, background: 'rgba(16,185,129,0.1)',
+                    border: '1px solid rgba(16,185,129,0.25)', borderRadius: '12px',
+                    padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px', overflow: 'hidden',
+                }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: '#10b981', fontWeight: 900, fontSize: '10px', letterSpacing: '0.12em' }}>⚡ NAME YOUR MISSION</span>
+                        <button onClick={() => setIsStartingLive(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '12px' }}>✕</button>
+                    </div>
+                    <input autoFocus placeholder="e.g. Deep work session..." value={liveInput}
+                        onChange={(e) => setLiveInput(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && liveInput.trim()) { onStartLiveMission(liveInput); setIsStartingLive(false); setLiveInput(''); }
+                            else if (e.key === 'Escape') setIsStartingLive(false);
+                        }}
+                        style={{
+                            background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                            borderRadius: '8px', color: 'white', padding: '8px', fontSize: '13px',
+                            outline: 'none', width: '100%', boxSizing: 'border-box',
+                        }}
+                    />
+                    <button onClick={() => { if (liveInput.trim()) { onStartLiveMission(liveInput); setIsStartingLive(false); setLiveInput(''); } }}
+                        style={{
+                            background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none',
+                            borderRadius: '8px', color: 'white', padding: '8px', fontSize: '10px',
+                            fontWeight: 900, letterSpacing: '0.1em', cursor: 'pointer',
+                        }}>🔥 LAUNCH MISSION</button>
+                </div>
+            ) : (
+                <button onClick={() => setIsStartingLive(true)} style={{
+                    flexShrink: 0, width: '100%', padding: '14px',
+                    background: 'linear-gradient(90deg, #d4a017, #c49010)',
+                    border: 'none', borderRadius: '12px', color: '#000',
+                    fontWeight: 900, fontSize: '13px', letterSpacing: '0.1em',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', gap: '8px', boxSizing: 'border-box',
+                    transition: 'box-shadow 0.2s, transform 0.1s',
+                }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 28px rgba(212,160,23,0.5)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none'; }}
+                    onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.97)'; }}
+                    onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
+                >
+                    <span>▶</span> START TASK
+                </button>
             )}
 
-            <aside className={`mission-checklist md:hidden no-scrollbar${sidebarOpen ? ' sidebar-open' : ''}`}>
+            {/* ZONE C — DAILIES */}
+            <div style={{
+                flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column',
+                background: '#0f0f0f', border: '1px solid rgba(255,255,255,0.05)',
+                borderRadius: '16px', overflow: 'hidden',
+            }}>
+                <SectionHeader dot="#34d399" label="DAILIES" completed={completedDailies} total={totalDailies}
+                    onAdd={() => { setAddingType('DAILIES'); setAddingText(''); }} />
+                <div className="mc-desktop-scroll" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '8px' }}>
+                    {addingType === 'DAILIES' && (
+                        <InlineInput placeholder="New daily habit..." value={addingText} onChange={setAddingText}
+                            onSave={handleSaveAdd} onCancel={() => setAddingType(null)} accentColor="#34d399" />
+                    )}
+                    {totalDailies === 0 && addingType !== 'DAILIES' && (
+                        <div style={{ textAlign: 'center', padding: '24px 8px' }}>
+                            <div style={{ fontSize: '24px', marginBottom: '8px' }}>🌅</div>
+                            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', lineHeight: 1.5, margin: 0 }}>
+                                No dailies yet.<br />Add your recurring habits.
+                            </p>
+                        </div>
+                    )}
+                    {dailies.map((daily, idx) => (
+                        editingItem?.id === daily.id ? (
+                            <InlineInput key={daily.id} placeholder="Edit daily..." value={editingItem.text}
+                                onChange={(v) => setEditingItem({ ...editingItem, text: v })}
+                                onSave={handleSaveEdit} onCancel={() => setEditingItem(null)} accentColor="#34d399" />
+                        ) : (
+                            <div key={daily.id} draggable
+                                onDragStart={(e) => handleDragStart(e, idx, 'DAILIES')}
+                                onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, idx, 'DAILIES')}
+                                style={{ opacity: dragInfo?.index === idx && dragInfo.type === 'DAILIES' ? 0.4 : 1 }}>
+                                <CheckItem label={daily.text} checked={daily.completed} accentColor="#34d399"
+                                    onToggle={() => onToggleDaily(daily.id)}
+                                    onEdit={() => setEditingItem({ id: daily.id, type: 'DAILIES', text: daily.text })}
+                                    onDelete={onDeleteDaily ? () => onDeleteDaily(daily.id) : undefined} />
+                            </div>
+                        )
+                    ))}
+                </div>
+            </div>
+
+            {/* ZONE D — TO-DO'S */}
+            <div style={{
+                flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column',
+                background: '#0f0f0f', border: '1px solid rgba(255,255,255,0.05)',
+                borderRadius: '16px', overflow: 'hidden',
+            }}>
+                <SectionHeader dot="#a78bfa" label="TO-DO'S" completed={completedTodos} total={totalTodos}
+                    countLabel="left" onAdd={() => { setAddingType('TODOS'); setAddingText(''); }} />
+                <div className="mc-desktop-scroll" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '8px' }}>
+                    {addingType === 'TODOS' && (
+                        <InlineInput placeholder="New task..." value={addingText} onChange={setAddingText}
+                            onSave={handleSaveAdd} onCancel={() => setAddingType(null)} accentColor="#a78bfa" />
+                    )}
+                    {totalTodos === 0 && addingType !== 'TODOS' && (
+                        <div style={{ textAlign: 'center', padding: '24px 8px' }}>
+                            <div style={{ fontSize: '24px', marginBottom: '8px' }}>📋</div>
+                            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', lineHeight: 1.5, margin: 0 }}>
+                                No tasks yet.<br />What needs to get done?
+                            </p>
+                        </div>
+                    )}
+                    {todos.map((todo, idx) => (
+                        editingItem?.id === todo.id ? (
+                            <InlineInput key={todo.id} placeholder="Edit task..." value={editingItem.text}
+                                onChange={(v) => setEditingItem({ ...editingItem, text: v })}
+                                onSave={handleSaveEdit} onCancel={() => setEditingItem(null)} accentColor="#a78bfa" />
+                        ) : (
+                            <div key={todo.id} draggable
+                                onDragStart={(e) => handleDragStart(e, idx, 'TODOS')}
+                                onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, idx, 'TODOS')}
+                                style={{ opacity: dragInfo?.index === idx && dragInfo.type === 'TODOS' ? 0.4 : 1 }}>
+                                <CheckItem label={todo.text} checked={todo.completed} accentColor="#a78bfa"
+                                    onToggle={() => onToggleTodo(todo.id)}
+                                    onEdit={() => setEditingItem({ id: todo.id, type: 'TODOS', text: todo.text })}
+                                    onDelete={onDeleteTodo ? () => onDeleteTodo(todo.id) : undefined} />
+                            </div>
+                        )
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+
+    // ── SINGLE ROOT ELEMENT ──────────────────────────────────────
+    // On desktop (inside the 300px grid column from page.tsx):
+    //   display: flex — occupies the full column, fully contained.
+    // On mobile: hidden via .mc-desktop-only CSS class.
+    //
+    // The mobile slide-over (aside.mission-checklist) is rendered
+    // separately inside the mobile-only layout in page.tsx (md:hidden).
+    // MissionChecklist itself only needs to be the desktop column.
+    return (
+        <>
+            {/* Global style for custom scrollbars */}
+            <style>{`
+                .mc-desktop-scroll::-webkit-scrollbar { width: 4px; }
+                .mc-desktop-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+                .mc-desktop-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+            `}</style>
+
+            {/* Mobile backdrop — only visible when sidebar is open on mobile */}
+            {sidebarOpen && (
+                <div
+                    className="mc-backdrop md:hidden"
+                    onClick={onClose}
+                    style={{
+                        position: 'fixed', inset: 0,
+                        background: 'rgba(0,0,0,0.6)', zIndex: 40,
+                    }}
+                />
+            )}
+
+            {/* Mobile drawer — slides in from left, hidden on desktop */}
+            <aside
+                className={`mission-checklist md:hidden no-scrollbar${sidebarOpen ? ' sidebar-open' : ''}`}
+                style={{ zIndex: 41 }}
+            >
+                {/* Reuse the same content tree for mobile */}
                 <div className="mc-header">
                     <div className="mc-header__title">
                         <span className="mc-header__icon">🎯</span>
@@ -341,9 +483,7 @@ export default function MissionChecklist({
                                 }}
                                 className="mc-task-input" />
                             <button onClick={() => { if (liveInput.trim()) { onStartLiveMission(liveInput); setIsStartingLive(false); setLiveInput(''); } }}
-                                className="mc-task-start-btn">
-                                🔥 LAUNCH MISSION
-                            </button>
+                                className="mc-task-start-btn">🔥 LAUNCH MISSION</button>
                         </div>
                     ) : (
                         <button onClick={() => setIsStartingLive(true)} className="mc-start-btn">
@@ -379,7 +519,6 @@ export default function MissionChecklist({
                                 onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, idx, 'DAILIES')}
                                 className={`mc-item${dragInfo?.index === idx && dragInfo.type === 'DAILIES' ? ' mc-item--dragging' : ''}`}>
                                 <div className="mc-item__drag">⋮⋮</div>
-                                <input type="checkbox" checked={daily.completed} onChange={() => onToggleDaily(daily.id)} className="mc-checkbox" />
                                 <div className="mc-item__content">
                                     {editingItem?.id === daily.id ? (
                                         <input autoFocus value={editingItem.text}
@@ -387,8 +526,10 @@ export default function MissionChecklist({
                                             onKeyDown={(e) => { if (e.key === 'Enter') handleSaveEdit(); else if (e.key === 'Escape') setEditingItem(null); }}
                                             onBlur={handleSaveEdit} className="mc-item__edit-input" />
                                     ) : (
-                                        <span onClick={(e) => { e.stopPropagation(); setEditingItem({ id: daily.id, type: 'DAILIES', text: daily.text }); }}
-                                            className={`mc-item__text${daily.completed ? ' mc-item__text--done' : ''}`}>{daily.text}</span>
+                                        <span onClick={() => onToggleDaily(daily.id)}
+                                            className={`mc-item__text${daily.completed ? ' mc-item__text--done' : ''}`}>
+                                            {daily.text}
+                                        </span>
                                     )}
                                 </div>
                                 {onDeleteDaily && (
@@ -427,7 +568,6 @@ export default function MissionChecklist({
                                 onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, idx, 'TODOS')}
                                 className={`mc-item${dragInfo?.index === idx && dragInfo.type === 'TODOS' ? ' mc-item--dragging' : ''}`}>
                                 <div className="mc-item__drag">⋮⋮</div>
-                                <input type="checkbox" checked={todo.completed} onChange={() => onToggleTodo(todo.id)} className="mc-checkbox" />
                                 <div className="mc-item__content">
                                     {editingItem?.id === todo.id ? (
                                         <input autoFocus value={editingItem.text}
@@ -435,8 +575,10 @@ export default function MissionChecklist({
                                             onKeyDown={(e) => { if (e.key === 'Enter') handleSaveEdit(); else if (e.key === 'Escape') setEditingItem(null); }}
                                             onBlur={handleSaveEdit} className="mc-item__edit-input" />
                                     ) : (
-                                        <span onClick={(e) => { e.stopPropagation(); setEditingItem({ id: todo.id, type: 'TODOS', text: todo.text }); }}
-                                            className={`mc-item__text${todo.completed ? ' mc-item__text--done' : ''}`}>{todo.text}</span>
+                                        <span onClick={() => onToggleTodo(todo.id)}
+                                            className={`mc-item__text${todo.completed ? ' mc-item__text--done' : ''}`}>
+                                            {todo.text}
+                                        </span>
                                     )}
                                 </div>
                                 {onDeleteTodo && (
@@ -449,348 +591,36 @@ export default function MissionChecklist({
                     </div>
                 </section>
             </aside>
-        </>
-    );
 
-    // ── DESKTOP SIDEBAR — all inline styles, guaranteed containment ──
-    const DesktopSidebar = (
-        <div style={{
-            width: '300px',
-            minWidth: '300px',
-            maxWidth: '300px',
-            height: '100%',
-            overflow: 'hidden',
-            borderRight: '1px solid rgba(212,160,23,0.1)',
-            backgroundColor: '#0a0a0a',
-            display: 'flex',
-            flexDirection: 'column',
-            position: 'relative',
-            zIndex: 1,
-            boxSizing: 'border-box',
-        }}>
-            {/* Inner scroll container */}
-            <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                height: '100%',
-                width: '100%',
-                overflow: 'hidden',
-                padding: '16px',
-                gap: '12px',
+            {/* ── DESKTOP SIDEBAR ─────────────────────────────────────────
+                This is the ONLY desktop render. It sits as the first child
+                of the CSS grid (300px column) defined in page.tsx.
+                It is hidden on mobile by the media query below.
+                NO other component should render <MissionChecklist> on desktop.
+            ─────────────────────────────────────────────────────────────── */}
+            <div className="mc-desktop-only" style={{
+                width: '300px', minWidth: '300px', maxWidth: '300px',
+                height: '100%', overflow: 'hidden',
+                borderRight: '1px solid rgba(212,160,23,0.1)',
+                backgroundColor: '#0a0a0a',
+                display: 'flex', flexDirection: 'column',
+                position: 'relative', zIndex: 1,
                 boxSizing: 'border-box',
+                /* hidden on mobile — shown on desktop */
             }}>
-
-                {/* ZONE A — MISSION BOARD */}
-                <div style={{
-                    flexShrink: 0,
-                    background: 'linear-gradient(135deg, #1a1500, #0f0f0f)',
-                    border: '1px solid rgba(212,160,23,0.2)',
-                    borderRadius: '16px',
-                    padding: '16px',
-                    overflow: 'hidden',
-                }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div style={{
-                                width: '32px', height: '32px',
-                                borderRadius: '12px',
-                                background: 'rgba(212,160,23,0.15)',
-                                border: '1px solid rgba(212,160,23,0.25)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: '16px', flexShrink: 0,
-                            }}>🎯</div>
-                            <div>
-                                <p style={{ color: '#d4a017', fontWeight: 900, fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase', margin: 0 }}>
-                                    Mission Board
-                                </p>
-                                <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', margin: '2px 0 0 0' }}>
-                                    Today&apos;s objectives
-                                </p>
-                            </div>
-                        </div>
-                        {onClose && (
-                            <button onClick={onClose} style={{
-                                width: '24px', height: '24px', borderRadius: '8px',
-                                background: 'rgba(255,255,255,0.05)', border: 'none',
-                                color: 'rgba(255,255,255,0.3)', cursor: 'pointer',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: '12px', flexShrink: 0,
-                            }}>✕</button>
-                        )}
-                    </div>
-                    {/* Progress */}
-                    <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                            <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px' }}>
-                                {completedAll} / {totalAll} complete
-                            </span>
-                            <span style={{ color: '#d4a017', fontSize: '10px', fontWeight: 700 }}>{pct}%</span>
-                        </div>
-                        <div style={{ height: '6px', background: 'rgba(255,255,255,0.08)', borderRadius: '6px', overflow: 'hidden' }}>
-                            <div style={{
-                                height: '100%',
-                                width: `${pct}%`,
-                                background: 'linear-gradient(90deg, #d4a017, #f5c842)',
-                                borderRadius: '6px',
-                                transition: 'width 0.7s ease',
-                            }} />
-                        </div>
-                    </div>
-                </div>
-
-                {/* ZONE B — START TASK */}
-                {isStartingLive ? (
-                    <div style={{
-                        flexShrink: 0,
-                        background: 'rgba(16,185,129,0.1)',
-                        border: '1px solid rgba(16,185,129,0.25)',
-                        borderRadius: '12px',
-                        padding: '12px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '8px',
-                        overflow: 'hidden',
-                    }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ color: '#10b981', fontWeight: 900, fontSize: '10px', letterSpacing: '0.12em' }}>
-                                ⚡ NAME YOUR MISSION
-                            </span>
-                            <button onClick={() => setIsStartingLive(false)}
-                                style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '12px' }}>
-                                ✕
-                            </button>
-                        </div>
-                        <input
-                            autoFocus
-                            placeholder="e.g. Deep work session..."
-                            value={liveInput}
-                            onChange={(e) => setLiveInput(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' && liveInput.trim()) { onStartLiveMission(liveInput); setIsStartingLive(false); setLiveInput(''); }
-                                else if (e.key === 'Escape') setIsStartingLive(false);
-                            }}
-                            style={{
-                                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                                borderRadius: '8px', color: 'white', padding: '8px', fontSize: '13px',
-                                outline: 'none', width: '100%', boxSizing: 'border-box',
-                            }}
-                        />
-                        <button
-                            onClick={() => { if (liveInput.trim()) { onStartLiveMission(liveInput); setIsStartingLive(false); setLiveInput(''); } }}
-                            style={{
-                                background: 'linear-gradient(135deg, #10b981, #059669)',
-                                border: 'none', borderRadius: '8px', color: 'white',
-                                padding: '8px', fontSize: '10px', fontWeight: 900,
-                                letterSpacing: '0.1em', cursor: 'pointer',
-                            }}>
-                            🔥 LAUNCH MISSION
-                        </button>
-                    </div>
-                ) : (
-                    <button
-                        onClick={() => setIsStartingLive(true)}
-                        style={{
-                            flexShrink: 0,
-                            width: '100%',
-                            padding: '14px',
-                            background: 'linear-gradient(90deg, #d4a017, #c49010)',
-                            border: 'none',
-                            borderRadius: '12px',
-                            color: '#000',
-                            fontWeight: 900,
-                            fontSize: '13px',
-                            letterSpacing: '0.1em',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '8px',
-                            boxSizing: 'border-box',
-                            transition: 'box-shadow 0.2s, transform 0.1s',
-                        }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 28px rgba(212,160,23,0.5)'; }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none'; }}
-                        onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.97)'; }}
-                        onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
-                    >
-                        <span>▶</span> START TASK
-                    </button>
-                )}
-
-                {/* ZONE C — DAILIES */}
-                <div style={{
-                    flex: 1,
-                    minHeight: 0,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    background: '#0f0f0f',
-                    border: '1px solid rgba(255,255,255,0.05)',
-                    borderRadius: '16px',
-                    overflow: 'hidden',
-                }}>
-                    <SectionHeader
-                        dot="#34d399"
-                        label="DAILIES"
-                        completed={completedDailies}
-                        total={totalDailies}
-                        onAdd={() => { setAddingType('DAILIES'); setAddingText(''); }}
-                    />
-                    <div className="sidebar-desktop-scroll" style={{
-                        flex: 1,
-                        overflowY: 'auto',
-                        overflowX: 'hidden',
-                        padding: '8px',
-                    }}>
-                        {addingType === 'DAILIES' && (
-                            <InlineInput
-                                placeholder="New daily habit..."
-                                value={addingText}
-                                onChange={setAddingText}
-                                onSave={handleSaveAdd}
-                                onCancel={() => setAddingType(null)}
-                                accentColor="#34d399"
-                            />
-                        )}
-                        {totalDailies === 0 && !addingType && (
-                            <div style={{ textAlign: 'center', padding: '24px 8px', opacity: 0.4 }}>
-                                <div style={{ fontSize: '24px', marginBottom: '8px' }}>🌅</div>
-                                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', lineHeight: 1.5 }}>
-                                    No dailies yet.<br />Add your recurring habits.
-                                </p>
-                            </div>
-                        )}
-                        {dailies.map((daily, idx) => (
-                            editingItem?.id === daily.id ? (
-                                <InlineInput key={daily.id}
-                                    placeholder="Edit daily..."
-                                    value={editingItem.text}
-                                    onChange={(v) => setEditingItem({ ...editingItem, text: v })}
-                                    onSave={handleSaveEdit}
-                                    onCancel={() => setEditingItem(null)}
-                                    accentColor="#34d399"
-                                />
-                            ) : (
-                                <div key={daily.id}
-                                    draggable
-                                    onDragStart={(e) => handleDragStart(e, idx, 'DAILIES')}
-                                    onDragOver={handleDragOver}
-                                    onDrop={(e) => handleDrop(e, idx, 'DAILIES')}
-                                    style={{ opacity: dragInfo?.index === idx && dragInfo.type === 'DAILIES' ? 0.4 : 1 }}>
-                                    <CheckItem
-                                        label={daily.text}
-                                        checked={daily.completed}
-                                        accentColor="#34d399"
-                                        onToggle={() => onToggleDaily(daily.id)}
-                                        onEdit={() => setEditingItem({ id: daily.id, type: 'DAILIES', text: daily.text })}
-                                        onDelete={onDeleteDaily ? () => onDeleteDaily(daily.id) : undefined}
-                                    />
-                                </div>
-                            )
-                        ))}
-                    </div>
-                </div>
-
-                {/* ZONE D — TO-DO'S */}
-                <div style={{
-                    flex: 1,
-                    minHeight: 0,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    background: '#0f0f0f',
-                    border: '1px solid rgba(255,255,255,0.05)',
-                    borderRadius: '16px',
-                    overflow: 'hidden',
-                }}>
-                    <SectionHeader
-                        dot="#a78bfa"
-                        label="TO-DO'S"
-                        completed={completedTodos}
-                        total={totalTodos}
-                        countLabel="left"
-                        onAdd={() => { setAddingType('TODOS'); setAddingText(''); }}
-                    />
-                    <div className="sidebar-desktop-scroll" style={{
-                        flex: 1,
-                        overflowY: 'auto',
-                        overflowX: 'hidden',
-                        padding: '8px',
-                    }}>
-                        {addingType === 'TODOS' && (
-                            <InlineInput
-                                placeholder="New task..."
-                                value={addingText}
-                                onChange={setAddingText}
-                                onSave={handleSaveAdd}
-                                onCancel={() => setAddingType(null)}
-                                accentColor="#a78bfa"
-                            />
-                        )}
-                        {totalTodos === 0 && !addingType && (
-                            <div style={{ textAlign: 'center', padding: '24px 8px', opacity: 0.4 }}>
-                                <div style={{ fontSize: '24px', marginBottom: '8px' }}>📋</div>
-                                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', lineHeight: 1.5 }}>
-                                    No tasks yet.<br />What needs to get done?
-                                </p>
-                            </div>
-                        )}
-                        {todos.map((todo, idx) => (
-                            editingItem?.id === todo.id ? (
-                                <InlineInput key={todo.id}
-                                    placeholder="Edit task..."
-                                    value={editingItem.text}
-                                    onChange={(v) => setEditingItem({ ...editingItem, text: v })}
-                                    onSave={handleSaveEdit}
-                                    onCancel={() => setEditingItem(null)}
-                                    accentColor="#a78bfa"
-                                />
-                            ) : (
-                                <div key={todo.id}
-                                    draggable
-                                    onDragStart={(e) => handleDragStart(e, idx, 'TODOS')}
-                                    onDragOver={handleDragOver}
-                                    onDrop={(e) => handleDrop(e, idx, 'TODOS')}
-                                    style={{ opacity: dragInfo?.index === idx && dragInfo.type === 'TODOS' ? 0.4 : 1 }}>
-                                    <CheckItem
-                                        label={todo.text}
-                                        checked={todo.completed}
-                                        accentColor="#a78bfa"
-                                        onToggle={() => onToggleTodo(todo.id)}
-                                        onEdit={() => setEditingItem({ id: todo.id, type: 'TODOS', text: todo.text })}
-                                        onDelete={onDeleteTodo ? () => onDeleteTodo(todo.id) : undefined}
-                                    />
-                                </div>
-                            )
-                        ))}
-                    </div>
-                </div>
-
+                {renderContent()}
             </div>
-        </div>
-    );
 
-    return (
-        <>
-            {/* Mobile: rendered via CSS classes (invisible on md+) */}
-            {MobileSidebar}
-            {/* Desktop: rendered with full inline styles (hidden on mobile via display:none @media) */}
-            <DesktopSidebarWrapper>{DesktopSidebar}</DesktopSidebarWrapper>
-        </>
-    );
-}
-
-// Wrapper that hides desktop sidebar on mobile using a style tag
-function DesktopSidebarWrapper({ children }: { children: React.ReactNode }) {
-    return (
-        <>
-            <style jsx global>{`
-                .desktop-sidebar-shell { display: none; }
+            {/* Media query: hide desktop sidebar on mobile, hide mobile aside on desktop */}
+            <style>{`
+                @media (max-width: 767px) {
+                    .mc-desktop-only { display: none !important; }
+                }
                 @media (min-width: 768px) {
-                    .desktop-sidebar-shell { display: flex !important; }
+                    .mission-checklist { display: none !important; }
+                    .mc-backdrop { display: none !important; }
                 }
             `}</style>
-            <div className="desktop-sidebar-shell" style={{ width: '300px', minWidth: '300px', maxWidth: '300px', height: '100%', overflow: 'hidden' }}>
-                {children}
-            </div>
         </>
     );
 }
