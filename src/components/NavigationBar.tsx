@@ -39,7 +39,7 @@ export function NavigationBar() {
                         border: active ? '1px solid rgba(139, 92, 246, 0.3)' : '1px solid transparent',
                         boxShadow: active ? '0 4px 15px rgba(139, 92, 246, 0.15)' : 'none',
                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                        letterSpacing: '0.06em'
+                        letterSpacing: '0.06em',
                     }}>
                         {item.label}
                     </Link>

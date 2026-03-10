@@ -1361,3 +1361,51 @@ input {
   background: rgba(239, 68, 68, 0.1);
   color: #ef4444;
 }
+
+/* ── Group Chat / Live Chat Animations ──────────────────────────────────── */
+
+@keyframes nav-live-pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 4px #10b981;
+  }
+
+  50% {
+    opacity: 0.5;
+    box-shadow: 0 0 10px #10b981;
+  }
+}
+
+@keyframes gc-pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 6px #10b981;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.6;
+    box-shadow: 0 0 14px #10b981;
+    transform: scale(1.2);
+  }
+}
+
+.gc-message-wrapper {
+  animation: gc-msg-in 0.2s ease-out;
+}
+
+@keyframes gc-msg-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
