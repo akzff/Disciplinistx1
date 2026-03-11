@@ -125,6 +125,11 @@ export default function ExpensesPage() {
             const formData = new FormData();
             formData.append('file', file);
 
+            const res = await fetch('/api/parse-gpay', { 
+                method: 'POST',
+                body: formData
+            });
+
             const contentType = res.headers.get('content-type');
             if (!contentType || !contentType.includes('application/json')) {
                 const textOutput = await res.text();

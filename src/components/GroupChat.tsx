@@ -37,6 +37,7 @@ function getAvatarColor(userId: string): string {
 function Avatar({ name, avatar, size = 32 }: { name: string; avatar?: string; size?: number }) {
     if (avatar) {
         return (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
                 src={avatar}
                 alt={name}

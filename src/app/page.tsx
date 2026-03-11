@@ -91,7 +91,6 @@ function useRealtimeSync(
       setSyncStatus('LOCAL');
     };
     // Only re-subscribe when user or date changes — not on every render
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, currentDate]);
 
   return { syncStatus };
@@ -158,7 +157,7 @@ export default function ChatPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { signOut } = useAuthContext();
   const { user } = useUser();
-  const { allChats, preferences: globalPrefs, updatePreferences: updateContextPrefs, setLocalChat, isSettingsOpen, setIsSettingsOpen, isCloudSynced } = useData();
+  const { allChats, preferences: globalPrefs, updatePreferences, setLocalChat, isSettingsOpen, setIsSettingsOpen, isCloudSynced } = useData();
   const saveDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Always use the cloud-synced name so it matches across all devices

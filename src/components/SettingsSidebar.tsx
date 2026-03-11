@@ -33,13 +33,6 @@ export default function SettingsSidebar() {
     const [syncStep, setSyncStep] = useState<SyncStep>('idle');
     const [syncProgress, setSyncProgress] = useState('');
 
-    // ─── Preferences (local draft) ────────────────
-    const [draft, setDraft] = useState<Partial<UserPreferences>>({});
-
-    useEffect(() => {
-        if (preferences) setDraft({});
-    }, [preferences]);
-
     if (!isSettingsOpen) return null;
 
     const updateProfile = (updates: Partial<UserPreferences>) => {

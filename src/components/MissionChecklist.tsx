@@ -219,7 +219,6 @@ export default function MissionChecklist({
     const totalTodos = todos.length;
     const totalAll = totalDailies + totalTodos;
     const completedAll = completedDailies + completedTodos;
-    const pct = totalAll > 0 ? Math.round((completedAll / totalAll) * 100) : 0;
 
     const handleSaveAdd = () => {
         if (!addingText.trim()) { setAddingType(null); return; }
