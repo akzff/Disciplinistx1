@@ -23,6 +23,11 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [editTarget, setEditTarget] = useState<{ item: any, type: 'DAILIES' | 'TODOS' } | null>(null);
 
+    // Todo specific state
+    const [todoScheduleMode, setTodoScheduleMode] = useState<'DATE' | 'DAYS_FROM_NOW' | 'DAY_OF_WEEK'>('DATE');
+    const [todoDaysOffset, setTodoDaysOffset] = useState(1);
+    const [todoTargetDay, setTodoTargetDay] = useState(DAYS[0]);
+
     // Daily specific state
     const [dailyScheduleType, setDailyScheduleType] = useState<'EVERYDAY' | 'DAYS' | 'FREQUENCY'>('EVERYDAY');
     const [selectedDays, setSelectedDays] = useState<string[]>([]);
@@ -34,9 +39,28 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
         const colors = ['#f97316', '#3b82f6', '#8b5cf6', '#ef4444', '#10b981'];
         const randomColor = colors[Math.floor(Math.random() * colors.length)];
 
-        // Convert YYYY-MM-DD back to DD/MM/YYYY for consistency with existing app format
-        const dateParts = newDate.split('-');
-        const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+        let formattedDate = undefined;
+
+        if (isTimed) {
+            let targetDateObj = new Date();
+            
+            if (todoScheduleMode === 'DATE') {
+                targetDateObj = new Date(newDate);
+            } else if (todoScheduleMode === 'DAYS_FROM_NOW') {
+                targetDateObj.setDate(targetDateObj.getDate() + todoDaysOffset);
+            } else if (todoScheduleMode === 'DAY_OF_WEEK') {
+                const todayIndex = targetDateObj.getDay();
+                const dayMap: Record<string, number> = { 'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6 };
+                let diff = dayMap[todoTargetDay] - todayIndex;
+                if (diff <= 0) diff += 7; // Next occurrence
+                targetDateObj.setDate(targetDateObj.getDate() + diff);
+            }
+            
+            const dd = String(targetDateObj.getDate()).padStart(2, '0');
+            const mm = String(targetDateObj.getMonth() + 1).padStart(2, '0');
+            const yyyy = targetDateObj.getFullYear();
+            formattedDate = `${dd}/${mm}/${yyyy}`;
+        }
 
         const newItem = {
             id: Date.now().toString(),
@@ -213,19 +237,82 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
                                     SCHEDULE
                                 </label>
                                 {isTimed && (
-                                    <div style={{ display: 'flex', gap: '8px' }}>
-                                        <input
-                                            type="date"
-                                            value={newDate}
-                                            onChange={(e) => setNewDate(e.target.value)}
-                                            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: 'white', borderRadius: '4px', padding: '4px', fontSize: '0.8rem', flex: 1 }}
-                                        />
-                                        <input
-                                            type="time"
-                                            value={newTime}
-                                            onChange={(e) => setNewTime(e.target.value)}
-                                            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: 'white', borderRadius: '4px', padding: '4px', fontSize: '0.8rem', width: '90px' }}
-                                        />
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        <div style={{ display: 'flex', gap: '10px' }}>
+                                            {['DATE', 'DAYS_FROM_NOW', 'DAY_OF_WEEK'].map(mode => (
+                                                <button
+                                                    key={mode}
+                                                    onClick={() => setTodoScheduleMode(mode as 'DATE' | 'DAYS_FROM_NOW' | 'DAY_OF_WEEK')}
+                                                    style={{
+                                                        background: todoScheduleMode === mode ? 'var(--accent)' : 'rgba(255,255,255,0.05)',
+                                                        border: 'none',
+                                                        color: 'white',
+                                                        fontSize: '0.65rem',
+                                                        fontWeight: '900',
+                                                        padding: '4px 8px',
+                                                        borderRadius: '4px',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                >
+                                                    {mode === 'DAYS_FROM_NOW' ? 'IN X DAYS' : mode === 'DAY_OF_WEEK' ? 'SPECIFIC DAY' : 'SPECIFIC DATE'}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        
+                                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                            {todoScheduleMode === 'DATE' && (
+                                                <input
+                                                    type="date"
+                                                    value={newDate}
+                                                    onChange={(e) => setNewDate(e.target.value)}
+                                                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: 'white', borderRadius: '4px', padding: '4px', fontSize: '0.8rem', flex: 1 }}
+                                                />
+                                            )}
+                                            {todoScheduleMode === 'DAYS_FROM_NOW' && (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', flex: 1 }}>
+                                                    <span>In</span>
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        value={todoDaysOffset}
+                                                        onChange={(e) => setTodoDaysOffset(parseInt(e.target.value) || 0)}
+                                                        style={{ width: '60px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: 'white', padding: '4px', borderRadius: '4px', fontSize: '0.8rem' }}
+                                                    />
+                                                    <span>days</span>
+                                                </div>
+                                            )}
+                                            {todoScheduleMode === 'DAY_OF_WEEK' && (
+                                                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', flex: 1 }}>
+                                                    {DAYS.map(day => (
+                                                        <button
+                                                            key={day}
+                                                            onClick={() => setTodoTargetDay(day)}
+                                                            style={{
+                                                                width: '32px',
+                                                                height: '32px',
+                                                                background: todoTargetDay === day ? 'var(--accent)' : 'rgba(255,255,255,0.05)',
+                                                                border: 'none',
+                                                                color: 'white',
+                                                                fontSize: '0.65rem',
+                                                                fontWeight: '900',
+                                                                borderRadius: '4px',
+                                                                cursor: 'pointer'
+                                                            }}
+                                                        >
+                                                            {day[0]}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            
+                                            <input
+                                                type="time"
+                                                value={newTime}
+                                                onChange={(e) => setNewTime(e.target.value)}
+                                                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: 'white', borderRadius: '4px', padding: '4px', fontSize: '0.8rem', width: '90px' }}
+                                                title="Optional Time"
+                                            />
+                                        </div>
                                     </div>
                                 )}
                             </div>

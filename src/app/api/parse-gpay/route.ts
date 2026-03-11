@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 const pdfParse = require('pdf-parse'); // eslint-disable-line @typescript-eslint/no-require-imports
 import { GoogleGenAI } from '@google/genai';
 
+export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
     try {
         const formData = await req.formData();

@@ -125,10 +125,16 @@ export default function ExpensesPage() {
             const formData = new FormData();
             formData.append('file', file);
 
-            const res = await fetch('/api/parse-gpay', { 
-                method: 'POST',
-                body: formData
-            });
+            const contentType = res.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const textOutput = await res.text();
+                // If it's HTML, it's likely a Vercel routing error like a 504 Timeout or 413 File Too Large
+                if (textOutput.includes('<html') || textOutput.includes('<!DOCTYPE')) {
+                    throw new Error('Server timed out or uploaded PDF is too large (max 4.5MB limit).');
+                }
+                throw new Error('Received invalid response format from server.');
+            }
+
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed to scan');
             

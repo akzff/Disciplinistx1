@@ -8,8 +8,8 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
         }
 
-        // Clean the prompt for URL encoding
-        const cleanedPrompt = prompt.replace(/[^\w\s]/gi, '').trim();
+        // Clean the prompt for URL encoding and truncate to prevent 400 Bad Request (URL too long)
+        const cleanedPrompt = prompt.replace(/[^\w\s]/gi, '').trim().substring(0, 800);
         const encodedPrompt = encodeURIComponent(cleanedPrompt);
 
         // We use Pollinations.ai for high-quality cinematic image generation 
