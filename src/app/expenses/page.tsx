@@ -31,6 +31,10 @@ export default function ExpensesPage() {
     const [expenseAmount, setExpenseAmount] = useState('');
     const [expenseDesc, setExpenseDesc] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
+    const [isScanning, setIsScanning] = useState(false);
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editAmount, setEditAmount] = useState('');
+    const [editDesc, setEditDesc] = useState('');
 
     useEffect(() => {
         const today = storage.getCurrentDate();
@@ -80,6 +84,69 @@ export default function ExpensesPage() {
             const updated = activeChat.expenses.filter(e => e.id !== id);
             setLocalChat(selectedDate, { expenses: updated });
             cloudStorage.saveChat(selectedDate, { expenses: updated });
+        }
+    };
+
+    const startEditing = (id: string, amount: number, text: string) => {
+        setEditingId(id);
+        setEditAmount(amount.toString());
+        setEditDesc(text);
+    };
+
+    const saveEdit = () => {
+        if (!editingId || !editAmount || !editDesc) return;
+        const amount = parseFloat(editAmount);
+        if (isNaN(amount)) return;
+        
+        if (activeChat && activeChat.expenses) {
+            const updated = activeChat.expenses.map(e => 
+                e.id === editingId ? { ...e, amount, text: editDesc } : e
+            );
+            setLocalChat(selectedDate, { expenses: updated });
+            cloudStorage.saveChat(selectedDate, { expenses: updated });
+        }
+        setEditingId(null);
+        setEditAmount('');
+        setEditDesc('');
+    };
+
+    const cancelEdit = () => {
+        setEditingId(null);
+        setEditAmount('');
+        setEditDesc('');
+    };
+
+    const scanLocalGPay = async () => {
+        setIsScanning(true);
+        try {
+            const res = await fetch('/api/parse-gpay', { method: 'POST' });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to scan');
+            
+            if (data.expenses && data.expenses.length > 0) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const newExpenses = data.expenses.map((e: any) => ({
+                    id: Date.now().toString() + Math.random().toString(36).substring(7),
+                    amount: parseFloat(e.amount),
+                    text: e.text
+                }));
+
+                const updatedExpenses = [
+                    ...((activeChat?.expenses) || []),
+                    ...newExpenses
+                ];
+
+                setLocalChat(selectedDate, { expenses: updatedExpenses });
+                cloudStorage.saveChat(selectedDate, { expenses: updatedExpenses });
+                alert(`Successfully imported ${data.expenses.length} transactions from GPay statement.`);
+            } else {
+                alert('No expenses found in the statement.');
+            }
+        } catch (error) {
+            console.error('Scan failed:', error);
+            alert(error instanceof Error ? error.message : String(error));
+        } finally {
+            setIsScanning(false);
         }
     };
 
@@ -251,6 +318,15 @@ export default function ExpensesPage() {
                                     >
                                         CONFIRM TRANSACTION
                                     </button>
+
+                                    <button
+                                        onClick={scanLocalGPay}
+                                        disabled={isScanning}
+                                        className="start-day-btn"
+                                        style={{ margin: 0, padding: '12px', fontSize: '0.8rem', width: '100%', background: 'transparent', border: '1px solid rgba(245, 158, 11, 0.4)', color: '#f59e0b', marginTop: '8px' }}
+                                    >
+                                        {isScanning ? '⏳ SCANNING...' : '📄 SCAN LOCAL GPAY PDF'}
+                                    </button>
                                 </div>
                             </section>
 
@@ -309,6 +385,37 @@ export default function ExpensesPage() {
                                     )}
 
                                     {activeChat?.expenses?.map((exp) => (
+                                        editingId === exp.id ? (
+                                            <div key={exp.id} className="expense-card" style={{
+                                                background: 'rgba(245,158,11,0.05)',
+                                                border: '1px solid rgba(245,158,11,0.4)',
+                                                borderRadius: '12px',
+                                                padding: '1.25rem',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: '10px'
+                                            }}>
+                                                <input
+                                                    type="text"
+                                                    value={editDesc}
+                                                    onChange={e => setEditDesc(e.target.value)}
+                                                    className="settings-input"
+                                                    style={{ padding: '8px', fontSize: '0.9rem' }}
+                                                />
+                                                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                                    <span style={{color: '#f59e0b', fontWeight: 'bold'}}>$</span>
+                                                    <input
+                                                        type="number"
+                                                        value={editAmount}
+                                                        onChange={e => setEditAmount(e.target.value)}
+                                                        className="settings-input"
+                                                        style={{ padding: '8px', fontSize: '0.9rem', flex: 1 }}
+                                                    />
+                                                    <button onClick={saveEdit} style={{ background: '#f59e0b', color: 'black', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.7rem' }}>SAVE</button>
+                                                    <button onClick={cancelEdit} style={{ background: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.2)', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.7rem' }}>CANCEL</button>
+                                                </div>
+                                            </div>
+                                        ) : (
                                         <div key={exp.id} className="expense-card" style={{
                                             background: 'rgba(255,255,255,0.02)',
                                             border: '1px solid var(--border)',
@@ -323,15 +430,23 @@ export default function ExpensesPage() {
                                                 <p style={{ fontSize: '0.9rem', fontWeight: '700', color: 'white' }}>{exp.text}</p>
                                                 <p style={{ fontSize: '0.65rem', opacity: 0.4, marginTop: '2px' }}>{exp.id.slice(-8)}</p>
                                             </div>
-                                            <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                                                <p style={{ fontSize: '1.1rem', fontWeight: '900', color: '#f59e0b' }}>${exp.amount.toFixed(2)}</p>
+                                            <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                <p style={{ fontSize: '1.1rem', fontWeight: '900', color: '#f59e0b', marginRight: '0.5rem' }}>${exp.amount.toFixed(2)}</p>
+                                                <button
+                                                    onClick={() => startEditing(exp.id, exp.amount, exp.text)}
+                                                    style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', opacity: 0.5, fontSize: '0.9rem', padding: '4px' }}
+                                                    className="delete-hover"
+                                                    title="Edit expense"
+                                                >✎</button>
                                                 <button
                                                     onClick={() => removeExpense(exp.id)}
                                                     style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', opacity: 0.3, fontSize: '1.2rem', padding: '4px' }}
                                                     className="delete-hover"
+                                                    title="Delete expense"
                                                 >×</button>
                                             </div>
                                         </div>
+                                        )
                                     ))}
                                 </div>
                             </div>

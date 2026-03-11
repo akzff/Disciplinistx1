@@ -100,15 +100,16 @@ export default function RecordsPage() {
             const prompt = `Generate a structured intelligence report for ${chat.date}. You MUST use the exact XML tags below. All content goes inside the XML tags. Output text and bullet points only — DO NOT include any XML tag descriptions or parenthetical instructions in the output.
 
 <block1>
-(DAY EXECUTION LOG: A detailed, comprehensive timeline of the day. Each bullet = one real moment with a timestamp. Include wake-up time, meals, every activity, how the user felt, what they were doing at college/gym/home. Pull from ALL sources: todos, dailies, completed missions, and especially every message in the chat history. Be exhaustive — every meaningful moment gets a bullet. No cap on bullets.
+(DAY EXECUTION LOG: A detailed, comprehensive timeline of the day based on chat records. 
+CRITICAL FORMATTING INSTRUCTION: 
+- You MUST output a true markdown list. 
+- You MUST separate every single bullet point with a complete completely new line (using \\n).
+- Format:
+- [04:00 AM] Woke up
+- [07:30 AM] Abandoned studying...
 
-CRITICAL: When you detect task abandonment, distraction, or context switching, ALWAYS include the specific reason or trigger. Examples:
-- "Abandoned studying because felt mentally exhausted and couldn't focus"
-- "Switched to football betting after seeing notification on phone"
-- "Stopped coding to watch YouTube due to boredom"
-- "Left workout early because of headache"
-
-Look for explicit reasons in messages and infer from context. Never just say "abandoned X" without explaining WHY.)
+Be exhaustive — every meaningful moment gets a bullet. No cap on bullets.
+CRITICAL: When you detect task abandonment, distraction, or context switching, ALWAYS include the specific reason or trigger from the chat.
 </block1>
 
 <block2>
@@ -524,7 +525,7 @@ This will ${user?.id ? 'sync to cloud storage' : 'import to local storage'}. Con
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                                                 {[1, 2].map((idx) => (
                                                     <div key={idx} className="block-card concise" style={{
-                                                        flex: 1,
+                                                        flex: '1 1 auto',
                                                         display: 'flex',
                                                         flexDirection: 'column'
                                                     }}>

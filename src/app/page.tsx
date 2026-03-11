@@ -38,6 +38,9 @@ function useRealtimeSync(
   }
 ) {
   const [syncStatus, setSyncStatus] = useState<'LIVE' | 'CONNECTING' | 'LOCAL'>('LOCAL');
+  // Keep setters in a ref so the channel never re-subscribes when the parent re-renders
+  const settersRef = useRef(setters);
+  settersRef.current = setters;
 
   useEffect(() => {
     if (!userId || !currentDate) return;
@@ -56,26 +59,27 @@ function useRealtimeSync(
         },
         (payload) => {
           const updated = payload.new as { date: string; data: DailyChat };
-          // Only apply if this update is for today's date
+          // Only apply if this update is for the active date
           if (updated.date !== currentDate) return;
 
           const incomingData = updated.data;
+          const s = settersRef.current;
 
           console.log('🔄 Chat updated from another device:', incomingData);
 
           // Update React state
-          setters.setMessages(incomingData.messages ?? []);
-          setters.setChatStatus(incomingData.status ?? 'OPEN');
-          if (incomingData.activeTasks) setters.setActiveTasks(incomingData.activeTasks);
-          if (incomingData.distractions) setters.setDistractions(incomingData.distractions);
-          if (incomingData.botMood) setters.setBotMood(incomingData.botMood);
-          if (incomingData.todos) setters.setTodos(incomingData.todos);
-          if (incomingData.dailies) setters.setDailies(incomingData.dailies);
-          if (incomingData.completedTasks) setters.setCompletedTasks(incomingData.completedTasks);
-          if (incomingData.expenses) setters.setExpenses(incomingData.expenses);
+          s.setMessages(incomingData.messages ?? []);
+          s.setChatStatus(incomingData.status ?? 'OPEN');
+          if (incomingData.activeTasks) s.setActiveTasks(incomingData.activeTasks);
+          if (incomingData.distractions) s.setDistractions(incomingData.distractions);
+          if (incomingData.botMood) s.setBotMood(incomingData.botMood);
+          if (incomingData.todos) s.setTodos(incomingData.todos);
+          if (incomingData.dailies) s.setDailies(incomingData.dailies);
+          if (incomingData.completedTasks) s.setCompletedTasks(incomingData.completedTasks);
+          if (incomingData.expenses) s.setExpenses(incomingData.expenses);
 
           // Update local cache
-          setters.setLocalChat(currentDate, incomingData);
+          s.setLocalChat(currentDate, incomingData);
         }
       )
       .subscribe((status) => {
@@ -86,7 +90,9 @@ function useRealtimeSync(
       supabase.removeChannel(channel);
       setSyncStatus('LOCAL');
     };
-  }, [userId, currentDate, setters]);
+    // Only re-subscribe when user or date changes — not on every render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, currentDate]);
 
   return { syncStatus };
 }
@@ -834,15 +840,21 @@ export default function ChatPage() {
                 )}
 
                 {isInitialized && messages.length === 0 && (
-                  <div className="start-day-wrapper">
-                    <div style={{ fontSize: '4rem', filter: 'drop-shadow(0 0 20px var(--accent-glow))' }}>🌅</div>
-                    <div>
-                      <h2 style={{ fontSize: '2rem', fontWeight: '900', marginBottom: '0.5rem' }}>A New Day Begins</h2>
-                      <p style={{ opacity: 0.6 }}>Your day starts fresh. What will you do today?</p>
+                  <div className="start-day-wrapper" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '2rem', textAlign: 'center', animation: 'slideIn 0.8s cubic-bezier(0.16, 1, 0.3, 1)', position: 'relative' }}>
+                    <div style={{ position: 'absolute', width: '30vw', height: '30vw', background: 'radial-gradient(circle, rgba(212,160,23,0.15) 0%, transparent 60%)', filter: 'blur(40px)', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 0, animation: 'pulse-glow 4s infinite alternate' }} />
+                    <div style={{ zIndex: 1, position: 'relative', marginBottom: '2rem' }}>
+                      <div style={{ fontSize: '5rem', filter: 'drop-shadow(0 0 30px var(--accent-glow))', animation: 'float 6s ease-in-out infinite' }}>🌅</div>
+                      <h2 style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: '900', letterSpacing: '-0.04em', background: 'linear-gradient(180deg, #fff 0%, rgba(255,255,255,0.6) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: '1rem 0 0.5rem' }}>A New Day Begins</h2>
+                      <p style={{ opacity: 0.6, fontSize: '1.1rem', maxWidth: '400px', margin: '0 auto', lineHeight: 1.6 }}>Your slate is wiped clean. Set your intentions, log your priorities, and conquer the hours ahead.</p>
                     </div>
-                    <button className="start-day-btn" onClick={startMyDay}>
-                      Start My Day
+                    <button className="start-day-btn" onClick={startMyDay} style={{ zIndex: 1, padding: '16px 40px', fontSize: '1.1rem', textTransform: 'uppercase', letterSpacing: '0.1em', borderRadius: '100px', background: 'linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%)', boxShadow: '0 10px 30px rgba(212,160,23,0.3)', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}>
+                      START MY DAY
                     </button>
+                    <style>{`
+                      @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+                      @keyframes pulse-glow { 0% { opacity: 0.5; transform: translate(-50%, -50%) scale(0.9); } 100% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); } }
+                      .start-day-btn:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 15px 40px rgba(212,160,23,0.5) !important; filter: brightness(1.1); }
+                    `}</style>
                   </div>
                 )}
 
@@ -993,25 +1005,27 @@ export default function ChatPage() {
               </div>
 
               {/* Input area (AI chat only) */}
-              <div className="input-area">
-                <div className="input-wrapper">
-                  <textarea
-                    placeholder="Message your coach..."
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    rows={1}
-                    onInput={(e) => {
-                      const target = e.target as HTMLTextAreaElement;
-                      target.style.height = 'auto';
-                      target.style.height = `${target.scrollHeight}px`;
-                    }}
-                  />
+              {messages.length > 0 && (
+                <div className="input-area">
+                  <div className="input-wrapper">
+                    <textarea
+                      placeholder="Message your coach..."
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      rows={1}
+                      onInput={(e) => {
+                        const target = e.target as HTMLTextAreaElement;
+                        target.style.height = 'auto';
+                        target.style.height = `${target.scrollHeight}px`;
+                      }}
+                    />
+                    <button className="send-button" onClick={() => handleSend()} disabled={!input.trim() || isLoading}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
+                    </button>
+                  </div>
                 </div>
-                <button className="send-button" onClick={() => handleSend()} disabled={!input.trim() || isLoading}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
-                </button>
-              </div>
+              )}
 
             </main>
             {/* ── closes AI Chat Tab wrapper ── */}

@@ -108,7 +108,7 @@ function CheckItem({
                     </svg>
                 )}
             </div>
-            <span onClick={(e) => { e.stopPropagation(); onEdit?.(); }} style={{
+            <span style={{
                 fontSize: '13px',
                 color: checked ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.8)',
                 textDecoration: checked ? 'line-through' : 'none',
@@ -117,16 +117,29 @@ function CheckItem({
             }}>
                 {label}
             </span>
-            {onDelete && hovered && (
-                <button onClick={(e) => { e.stopPropagation(); onDelete(); }} style={{
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    color: 'rgba(248,113,113,0.5)', padding: '2px',
-                    display: 'flex', alignItems: 'center', flexShrink: 0,
-                }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                </button>
+            {hovered && (
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
+                    {onEdit && (
+                        <button onClick={(e) => { e.stopPropagation(); onEdit(); }} style={{
+                            background: 'none', border: 'none', cursor: 'pointer',
+                            color: '#3b82f6', opacity: 0.7, padding: '2px',
+                            display: 'flex', alignItems: 'center'
+                        }} title="Edit">
+                            <span style={{ fontSize: '12px' }}>✎</span>
+                        </button>
+                    )}
+                    {onDelete && (
+                        <button onClick={(e) => { e.stopPropagation(); onDelete(); }} style={{
+                            background: 'none', border: 'none', cursor: 'pointer',
+                            color: 'rgba(248,113,113,0.7)', padding: '2px',
+                            display: 'flex', alignItems: 'center'
+                        }} title="Delete">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+                                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                        </button>
+                    )}
+                </div>
             )}
         </div>
     );
