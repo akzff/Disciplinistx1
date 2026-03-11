@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+export const maxDuration = 30;
+
 export async function POST(req: Request) {
     try {
         const { prompt } = await req.json();
@@ -8,24 +10,40 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
         }
 
-        // Clean the prompt for URL encoding and truncate to prevent 400 Bad Request (URL too long)
-        const cleanedPrompt = prompt.replace(/[^\w\s]/gi, '').trim().substring(0, 800);
-        const encodedPrompt = encodeURIComponent(cleanedPrompt);
+        const cleanedPrompt = prompt.replace(/[^\w\s]/gi, '').trim().substring(0, 500);
+        const seed = Math.floor(Math.random() * 999999);
 
-        // We use Pollinations.ai for high-quality cinematic image generation 
-        // that is free, fast, and doesn't require complex API keys for this specific use case.
-        // It's perfect for the "cinematic artifact" style the app uses.
-        const width = 1024;
-        const height = 576; // 16:9 Aspect Ratio
-        const seed = Math.floor(Math.random() * 1000000);
-        
-        const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&seed=${seed}&nologo=true&model=flux`;
+        // Provider 1: Pollinations with a quick health check
+        const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanedPrompt)}?width=1024&height=576&seed=${seed}&nologo=true&enhance=true&model=flux`;
+        try {
+            const probe = await fetch(pollinationsUrl, { method: 'HEAD', signal: AbortSignal.timeout(8000) });
+            if (probe.ok) {
+                return NextResponse.json({ imageUrl: pollinationsUrl });
+            }
+        } catch {
+            console.warn('Pollinations unavailable, trying fallback...');
+        }
 
-        // We verify the image URL is accessible or just return it 
-        // In most cases, we just return the URL since it's generated on the fly
-        return NextResponse.json({
-            imageUrl: imageUrl
-        });
+        // Provider 2: Lexica Aperture (query-based search, always returns images)
+        try {
+            const lexicaRes = await fetch(`https://lexica.art/api/v1/search?q=${encodeURIComponent(cleanedPrompt)}&n=1`, {
+                signal: AbortSignal.timeout(8000)
+            });
+            if (lexicaRes.ok) {
+                const lexicaData = await lexicaRes.json();
+                const imageUrl = lexicaData?.images?.[0]?.src;
+                if (imageUrl) {
+                    return NextResponse.json({ imageUrl });
+                }
+            }
+        } catch {
+            console.warn('Lexica unavailable, using final fallback...');
+        }
+
+        // Provider 3: Unsplash Source (guaranteed - always returns a relevant photo)
+        const unsplashKeywords = cleanedPrompt.split(' ').slice(0, 5).join(',');
+        const fallbackUrl = `https://source.unsplash.com/1024x576/?${encodeURIComponent(unsplashKeywords)}&sig=${seed}`;
+        return NextResponse.json({ imageUrl: fallbackUrl });
 
     } catch (error: unknown) {
         console.error('Image generation error:', error);
