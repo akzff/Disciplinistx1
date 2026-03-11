@@ -7,26 +7,13 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
     try {
-        const formData = await req.formData();
-        const file = formData.get('file') as File;
+        const { text } = await req.json();
 
-        if (!file) {
-            return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
+        if (!text) {
+            return NextResponse.json({ error: 'No text provided' }, { status: 400 });
         }
 
-        const bytes = await file.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-
-        // Parse PDF content
-        let data;
-        try {
-            data = await pdfParse(buffer);
-        } catch (pdfError) {
-            console.error('PDF Parse Error:', pdfError);
-            return NextResponse.json({ error: 'Failed to parse PDF file content' }, { status: 400 });
-        }
-
-        const fullText = data.text;
+        const fullText = text;
         
         const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
         
@@ -77,7 +64,7 @@ ${fullText.substring(0, 30000)} /* limit strictly in case of huge files */
             const expenses = JSON.parse(rawResponse);
             return NextResponse.json({ 
                 expenses, 
-                message: `Successfully parsed ${file.name}` 
+                message: `Successfully parsed statement` 
             });
         } catch (jsonError) {
             console.error('JSON Parse Error:', jsonError, 'Raw Response:', rawResponse);

@@ -122,12 +122,25 @@ export default function ExpensesPage() {
 
         setIsScanning(true);
         try {
-            const formData = new FormData();
-            formData.append('file', file);
+            // Dynamically import pdfjs to avoid SSR errors
+            const pdfjs = await import('pdfjs-dist');
+            pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+
+            // Parse PDF on the client to avoid Vercel's 4.5MB Serverless upload limit
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjs.getDocument(arrayBuffer).promise;
+            let fullText = '';
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                fullText += textContent.items.map((item: any) => item.str).join(' ') + '\n';
+            }
 
             const res = await fetch('/api/parse-gpay', { 
                 method: 'POST',
-                body: formData
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: fullText })
             });
 
             const contentType = res.headers.get('content-type');
