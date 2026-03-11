@@ -35,6 +35,10 @@ export default function TaskEditModal({ item, type, onSave, onClose }: TaskEditM
     const [date, setDate] = useState(toISODate(item.date) || new Date().toISOString().split('T')[0]);
     const [time, setTime] = useState(item.time || '');
     const [isTimed, setIsTimed] = useState(item.isTimed || false);
+    
+    const [todoScheduleMode, setTodoScheduleMode] = useState<'DATE' | 'DAYS_FROM_NOW' | 'DAY_OF_WEEK'>('DATE');
+    const [todoDaysOffset, setTodoDaysOffset] = useState(1);
+    const [todoTargetDay, setTodoTargetDay] = useState(DAYS[0]);
 
     // Daily specific
     const [dailyScheduleType, setDailyScheduleType] = useState<'EVERYDAY' | 'DAYS' | 'FREQUENCY'>(
@@ -54,7 +58,26 @@ export default function TaskEditModal({ item, type, onSave, onClose }: TaskEditM
         const updatedItem = { ...item, text, subtasks };
 
         if (type === 'TODOS') {
-            updatedItem.date = toDisplayDate(date);
+            let finalDate = toDisplayDate(date);
+            if (todoScheduleMode === 'DAYS_FROM_NOW') {
+                const targetDateObj = new Date();
+                targetDateObj.setDate(targetDateObj.getDate() + todoDaysOffset);
+                const dd = String(targetDateObj.getDate()).padStart(2, '0');
+                const mm = String(targetDateObj.getMonth() + 1).padStart(2, '0');
+                finalDate = `${dd}/${mm}/${targetDateObj.getFullYear()}`;
+            } else if (todoScheduleMode === 'DAY_OF_WEEK') {
+                const targetDateObj = new Date();
+                const todayIndex = targetDateObj.getDay();
+                const dayMap: Record<string, number> = { 'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6 };
+                let diff = dayMap[todoTargetDay] - todayIndex;
+                if (diff <= 0) diff += 7;
+                targetDateObj.setDate(targetDateObj.getDate() + diff);
+                const dd = String(targetDateObj.getDate()).padStart(2, '0');
+                const mm = String(targetDateObj.getMonth() + 1).padStart(2, '0');
+                finalDate = `${dd}/${mm}/${targetDateObj.getFullYear()}`;
+            }
+
+            updatedItem.date = finalDate;
             updatedItem.isTimed = isTimed;
             updatedItem.time = isTimed ? time : undefined;
         } else {
@@ -115,36 +138,79 @@ export default function TaskEditModal({ item, type, onSave, onClose }: TaskEditM
 
                     <div className="modal-grid">
                         {type === 'TODOS' ? (
-                            <>
-                                <div className="form-group">
-                                    <label>DATE</label>
-                                    <input
-                                        type="date"
-                                        value={date}
-                                        onChange={(e) => setDate(e.target.value)}
-                                    />
+                            <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                                <label>SCHEDULE TO-DO</label>
+                                <div className="tab-switcher">
+                                    {['DATE', 'DAYS_FROM_NOW', 'DAY_OF_WEEK'].map(mode => (
+                                        <button
+                                            key={mode}
+                                            className={todoScheduleMode === mode ? 'active' : ''}
+                                            onClick={() => setTodoScheduleMode(mode as 'DATE' | 'DAYS_FROM_NOW' | 'DAY_OF_WEEK')}
+                                        >
+                                            {mode === 'DAYS_FROM_NOW' ? 'IN X DAYS' : mode === 'DAY_OF_WEEK' ? 'SPECIFIC DAY' : 'SPECIFIC DATE'}
+                                        </button>
+                                    ))}
                                 </div>
-                                <div className="form-group">
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                        <label style={{ margin: 0 }}>SCHEDULE TIME</label>
-                                        <Checkbox
-                                            checked={isTimed}
-                                            onChange={setIsTimed}
-                                            size="md"
-                                        />
+
+                                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1fr)', gap: '1.5rem', marginTop: '10px' }}>
+                                    <div className="form-group">
+                                        <label>TARGET DAY</label>
+                                        {todoScheduleMode === 'DATE' && (
+                                            <input
+                                                type="date"
+                                                value={date}
+                                                onChange={(e) => setDate(e.target.value)}
+                                            />
+                                        )}
+                                        {todoScheduleMode === 'DAYS_FROM_NOW' && (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0' }}>
+                                                <span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.8)' }}>In</span>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    value={todoDaysOffset}
+                                                    onChange={(e) => setTodoDaysOffset(parseInt(e.target.value) || 0)}
+                                                    style={{ width: '80px' }}
+                                                />
+                                                <span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.8)' }}>days</span>
+                                            </div>
+                                        )}
+                                        {todoScheduleMode === 'DAY_OF_WEEK' && (
+                                            <div className="days-picker">
+                                                {DAYS.map(day => (
+                                                    <button
+                                                        key={day}
+                                                        className={todoTargetDay === day ? 'active' : ''}
+                                                        onClick={() => setTodoTargetDay(day)}
+                                                    >
+                                                        {day[0]}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
-                                    {isTimed ? (
-                                        <input
-                                            type="time"
-                                            value={time}
-                                            onChange={(e) => setTime(e.target.value)}
-                                            style={{ marginTop: '4px' }}
-                                        />
-                                    ) : (
-                                        <div className="disabled-input">TIME NOT SET</div>
-                                    )}
+
+                                    <div className="form-group">
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <label style={{ margin: 0 }}>SCHEDULE TIME</label>
+                                            <Checkbox
+                                                checked={isTimed}
+                                                onChange={setIsTimed}
+                                                size="md"
+                                            />
+                                        </div>
+                                        {isTimed ? (
+                                            <input
+                                                type="time"
+                                                value={time}
+                                                onChange={(e) => setTime(e.target.value)}
+                                            />
+                                        ) : (
+                                            <div className="disabled-input">TIME NOT SET</div>
+                                        )}
+                                    </div>
                                 </div>
-                            </>
+                            </div>
                         ) : (
                             <div className="form-group" style={{ gridColumn: 'span 2' }}>
                                 <label>RECURRENCE</label>

@@ -87,10 +87,11 @@ function SectionHeader({
 }
 
 function CheckItem({
-    label, checked, onToggle, onEdit, onDelete, accentColor = '#34d399'
+    label, checked, onToggle, onEdit, onDelete, accentColor = '#34d399', date, time, recurring
 }: {
     label: string; checked: boolean; onToggle: () => void;
     onEdit?: () => void; onDelete?: () => void; accentColor?: string;
+    date?: string; time?: string; recurring?: string;
 }) {
     const [hovered, setHovered] = useState(false);
     return (
@@ -119,15 +120,24 @@ function CheckItem({
                     </svg>
                 )}
             </div>
-            <span style={{
-                fontSize: '13px',
-                color: checked ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.8)',
-                textDecoration: checked ? 'line-through' : 'none',
-                overflow: 'hidden', textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap' as const, flex: 1, minWidth: 0,
-            }}>
-                {label}
-            </span>
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                <span style={{
+                    fontSize: '13px',
+                    color: checked ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.8)',
+                    textDecoration: checked ? 'line-through' : 'none',
+                    overflow: 'hidden', textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap' as const, display: 'block'
+                }}>
+                    {label}
+                </span>
+                {(date || time || recurring) && (
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '2px', alignItems: 'center' }}>
+                        {date && <span style={{ fontSize: '10px', color: accentColor, opacity: 0.8, background: `${accentColor}1A`, padding: '1px 5px', borderRadius: '4px' }}>{date}</span>}
+                        {time && <span style={{ fontSize: '10px', color: accentColor, opacity: 0.8, background: `${accentColor}1A`, padding: '1px 5px', borderRadius: '4px' }}>⏰ {time}</span>}
+                        {recurring && <span style={{ fontSize: '10px', color: accentColor, opacity: 0.8, background: `${accentColor}1A`, padding: '1px 5px', borderRadius: '4px' }}>↻ {recurring}</span>}
+                    </div>
+                )}
+            </div>
             {hovered && (
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
                     {onEdit && (
@@ -337,6 +347,7 @@ export default function MissionChecklist({
                                 onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, idx, 'DAILIES')}
                                 style={{ opacity: dragInfo?.index === idx && dragInfo.type === 'DAILIES' ? 0.4 : 1 }}>
                                 <CheckItem label={daily.text} checked={daily.completed} accentColor="#34d399"
+                                    recurring={daily.recurringDays ? daily.recurringDays.join(', ') : daily.frequency ? `${daily.frequency.count}x/${daily.frequency.period}` : undefined}
                                     onToggle={() => onToggleDaily(daily.id)}
                                     onEdit={() => setEditingItem({ id: daily.id, type: 'DAILIES', text: daily.text })}
                                     onDelete={onDeleteDaily ? () => onDeleteDaily(daily.id) : undefined} />
@@ -378,6 +389,7 @@ export default function MissionChecklist({
                                 onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, idx, 'TODOS')}
                                 style={{ opacity: dragInfo?.index === idx && dragInfo.type === 'TODOS' ? 0.4 : 1 }}>
                                 <CheckItem label={todo.text} checked={todo.completed} accentColor="#a78bfa"
+                                    date={todo.date} time={todo.isTimed ? todo.time : undefined}
                                     onToggle={() => onToggleTodo(todo.id)}
                                     onEdit={() => setEditingItem({ id: todo.id, type: 'TODOS', text: todo.text })}
                                     onDelete={onDeleteTodo ? () => onDeleteTodo(todo.id) : undefined} />
