@@ -107,10 +107,10 @@ export default function RecordsPage() {
 (DAY EXECUTION LOG: A detailed, comprehensive timeline of the day based on chat records. 
 CRITICAL FORMATTING INSTRUCTION: 
 - You MUST output a true markdown list. 
-- You MUST separate every single bullet point with a complete completely new line (using \\n).
+- You MUST use the "- " prefix for every item.
+- You MUST separate every single bullet point with TWO newlines (using \\n\\n).
 - Format:
-- [04:00 AM] Woke up
-- [07:30 AM] Abandoned studying...
+- [04:00 AM] Woke up\\n\\n- [07:30 AM] Abandoned studying...
 
 Be exhaustive — every meaningful moment gets a bullet. No cap on bullets.
 CRITICAL: Use the REAL "time" provided in the Chat list for each event. DO NOT guess or hallucinate times. If a message has no time, use context.
@@ -488,8 +488,8 @@ This will ${user?.id ? 'sync to cloud storage' : 'import to local storage'}. Con
                                 {/* Artifact + 3 Block Cards */}
                                 {chat.aiSummary ? (
                                     <div>
-                                        {/* Cover Image */}
-                                        {chat.artifactUrl && (
+                                        {/* Cover Image - HIDDEN as requested */}
+                                        {/* {chat.artifactUrl && (
                                             <div style={{ position: 'relative', borderRadius: '20px', overflow: 'hidden', marginBottom: '2rem', border: '1px solid var(--border)' }}>
                                                 <Image src={chat.artifactUrl} alt="Mission Artifact" style={{ width: '100%', maxHeight: '420px', objectFit: 'cover', display: 'block' }} width={800} height={420} />
                                                 <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '2rem 1.5rem 1rem', background: 'linear-gradient(transparent, rgba(0,0,0,0.9))' }}>
@@ -497,7 +497,7 @@ This will ${user?.id ? 'sync to cloud storage' : 'import to local storage'}. Con
                                                     <p style={{ fontSize: '1.1rem', fontWeight: '900', color: 'white' }}>{selectedDate}</p>
                                                 </div>
                                             </div>
-                                        )}
+                                        )} */}
 
                                         {/* 1st Column (Detailed) vs 2nd Column (Concise) Layout */}
                                         <div className="records-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.6fr) minmax(0, 1fr)', gap: '1.5rem', alignItems: 'stretch' }}>
@@ -606,34 +606,34 @@ This will ${user?.id ? 'sync to cloud storage' : 'import to local storage'}. Con
                 .detailed-markdown {
                     font-size: 0.88rem;
                 }
-                .detailed-markdown :global(li) {
-                    margin-bottom: 0.8rem !important;
-                    font-weight: 500;
-                    color: rgba(255,255,255,0.9);
-                }
-                .block-markdown p {
+                .block-markdown :global(p) {
                     opacity: 0.75;
-                    margin-bottom: 0.5rem;
+                    margin-bottom: 0.8rem;
                 }
-                .block-markdown ul, .block-markdown ol {
+                .block-markdown :global(ul), .block-markdown :global(ol) {
                     padding-left: 1.2rem;
-                    margin: 0;
+                    margin: 0.5rem 0;
                 }
-                .block-markdown li {
-                    opacity: 0.8;
-                    margin-bottom: 0.4rem;
-                    font-size: 0.8rem;
-                    line-height: 1.5;
+                .block-markdown :global(li) {
+                    opacity: 0.9;
+                    margin-bottom: 0.6rem;
+                    font-size: 0.85rem;
+                    line-height: 1.6;
+                    color: rgba(255,255,255,0.95);
                 }
-                .block-markdown strong {
+                .detailed-markdown :global(li) {
+                    margin-bottom: 1rem !important;
+                    font-weight: 500;
+                }
+                .block-markdown :global(strong) {
                     color: white;
                     font-weight: 700;
                 }
-                .block-markdown h3, .block-markdown h4 {
+                .block-markdown :global(h3), .block-markdown :global(h4) {
                     font-size: 0.75rem;
                     font-weight: 900;
                     color: white;
-                    margin: 0.75rem 0 0.4rem 0;
+                    margin: 1rem 0 0.5rem 0;
                     letter-spacing: 0.05em;
                 }
             `}</style>
