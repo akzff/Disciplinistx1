@@ -116,10 +116,19 @@ export default function ExpensesPage() {
         setEditDesc('');
     };
 
-    const scanLocalGPay = async () => {
+    const scanLocalGPay = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
         setIsScanning(true);
         try {
-            const res = await fetch('/api/parse-gpay', { method: 'POST' });
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const res = await fetch('/api/parse-gpay', { 
+                method: 'POST',
+                body: formData
+            });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed to scan');
             
@@ -147,6 +156,8 @@ export default function ExpensesPage() {
             alert(error instanceof Error ? error.message : String(error));
         } finally {
             setIsScanning(false);
+            // Reset input
+            e.target.value = '';
         }
     };
 
@@ -319,14 +330,23 @@ export default function ExpensesPage() {
                                         CONFIRM TRANSACTION
                                     </button>
 
-                                    <button
-                                        onClick={scanLocalGPay}
-                                        disabled={isScanning}
-                                        className="start-day-btn"
-                                        style={{ margin: 0, padding: '12px', fontSize: '0.8rem', width: '100%', background: 'transparent', border: '1px solid rgba(245, 158, 11, 0.4)', color: '#f59e0b', marginTop: '8px' }}
-                                    >
-                                        {isScanning ? '⏳ SCANNING...' : '📄 SCAN LOCAL GPAY PDF'}
-                                    </button>
+                                    <div style={{ position: 'relative' }}>
+                                        <input
+                                            type="file"
+                                            accept=".pdf"
+                                            onChange={scanLocalGPay}
+                                            style={{ display: 'none' }}
+                                            id="gpay-upload"
+                                        />
+                                        <button
+                                            onClick={() => document.getElementById('gpay-upload')?.click()}
+                                            disabled={isScanning}
+                                            className="start-day-btn"
+                                            style={{ margin: 0, padding: '12px', fontSize: '0.8rem', width: '100%', background: 'transparent', border: '1px solid rgba(245, 158, 11, 0.4)', color: '#f59e0b', marginTop: '8px' }}
+                                        >
+                                            {isScanning ? '⏳ SCANNING...' : '📄 SCAN GPAY PDF STATEMENT'}
+                                        </button>
+                                    </div>
                                 </div>
                             </section>
 

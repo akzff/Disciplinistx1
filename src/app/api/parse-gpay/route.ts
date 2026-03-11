@@ -1,37 +1,32 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
 const pdfParse = require('pdf-parse'); // eslint-disable-line @typescript-eslint/no-require-imports
 import { GoogleGenAI } from '@google/genai';
 
-export async function POST() {
+export async function POST(req: Request) {
     try {
-        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-        
-        // This is the directory specified by the user
-        const targetDir = 'C:\\Users\\Asus\\Downloads\\referencex1';
-        
-        if (!fs.existsSync(targetDir)) {
-            return NextResponse.json({ error: `Directory not found: ${targetDir}` }, { status: 404 });
-        }
-        
-        const files = fs.readdirSync(targetDir);
-        const pdfFiles = files.filter(f => f.toLowerCase().endsWith('.pdf'));
-        
-        if (pdfFiles.length === 0) {
-            return NextResponse.json({ error: `No PDF files found in ${targetDir}` }, { status: 404 });
-        }
-        
-        // Assuming we want to parse the first PDF found, or process all. 
-        // Let's process the first one for simplicity, or we can combine text from all.
-        let fullText = '';
-        for (const file of pdfFiles) {
-            const filePath = path.join(targetDir, file);
-            const dataBuffer = fs.readFileSync(filePath);
-            const data = await pdfParse(dataBuffer);
-            fullText += `\n--- File: ${file} ---\n` + data.text;
+        const formData = await req.formData();
+        const file = formData.get('file') as File;
+
+        if (!file) {
+            return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
         }
 
+        const bytes = await file.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+
+        // Parse PDF content
+        let data;
+        try {
+            data = await pdfParse(buffer);
+        } catch (pdfError) {
+            console.error('PDF Parse Error:', pdfError);
+            return NextResponse.json({ error: 'Failed to parse PDF file content' }, { status: 400 });
+        }
+
+        const fullText = data.text;
+        
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+        
         // Send the extracted text to Gemini to parse into a structured JSON array
         const prompt = `You are an expert at extracting financial transactions from GPay statement PDFs.
 I will provide you with the raw extracted text from a PDF statement.
@@ -49,34 +44,47 @@ Statement Text:
 ${fullText.substring(0, 30000)} /* limit strictly in case of huge files */
 `;
 
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-pro',
-            contents: prompt,
-            config: {
-                temperature: 0.1,
-            }
+        const aiApiKey = process.env.GEMINI_API_KEY || '';
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${aiApiKey}`;
+
+        const geminiRes = await fetch(geminiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.1, responseMimeType: "application/json" }
+            })
         });
 
-        let rawResponse = response.text?.trim() || '[]';
-        
-        // Strip out any markdown formatting just in case
-        if (rawResponse.startsWith('```json')) {
-            rawResponse = rawResponse.substring(7);
+        if (!geminiRes.ok) {
+            const errText = await geminiRes.text();
+            console.error('Gemini API Error:', errText);
+            throw new Error('AI analysis failed');
         }
-        if (rawResponse.startsWith('```')) {
-            rawResponse = rawResponse.substring(3);
-        }
-        if (rawResponse.endsWith('```')) {
-            rawResponse = rawResponse.substring(0, rawResponse.length - 3);
-        }
-        rawResponse = rawResponse.trim();
+
+        const geminiData = await geminiRes.json();
+        const responseText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
+
+        let rawResponse = responseText.trim();
         
-        const expenses = JSON.parse(rawResponse);
+        // Strip out any markdown formatting
+        rawResponse = rawResponse.replace(/```json/g, '').replace(/```/g, '').trim();
         
-        return NextResponse.json({ expenses, message: `Successfully parsed ${pdfFiles.length} file(s)` });
+        try {
+            const expenses = JSON.parse(rawResponse);
+            return NextResponse.json({ 
+                expenses, 
+                message: `Successfully parsed ${file.name}` 
+            });
+        } catch (jsonError) {
+            console.error('JSON Parse Error:', jsonError, 'Raw Response:', rawResponse);
+            return NextResponse.json({ error: 'Failed to parse AI response into valid transaction data' }, { status: 500 });
+        }
 
     } catch (error) {
         console.error('Failed to parse GPay statements:', error);
-        return NextResponse.json({ error: error instanceof Error ? error.message : 'Unknown error occurred' }, { status: 500 });
+        return NextResponse.json({ 
+            error: error instanceof Error ? error.message : 'Unknown error occurred' 
+        }, { status: 500 });
     }
 }

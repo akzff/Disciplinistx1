@@ -29,48 +29,59 @@ interface MissionChecklistProps {
 // ────────────────────────────────────────────────────────────────
 
 function SectionHeader({
-    dot, label, completed, total, countLabel = '', onAdd
+    dot, label, completed, total, onAdd, accentColor = '#d4a017'
 }: {
     dot: string; label: string; completed: number; total: number;
-    countLabel?: string; onAdd: () => void;
+    onAdd: () => void; accentColor?: string;
 }) {
-    const count = countLabel === 'left' ? total - completed : completed;
+    const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
     return (
         <div style={{
             flexShrink: 0,
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
+            flexDirection: 'column',
             padding: '12px 16px',
             borderBottom: '1px solid rgba(255,255,255,0.05)',
+            gap: '8px'
         }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{
-                    width: '6px', height: '6px', borderRadius: '50%',
-                    backgroundColor: dot, boxShadow: `0 0 6px ${dot}`, flexShrink: 0,
-                }} />
-                <span style={{
-                    color: 'rgba(255,255,255,0.7)', fontWeight: 900, fontSize: '11px',
-                    letterSpacing: '0.12em', textTransform: 'uppercase' as const,
-                }}>
-                    {label}
-                </span>
-                {total > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{
+                        width: '6px', height: '6px', borderRadius: '50%',
+                        backgroundColor: dot, boxShadow: `0 0 6px ${dot}`, flexShrink: 0,
+                    }} />
                     <span style={{
-                        fontSize: '10px', background: 'rgba(212,160,23,0.12)', color: '#d4a017',
-                        border: '1px solid rgba(212,160,23,0.25)', padding: '2px 6px',
-                        borderRadius: '20px', fontWeight: 700,
+                        color: 'rgba(255,255,255,0.7)', fontWeight: 900, fontSize: '11px',
+                        letterSpacing: '0.12em', textTransform: 'uppercase' as const,
                     }}>
-                        {count}{countLabel ? ` ${countLabel}` : `/${total}`}
+                        {label}
                     </span>
-                )}
+                    {total > 0 && (
+                        <span style={{
+                            fontSize: '10px', background: `${accentColor}1A`, color: accentColor,
+                            border: `1px solid ${accentColor}40`, padding: '2px 6px',
+                            borderRadius: '20px', fontWeight: 700,
+                        }}>
+                            {completed}/{total}
+                        </span>
+                    )}
+                </div>
+                <button onClick={onAdd} style={{
+                    width: '24px', height: '24px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '16px',
+                    fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', lineHeight: 1, flexShrink: 0,
+                }}>+</button>
             </div>
-            <button onClick={onAdd} style={{
-                width: '24px', height: '24px', borderRadius: '8px', background: 'rgba(212,160,23,0.1)',
-                border: '1px solid rgba(212,160,23,0.2)', color: '#d4a017', fontSize: '18px',
-                fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center',
-                justifyContent: 'center', lineHeight: 1, flexShrink: 0,
-            }}>+</button>
+            {total > 0 && (
+                <div style={{ height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{ 
+                        height: '100%', width: `${pct}%`, 
+                        background: accentColor, 
+                        borderRadius: '4px', transition: 'width 0.5s ease' 
+                    }} />
+                </div>
+            )}
         </div>
     );
 }
@@ -244,51 +255,7 @@ export default function MissionChecklist({
             display: 'flex', flexDirection: 'column', height: '100%', width: '100%',
             overflow: 'hidden', padding: '16px', gap: '12px', boxSizing: 'border-box',
         }}>
-            {/* ZONE A — MISSION BOARD */}
-            <div style={{
-                flexShrink: 0, background: 'linear-gradient(135deg, #1a1500, #0f0f0f)',
-                border: '1px solid rgba(212,160,23,0.2)', borderRadius: '16px',
-                padding: '16px', overflow: 'hidden',
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{
-                            width: '32px', height: '32px', borderRadius: '12px',
-                            background: 'rgba(212,160,23,0.15)', border: '1px solid rgba(212,160,23,0.25)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: '16px', flexShrink: 0,
-                        }}>🎯</div>
-                        <div>
-                            <p style={{ color: '#d4a017', fontWeight: 900, fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase', margin: 0 }}>
-                                Mission Board
-                            </p>
-                            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', margin: '2px 0 0 0' }}>
-                                Today&apos;s objectives
-                            </p>
-                        </div>
-                    </div>
-                    {onClose && (
-                        <button onClick={onClose} style={{
-                            width: '24px', height: '24px', borderRadius: '8px',
-                            background: 'rgba(255,255,255,0.05)', border: 'none',
-                            color: 'rgba(255,255,255,0.3)', cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: '12px', flexShrink: 0,
-                        }}>✕</button>
-                    )}
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                    <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px' }}>{completedAll} / {totalAll} complete</span>
-                    <span style={{ color: '#d4a017', fontSize: '10px', fontWeight: 700 }}>{pct}%</span>
-                </div>
-                <div style={{ height: '6px', background: 'rgba(255,255,255,0.08)', borderRadius: '6px', overflow: 'hidden' }}>
-                    <div style={{
-                        height: '100%', width: `${pct}%`,
-                        background: 'linear-gradient(90deg, #d4a017, #f5c842)',
-                        borderRadius: '6px', transition: 'width 0.7s ease',
-                    }} />
-                </div>
-            </div>
+            {/* ZONE A (Integrated into sections headers) */}
 
             {/* ZONE B — START TASK */}
             {isStartingLive ? (
@@ -346,7 +313,7 @@ export default function MissionChecklist({
                 borderRadius: '16px', overflow: 'hidden',
             }}>
                 <SectionHeader dot="#34d399" label="DAILIES" completed={completedDailies} total={totalDailies}
-                    onAdd={() => { setAddingType('DAILIES'); setAddingText(''); }} />
+                    accentColor="#34d399" onAdd={() => { setAddingType('DAILIES'); setAddingText(''); }} />
                 <div className="mc-desktop-scroll" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '8px' }}>
                     {addingType === 'DAILIES' && (
                         <InlineInput placeholder="New daily habit..." value={addingText} onChange={setAddingText}
@@ -387,7 +354,7 @@ export default function MissionChecklist({
                 borderRadius: '16px', overflow: 'hidden',
             }}>
                 <SectionHeader dot="#a78bfa" label="TO-DO'S" completed={completedTodos} total={totalTodos}
-                    countLabel="left" onAdd={() => { setAddingType('TODOS'); setAddingText(''); }} />
+                    accentColor="#a78bfa" onAdd={() => { setAddingType('TODOS'); setAddingText(''); }} />
                 <div className="mc-desktop-scroll" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '8px' }}>
                     {addingType === 'TODOS' && (
                         <InlineInput placeholder="New task..." value={addingText} onChange={setAddingText}
@@ -458,28 +425,7 @@ export default function MissionChecklist({
                 style={{ zIndex: 41 }}
             >
                 {/* Reuse the same content tree for mobile */}
-                <div className="mc-header">
-                    <div className="mc-header__title">
-                        <span className="mc-header__icon">🎯</span>
-                        <div>
-                            <p className="mc-header__label">MISSION BOARD</p>
-                            <p className="mc-header__sub">{completedAll} / {totalAll} complete</p>
-                        </div>
-                    </div>
-                    {onClose && (
-                        <button onClick={onClose} className="mc-close-btn" aria-label="Close">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                            </svg>
-                        </button>
-                    )}
-                </div>
-
-                {totalAll > 0 && (
-                    <div className="mc-progress-bar">
-                        <div className="mc-progress-fill" style={{ width: `${pct}%` }} />
-                    </div>
-                )}
+                {/* Header and Progress Bar removed as requested */}
 
                 <div className="mc-start-section">
                     {isStartingLive ? (
@@ -508,10 +454,19 @@ export default function MissionChecklist({
 
                 <section className="mc-section">
                     <div className="mc-section__header">
-                        <div className="mc-section__title">
-                            <span className="mc-section__dot mc-section__dot--daily" />
-                            <span>DAILIES</span>
-                            {totalDailies > 0 && <span className="mc-section__count">{completedDailies}/{totalDailies}</span>}
+                        <div className="mc-section__title" style={{ width: '100%' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: '4px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span className="mc-section__dot mc-section__dot--daily" />
+                                    <span>DAILIES</span>
+                                    {totalDailies > 0 && <span className="mc-section__count" style={{ background: 'rgba(52, 211, 153, 0.1)', color: '#34d399', border: '1px solid rgba(52, 211, 153, 0.2)' }}>{completedDailies}/{totalDailies}</span>}
+                                </div>
+                            </div>
+                            {totalDailies > 0 && (
+                                <div style={{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden', width: '100%' }}>
+                                    <div style={{ height: '100%', width: `${Math.round((completedDailies / totalDailies) * 100)}%`, background: '#34d399', transition: 'width 0.5s' }} />
+                                </div>
+                            )}
                         </div>
                         <button onClick={() => { setAddingType('DAILIES'); setAddingText(''); }} className="mc-add-btn" aria-label="Add daily">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
@@ -557,10 +512,19 @@ export default function MissionChecklist({
 
                 <section className="mc-section">
                     <div className="mc-section__header">
-                        <div className="mc-section__title">
-                            <span className="mc-section__dot mc-section__dot--todo" />
-                            <span>TO-DO&apos;S</span>
-                            {totalTodos > 0 && <span className="mc-section__count">{completedTodos}/{totalTodos}</span>}
+                        <div className="mc-section__title" style={{ width: '100%' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: '4px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span className="mc-section__dot mc-section__dot--todo" />
+                                    <span>TO-DO&apos;S</span>
+                                    {totalTodos > 0 && <span className="mc-section__count" style={{ background: 'rgba(167, 139, 250, 0.1)', color: '#a78bfa', border: '1px solid rgba(167, 139, 250, 0.2)' }}>{completedTodos}/{totalTodos}</span>}
+                                </div>
+                            </div>
+                            {totalTodos > 0 && (
+                                <div style={{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden', width: '100%' }}>
+                                    <div style={{ height: '100%', width: `${Math.round((completedTodos / totalTodos) * 100)}%`, background: '#a78bfa', transition: 'width 0.5s' }} />
+                                </div>
+                            )}
                         </div>
                         <button onClick={() => { setAddingType('TODOS'); setAddingText(''); }} className="mc-add-btn" aria-label="Add todo">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>

@@ -79,11 +79,8 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
         setSelectedDays([]);
     };
 
-    const toggleTodo = (id: string) => {
-        const updated = chat.todos.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
-        onUpdate({ todos: updated });
-    };
-
+    // toggleTodo removed as missions board doesn't consider todo completion
+    
     const toggleDaily = (id: string) => {
         const updated = chat.dailies.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
         onUpdate({ dailies: updated });
@@ -380,12 +377,17 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
                                 }}
                             >
                                 <div style={{ display: 'flex', gap: '1rem' }}>
-                                    <label style={{ display: 'flex', gap: '1rem', flex: 1, cursor: 'pointer' }}>
-                                        <MissionCheckbox checked={todo.completed} onChange={() => { toggleTodo(todo.id); }} variant="todo" />
+                                    <div style={{ display: 'flex', gap: '1rem', flex: 1 }}>
+                                        <div style={{
+                                            width: '18px', height: '18px', minWidth: '18px', borderRadius: '5px',
+                                            border: `2px solid ${todo.color || 'var(--accent)'}`, background: 'transparent',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                                            marginTop: '4px'
+                                        }} />
                                         <div style={{ flex: 1 }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                                 <div>
-                                                    <h4 style={{ fontSize: '1.1rem', fontWeight: '700', textDecoration: todo.completed ? 'line-through' : 'none', opacity: todo.completed ? 0.5 : 1 }}>{todo.text}</h4>
+                                                    <h4 style={{ fontSize: '1.1rem', fontWeight: '700' }}>{todo.text}</h4>
                                                     {todo.date && <p style={{ fontSize: '0.7rem', opacity: 0.5, marginTop: '4px' }}>📅 {todo.date}</p>}
                                                 </div>
                                                 {todo.isTimed && todo.time && (
@@ -397,15 +399,15 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
                                                 <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                                     {todo.subtasks.slice(0, 3).map(sub => (
                                                         <div key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem', opacity: 0.6 }}>
-                                                            <span>{sub.completed ? '✅' : '○'}</span>
-                                                            <span style={{ textDecoration: sub.completed ? 'line-through' : 'none' }}>{sub.text}</span>
+                                                            <span>○</span>
+                                                            <span>{sub.text}</span>
                                                         </div>
                                                     ))}
                                                     {todo.subtasks.length > 3 && <span style={{ fontSize: '0.65rem', opacity: 0.4 }}>+{todo.subtasks.length - 3} more sub-missions</span>}
                                                 </div>
                                             )}
                                         </div>
-                                    </label>
+                                    </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end', justifyContent: 'space-between' }}>
                                         <div style={{ display: 'flex', gap: '8px' }}>
                                             <button onClick={(e) => { e.stopPropagation(); toggleTodoTime(todo.id); }} style={{ background: 'none', border: 'none', color: todo.isTimed ? 'var(--accent)' : 'white', fontSize: '0.65rem', fontWeight: '800', opacity: todo.isTimed ? 1 : 0.5, cursor: 'pointer' }}>{todo.isTimed ? 'TIMED' : 'TIME'}</button>

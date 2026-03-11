@@ -341,7 +341,7 @@ export default function ChatPage() {
       return msg;
     });
 
-    const userMessage: Message = { role: 'user', content: textToSend };
+    const userMessage: Message = { role: 'user', content: textToSend, timestamp: Date.now() };
     const newMessages = [...cleanedMessages, userMessage];
 
     setMessages(newMessages);
@@ -428,7 +428,8 @@ export default function ChatPage() {
           .replace(/LOG_HABIT: ['"].+?['"]/gi, '')
           .replace(/TRACK_EXPENSE: .+? \| .+?/gi, '')
           .trim(),
-        taskRequest: taskReqData
+        taskRequest: taskReqData,
+        timestamp: Date.now()
       };
 
       setMessages((prev) => [...prev, aiMessage]);
@@ -564,7 +565,8 @@ export default function ChatPage() {
           endTime: timestamp,
           activeTime: finalActiveTime,
           pausedTime: finalPausedTime,
-        }
+        },
+        timestamp: timestamp
       }]);
 
       setCompletedTasks(prevCompleted => [
@@ -585,7 +587,7 @@ export default function ChatPage() {
   const startMyDay = () => {
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const greeting = `Namaste. It is ${time}. You are awake. How did you spend your time since last night? Give me a rough idea so we can begin your mission for today.`;
-    setMessages([{ role: 'assistant', content: greeting }]);
+    setMessages([{ role: 'assistant', content: greeting, timestamp: Date.now() }]);
     setChatStatus('OPEN');
   };
 

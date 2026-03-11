@@ -1,6 +1,7 @@
 export interface Message {
     role: 'user' | 'assistant';
     content: string;
+    timestamp?: number;
     taskRequest?: {
         name: string;
         status: 'PENDING' | 'APPROVED' | 'IGNORED';

@@ -91,7 +91,11 @@ export default function RecordsPage() {
                 todos: chat.todos,
                 dailies: chat.dailies,
                 completedTasks: chat.completedTasks,
-                messages: chat.messages,
+                messages: chat.messages?.map(m => ({
+                    role: m.role,
+                    content: m.content,
+                    time: m.timestamp ? new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : undefined
+                })),
                 habits: preferences.habitNotes,
                 vision: preferences.dayVision,
                 ambition: preferences.ambition
@@ -109,6 +113,7 @@ CRITICAL FORMATTING INSTRUCTION:
 - [07:30 AM] Abandoned studying...
 
 Be exhaustive — every meaningful moment gets a bullet. No cap on bullets.
+CRITICAL: Use the REAL "time" provided in the Chat list for each event. DO NOT guess or hallucinate times. If a message has no time, use context.
 CRITICAL: When you detect task abandonment, distraction, or context switching, ALWAYS include the specific reason or trigger from the chat.
 </block1>
 
@@ -130,7 +135,7 @@ CRITICAL: When you detect task abandonment, distraction, or context switching, A
 </artifact>
 
 Context: ${JSON.stringify({ ...context, messages: undefined })}
-Recent Chat: ${JSON.stringify(context.messages?.slice(-15))}
+Recent Chat (with REAL timestamps): ${JSON.stringify(context.messages?.slice(-30))}
 
 IMPORTANT: For each completed task, check if there's an abandonmentReason. If present, include it in the execution log like: "• [TIME]: Abandoned [task name] - [reason]". If no reason is given but the task was short or context suggests abandonment, infer the likely reason from the chat messages.`;
 
