@@ -1,13 +1,6 @@
 import { supabase } from './supabase';
 import { DailyChat, UserPreferences } from './storage';
 
-// Helper function to get current user ID from Clerk
-// Note: This function should only be called with userId parameter from React components
-async function getCurrentUserId(userId?: string): Promise<string | null> {
-    // Return the provided userId or null
-    return userId || null;
-}
-
 // ─── Cloud sync layer that talks directly to Supabase with Clerk auth ──────────────────────
 
 export const cloudStorage = {

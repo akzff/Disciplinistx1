@@ -10,7 +10,6 @@ import { useDeviceHeartbeat } from '@/hooks/useDeviceHeartbeat';
 interface DataContextType {
     allChats: Record<string, DailyChat>;
     preferences: UserPreferences | null;
-    isLoadingData: boolean;
     isCloudSynced: boolean;
     refreshData: () => Promise<void>;
     updatePreferences: (updates: Partial<UserPreferences>) => Promise<void>;
@@ -29,7 +28,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     // localStorage is only a write-through cache, never the initial source.
     const [allChats, setAllChats] = useState<Record<string, DailyChat>>({});
     const [preferences, setPreferences] = useState<UserPreferences | null>(null);
-    const [isLoadingData, setIsLoadingData] = useState(false);
     const [isCloudSynced, setIsCloudSynced] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -148,7 +146,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
         <DataContext.Provider value={{
             allChats,
             preferences,
-            isLoadingData,
             isCloudSynced,
             refreshData,
             updatePreferences,

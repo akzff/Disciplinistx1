@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }, [isLoaded, userId]);
 
-    const signInWithEmail = async (_email: string, _password: string): Promise<{ success: boolean; error?: string }> => {
+    const signInWithEmail = async (): Promise<{ success: boolean; error?: string }> => {
         try {
             // Clerk handles sign-in through their components
             // This is a placeholder for the actual Clerk sign-in flow
@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    const signUpWithEmail = async (_email: string, _password: string): Promise<{ success: boolean; error?: string }> => {
+    const signUpWithEmail = async (): Promise<{ success: boolean; error?: string }> => {
         try {
             // Clerk handles sign-up through their components
             // This is a placeholder for the actual Clerk sign-up flow

@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-const pdfParse = require('pdf-parse');
+const pdfParse = require('pdf-parse'); // eslint-disable-line @typescript-eslint/no-require-imports
 import { GoogleGenAI } from '@google/genai';
 
-export async function POST(req: Request) {
+export async function POST() {
     try {
         const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
         

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { UserPreferences } from '@/lib/storage';
 import { useData } from '@/lib/DataContext';
@@ -38,7 +38,7 @@ export default function SettingsSidebar() {
 
     useEffect(() => {
         if (preferences) setDraft({});
-    }, [isSettingsOpen, preferences]);
+    }, [preferences]);
 
     if (!isSettingsOpen) return null;
 

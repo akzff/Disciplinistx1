@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useData } from '@/lib/DataContext';
-import { DailyChat, formatTime } from '@/lib/storage';
+import React, { useState } from 'react';
+import { DailyChat } from '@/lib/storage';
 import { MissionCheckbox } from '@/components/Checkbox';
 import TaskEditModal from './TaskEditModal';
 

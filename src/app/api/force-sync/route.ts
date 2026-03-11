@@ -5,7 +5,7 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 
 export async function POST(req: NextRequest) {
     try {
-        const { targetAccountId, requestingUserId } = await req.json();
+        const { targetAccountId } = await req.json();
 
         // Validate UUID format
         if (!targetAccountId || !UUID_REGEX.test(targetAccountId)) {

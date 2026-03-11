@@ -1,5 +1,4 @@
 import { DailyChat, UserPreferences, storage, HabitIssue } from './storage';
-import { supabase } from './supabase';
 import { cloudStorage } from './cloudStorage';
 
 export interface ComprehensiveExportData {
