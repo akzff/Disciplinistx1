@@ -435,8 +435,10 @@ export default function MissionChecklist({
                 className={`mission-checklist md:hidden no-scrollbar${sidebarOpen ? ' sidebar-open' : ''}`}
                 style={{ zIndex: 41 }}
             >
-                {/* Reuse the same content tree for mobile */}
-                {/* Header and Progress Bar removed as requested */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 16px 8px 16px' }}>
+                    <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: 'white', letterSpacing: '0.05em' }}>MISSIONS</h2>
+                    <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: '20px', padding: '4px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                </div>
 
                 <div className="mc-start-section">
                     {isStartingLive ? (
