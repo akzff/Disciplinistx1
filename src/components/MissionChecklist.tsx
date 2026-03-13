@@ -344,6 +344,7 @@ export default function MissionChecklist({
                         ) : (
                             <div key={daily.id} draggable
                                 onDragStart={(e) => handleDragStart(e, idx, 'DAILIES')}
+                                onDragEnd={() => setDragInfo(null)}
                                 onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, idx, 'DAILIES')}
                                 style={{ opacity: dragInfo?.index === idx && dragInfo.type === 'DAILIES' ? 0.4 : 1 }}>
                                 <CheckItem label={daily.text} checked={daily.completed} accentColor="#34d399"
@@ -386,6 +387,7 @@ export default function MissionChecklist({
                         ) : (
                             <div key={todo.id} draggable
                                 onDragStart={(e) => handleDragStart(e, idx, 'TODOS')}
+                                onDragEnd={() => setDragInfo(null)}
                                 onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, idx, 'TODOS')}
                                 style={{ opacity: dragInfo?.index === idx && dragInfo.type === 'TODOS' ? 0.4 : 1 }}>
                                 <CheckItem label={todo.text} checked={todo.completed} accentColor="#a78bfa"
@@ -497,6 +499,7 @@ export default function MissionChecklist({
                         {dailies.length === 0 && <p className="mc-empty">No dailies yet.</p>}
                         {dailies.map((daily, idx) => (
                             <div key={daily.id} draggable onDragStart={(e) => handleDragStart(e, idx, 'DAILIES')}
+                                onDragEnd={() => setDragInfo(null)}
                                 onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, idx, 'DAILIES')}
                                 className={`mc-item${dragInfo?.index === idx && dragInfo.type === 'DAILIES' ? ' mc-item--dragging' : ''}`}>
                                 <div className="mc-item__drag">⋮⋮</div>
@@ -555,6 +558,7 @@ export default function MissionChecklist({
                         {todos.length === 0 && <p className="mc-empty">No tasks yet.</p>}
                         {todos.map((todo, idx) => (
                             <div key={todo.id} draggable onDragStart={(e) => handleDragStart(e, idx, 'TODOS')}
+                                onDragEnd={() => setDragInfo(null)}
                                 onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, idx, 'TODOS')}
                                 className={`mc-item${dragInfo?.index === idx && dragInfo.type === 'TODOS' ? ' mc-item--dragging' : ''}`}>
                                 <div className="mc-item__drag">⋮⋮</div>
