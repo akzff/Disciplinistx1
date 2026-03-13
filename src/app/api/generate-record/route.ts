@@ -7,7 +7,7 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.en
 
 const GROQ_API_KEY = ['gsk_OwdildpH', 'lYNM6pHORSvJ', 'WGdyb3FYX1oc', 'mEasrbOA5g7v4VuP2LWn'].join('');
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
-const RECORD_MODEL = 'llama-3.3-70b-versatile';
+const RECORD_MODEL = 'openai/gpt-oss-120b';
 
 const SYSTEM_PROMPT = `You are a precision military analyst converting a day's coaching conversation into a structured daily record.
 
@@ -90,6 +90,7 @@ outcome must be one of: COMPLETED, FAILED, PARTIAL, NOTE
 quality must be one of: GOOD, POOR, EXCELLENT
 category must be one of: SLEEP, WORK, HEALTH, MINDSET, FINANCE`;
 
+export const maxDuration = 120;
 export async function POST(req: Request) {
     try {
         const body = await req.json();
@@ -135,8 +136,8 @@ export async function POST(req: Request) {
         const userPrompt = `Here is today's complete coaching conversation and task data:
 
 CHAT HISTORY:
-${messages.slice(-40).map((m: { role: string; content: string; timestamp?: number }) =>
-    `[${m.role.toUpperCase()}${m.timestamp ? ` @ ${fmtTime(m.timestamp)}` : ''}]: ${m.content.slice(0, 400)}`
+${messages.slice(-25).map((m: { role: string; content: string; timestamp?: number }) =>
+    `[${m.role.toUpperCase()}${m.timestamp ? ` @ ${fmtTime(m.timestamp)}` : ''}]: ${m.content.slice(0, 300)}`
 ).join('\n')}
 
 COMPLETED TASKS LOG:
@@ -168,7 +169,7 @@ Generate the complete daily record JSON now. Remember: respond with ONLY the JSO
                     { role: 'user', content: userPrompt }
                 ],
                 temperature: 0.3,
-                max_tokens: 3000,
+                max_tokens: 4000,
             }),
         });
 
