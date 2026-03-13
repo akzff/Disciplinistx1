@@ -200,6 +200,7 @@ main {
   width: 100%;
   margin: 0 auto;
   position: relative;
+  overflow: hidden;
 }
 
 /* Full-bleed layout for chat to eliminate side gutters */
@@ -212,7 +213,7 @@ main {
   margin: 0;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .chat-page .chat-container {

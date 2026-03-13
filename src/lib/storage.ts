@@ -12,6 +12,7 @@ export interface Message {
         endTime: number;
         activeTime: number;
         pausedTime: number;
+        notes?: TaskNote[];
         rating?: number;
     };
 }

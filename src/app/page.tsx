@@ -598,7 +598,7 @@ export default function ChatPage() {
     };
 
     setMessages(updatedMessages);
-    setActiveTasks([newTask, ...activeTasks]);
+    setActiveTasks(prev => [newTask, ...prev]);
   };
 
   const startManualTask = (name: string) => {
@@ -612,7 +612,7 @@ export default function ChatPage() {
       totalPausedTime: 0,
       lastStartedAt: Date.now()
     };
-    setActiveTasks([newTask, ...activeTasks]);
+    setActiveTasks(prev => [newTask, ...prev]);
 
     // Notify the bot
     handleSend(`[Protocol Started]: Mission "${name.trim()}" is now live.`);
@@ -679,6 +679,7 @@ export default function ChatPage() {
           endTime: timestamp,
           activeTime: finalActiveTime,
           pausedTime: finalPausedTime,
+          notes: task.notes || []
         },
         timestamp: timestamp
       }]);
@@ -784,13 +785,13 @@ export default function ChatPage() {
 
 
   return (
-    <main className="chat-page">
+    <div className="chat-page">
       <div className="bg-mesh"></div>
 
       <div className="chat-container">
         <header className="chat-header">
 
-          <div className="chat-header__left" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div className="chat-header__left" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <div
               className="status-indicator"
               style={{
@@ -810,100 +811,34 @@ export default function ChatPage() {
                 )}
               </div>
             </div>
-            {/* AI / Live tab switcher */}
-            <div style={{
-              display: 'flex',
-              gap: '4px',
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: '100px',
-              padding: '3px',
-              marginLeft: '8px',
-              flexShrink: 0,
-            }}>
-              <button
-                onClick={() => setLiveTab(false)}
-                style={{
-                  padding: '5px 14px',
-                  borderRadius: '100px',
-                  border: 'none',
-                  fontSize: '0.65rem',
-                  fontWeight: '800',
-                  letterSpacing: '0.06em',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  background: !liveTab ? 'rgba(212,160,23,0.2)' : 'transparent',
-                  color: !liveTab ? '#d4a017' : 'rgba(255,255,255,0.4)',
-                  boxShadow: !liveTab ? '0 2px 10px rgba(212,160,23,0.15)' : 'none',
-                }}
-              >AI</button>
-              <button
-                onClick={() => setLiveTab(true)}
-                style={{
-                  padding: '5px 14px',
-                  borderRadius: '100px',
-                  border: 'none',
-                  fontSize: '0.65rem',
-                  fontWeight: '800',
-                  letterSpacing: '0.06em',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '5px',
-                  background: liveTab ? 'rgba(16,185,129,0.2)' : 'transparent',
-                  color: liveTab ? '#10b981' : 'rgba(255,255,255,0.4)',
-                  boxShadow: liveTab ? '0 2px 10px rgba(16,185,129,0.15)' : 'none',
-                }}
-              >
-                <span style={{
-                  width: '5px', height: '5px', borderRadius: '50%',
-                  background: '#10b981',
-                  flexShrink: 0,
-                  animation: 'nav-live-pulse 2s ease-in-out infinite',
-                }} />
-                LIVE
-              </button>
-            </div>
           </div>
 
-          <div className="nav-center-wrapper desktop-only" style={{ flex: 2, display: 'flex', justifyContent: 'center' }}>
+          <div className="nav-center-wrapper desktop-only" style={{ display: 'flex', justifyContent: 'center' }}>
             <NavigationBar />
           </div>
 
-          <div className="header-controls" style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+          <div className="header-controls" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <button
-                onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                className="header-action-btn"
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '10px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="3"></circle>
-                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 1 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                </svg>
-              </button>
-
               {/* Profile dropdown */}
               <div className="profile-dropdown-wrapper" ref={profileRef}>
                 <button
                   onClick={() => setProfileOpen(v => !v)}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: '8px',
-                    padding: '4px 10px', borderRadius: '100px',
-                    background: profileOpen ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.1)',
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                    padding: '6px 14px', borderRadius: '100px',
+                    background: profileOpen ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.12)',
                     backdropFilter: 'blur(10px)', cursor: 'pointer',
-                    transition: 'background 0.2s'
+                    transition: 'all 0.2s ease'
                   }}
                 >
                   <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'linear-gradient(135deg, #8b5cf6, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: '900', boxShadow: '0 2px 10px rgba(139, 92, 246, 0.3)', flexShrink: 0 }}>
                     {user?.primaryEmailAddress?.emailAddress?.charAt(0).toUpperCase() || 'U'}
                   </div>
-                  <span className="mobile-hidden" style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: '700' }}>
+                  <span className="mobile-hidden" style={{ fontSize: '0.75rem', color: 'white', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: '800', letterSpacing: '0.02em' }}>
                     {displayName}
                   </span>
-                  <svg className="mobile-hidden" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ transform: profileOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}>
+                  <svg className="mobile-hidden" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ transform: profileOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.25s', flexShrink: 0 }}>
                     <polyline points="6 9 12 15 18 9"></polyline>
                   </svg>
                 </button>
@@ -960,15 +895,15 @@ export default function ChatPage() {
               onDeleteTodo={(id) => setTodos(prev => prev.filter(t => t.id !== id))}
             />
 
-            <main style={{ 
-              display: 'flex', 
-              flexDirection: 'column', 
-              height: '100%', 
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100%',
               maxHeight: '100%',
-              overflow: 'hidden', 
-              minWidth: 0, 
-              position: 'relative',
-              flex: 1
+              overflow: 'hidden',
+              background: 'transparent',
+              flex: 1,
+              position: 'relative'
             }}>
 
               {isPreviousDayOpen && !hideOverlay && (
@@ -1086,6 +1021,16 @@ export default function ChatPage() {
                                   <span className="mc-stat-label">⏱ TOTAL DURATION</span>
                                   <span className="mc-stat-value">{formatTime(msg.completedMission.endTime - msg.completedMission.startTime)}</span>
                                 </div>
+                                {msg.completedMission.notes && msg.completedMission.notes.length > 0 && (
+                                  <div className="mc-stat mc-wide" style={{ gap: '8px' }}>
+                                    <span className="mc-stat-label">📔 SESSION NOTES</span>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                      {msg.completedMission.notes.map((n: any, idx: number) => (
+                                        <p key={idx} style={{ fontSize: '0.75rem', opacity: 0.9, margin: 0, lineHeight: '1.4' }}>• {n.text}</p>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                               <p className="mc-prompt">{msg.content}</p>
                               <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(16,185,129,0.15)' }}>
@@ -1226,7 +1171,7 @@ export default function ChatPage() {
                 })}
 
                 {/* Invisible anchor at the very bottom */}
-                <div ref={bottomRef} style={{ height: '1px' }} />
+                <div ref={bottomRef} style={{ height: '40px', flexShrink: 0 }} />
               </div>
 
               {/* Input area (AI chat only) */}
@@ -1313,7 +1258,7 @@ export default function ChatPage() {
               </div>
             )}
 
-            </main>
+            </div>
             {/* ── closes AI Chat Tab wrapper ── */}
           </div>
 
@@ -1321,7 +1266,55 @@ export default function ChatPage() {
 
 
         <style jsx global>{`
-                @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+                .profile-dropdown-wrapper { position: relative; }
+                .profile-dropdown {
+                  position: absolute;
+                  top: calc(100% + 12px);
+                  right: 0;
+                  width: 240px;
+                  background: #0d0d0f !important;
+                  border: 1px solid rgba(255,255,255,0.12);
+                  border-radius: 16px;
+                  box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.05);
+                  z-index: 5000 !important;
+                  overflow: hidden;
+                  animation: slideIn 0.2s cubic-bezier(0, 0, 0.2, 1);
+                }
+                .profile-dropdown__header {
+                  padding: 16px;
+                  background: rgba(255,255,255,0.02);
+                  border-bottom: 1px solid rgba(255,255,255,0.08);
+                }
+                .profile-dropdown__email {
+                  font-size: 0.75rem;
+                  color: rgba(255,255,255,0.4);
+                  margin: 0;
+                  font-weight: 500;
+                  word-break: break-all;
+                }
+                .profile-dropdown__item {
+                  width: 100%;
+                  padding: 12px 16px;
+                  display: flex;
+                  align-items: center;
+                  gap: 12px;
+                  background: transparent;
+                  border: none;
+                  color: rgba(255,255,255,0.85);
+                  font-size: 0.85rem;
+                  font-weight: 700;
+                  cursor: pointer;
+                  transition: all 0.2s ease;
+                  text-align: left;
+                }
+                .profile-dropdown__item:hover {
+                  background: rgba(255,255,255,0.08);
+                  color: white;
+                }
+                .profile-dropdown__item--danger { color: #ff5555; }
+                .profile-dropdown__item--danger:hover { background: rgba(255,85,85,0.1); }
+                
+                @keyframes slideIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
                 .setting-item { padding: 12px; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
 
                 /* Mission Complete Card */
@@ -1468,8 +1461,7 @@ export default function ChatPage() {
                 /* Responsive Main Layout */
                 .chat-layout-grid {
                   flex: 1;
-                  height: 100vh;
-                  max-height: 100vh;
+                  height: 100%;
                   width: 100%;
                   overflow: hidden;
                   grid-template-columns: 1fr; /* Mobile default */
@@ -1499,6 +1491,6 @@ export default function ChatPage() {
           tasksActive={sidebarOpen}
         />
       </div>
-    </main >
+    </div>
   );
 }
