@@ -771,7 +771,7 @@ textarea::placeholder {
     box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.5);
   }
 
-  .mobile-hidden {
+  .mobile-hidden, .mc-desktop-only {
     display: none !important;
   }
 
