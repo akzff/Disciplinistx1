@@ -784,7 +784,7 @@ export default function ChatPage() {
 
 
   return (
-    <main>
+    <main className="chat-page">
       <div className="bg-mesh"></div>
 
       <div className="chat-container">
