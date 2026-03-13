@@ -7,7 +7,7 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.en
 
 const GROQ_API_KEY = ['gsk_OwdildpH', 'lYNM6pHORSvJ', 'WGdyb3FYX1oc', 'mEasrbOA5g7v4VuP2LWn'].join('');
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
-const RECORD_MODEL = 'qwen/qwen3-32b';
+const RECORD_MODEL = 'llama-3.3-70b-versatile';
 
 const SYSTEM_PROMPT = `You are a precision military analyst converting a day's coaching conversation into a structured daily record.
 
@@ -129,7 +129,7 @@ export async function POST(req: Request) {
 
         const completedTasks = chatData.completedTasks ?? [];
         const completedTasksLog = completedTasks.map((t: CompletedTask) => 
-            `- ${t.name} (Active: ${((t.activeTime || 0) / 60000).toFixed(1)}m)${t.notes && t.notes.length > 0 ? `\n  Notes:\n  ${t.notes.map((n: TaskNote) => `  [${fmtTime(n.timestamp)}]: ${n.text}`).join('\n  ')}` : ''}`
+            `- ${t.name} (Active: ${((t.activeTime || 0) / 60000).toFixed(1)}m)${t.notes && t.notes.length > 0 ? `\n  Notes:\n  ${t.notes.map((n: TaskNote) => `  [${n.timestamp ? fmtTime(n.timestamp) : '??:??'}]: ${n.text}`).join('\n  ')}` : ''}`
         ).join('\n');
 
         const userPrompt = `Here is today's complete coaching conversation and task data:
@@ -187,12 +187,20 @@ Generate the complete daily record JSON now. Remember: respond with ONLY the JSO
             .replace(/<thinking>[\s\S]*?<\/thinking>/gi, '')
             .trim();
 
-        // Strip accidental markdown fences
-        const clean = rawText
-            .replace(/^```json\s*/i, '')
-            .replace(/^```\s*/i, '')
-            .replace(/\s*```$/i, '')
-            .trim();
+        // More robust JSON extraction: find first '{' and last '}'
+        let clean = rawText;
+        const firstBrace = rawText.indexOf('{');
+        const lastBrace = rawText.lastIndexOf('}');
+        if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+            clean = rawText.substring(firstBrace, lastBrace + 1);
+        } else {
+            // fallback to original cleaning if braces pattern not found
+            clean = rawText
+                .replace(/^```json\s*/i, '')
+                .replace(/^```\s*/i, '')
+                .replace(/\s*```$/i, '')
+                .trim();
+        }
 
         let structuredData: Record<string, unknown> | null = null;
         let legacyContent: string = rawText;
