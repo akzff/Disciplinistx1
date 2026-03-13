@@ -2,8 +2,13 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { Message, CompletedTask, TaskNote } from '@/lib/storage';
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+// Fallbacks match client-side Supabase config to prevent server-side 500s
+const FALLBACK_SUPABASE_URL = 'https://txqcuqhauipyzckefkqp.supabase.co';
+const FALLBACK_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4cWN1cWhhdWlweXpja2Vma3FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2NTY0OTEsImV4cCI6MjA4NzIzMjQ5MX0.IAQH3xQoMGcUQ9_bv1EIpyJpf1shlHMBOg__F5SXIYA';
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || FALLBACK_SUPABASE_ANON_KEY;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
 
 const GROQ_API_KEY = ['gsk_OwdildpH', 'lYNM6pHORSvJ', 'WGdyb3FYX1oc', 'mEasrbOA5g7v4VuP2LWn'].join('');
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
@@ -98,6 +103,13 @@ export async function POST(req: Request) {
 
         if (!userId || !date || !chatData) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+        }
+
+        if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+            return NextResponse.json(
+                { error: 'Server misconfigured: missing Supabase credentials' },
+                { status: 500 }
+            );
         }
 
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
