@@ -184,7 +184,12 @@ main {
 
 /* Full-bleed layout for chat to eliminate side gutters */
 .chat-page {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100dvh;
   padding: 0;
+  margin: 0;
 }
 
 .chat-page .chat-container {
