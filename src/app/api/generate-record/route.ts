@@ -22,16 +22,17 @@ No markdown. No backticks. No preamble. No text before or after the JSON object.
 Analyze the full conversation and extract:
 - Every time mention (wake up, meals, work sessions, sleep)
 - Every task attempted and its outcome
+- Emotional state, internal feelings, and psychological barriers
 - Mood and energy shifts throughout the day
-- What went right vs wrong
+- What went right vs wrong (both logistically and emotionally)
 - Key decisions made
-- Discipline score (0-100) based on: task completion, consistency with stated goals, time management
+- Discipline score (0-100) based on: task completion, consistency with stated goals, and emotional resilience
 
 Return this EXACT JSON structure:
 
 {
   "date": "YYYY-MM-DD",
-  "journal": "First-person detailed narrative of the day in chronological order",
+  "journal": "First-person detailed narrative capturing both what happened and how I felt; include internal monologues, emotional struggles, and psychological wins",
   "headline": "One punchy sentence summarizing the day",
   "discipline_score": 75,
   "score_reason": "One sentence explaining the score",
@@ -95,7 +96,7 @@ energy_arc must be one of: RISING, PEAK_THEN_CRASH, FLAT, SLOW_START, STRONG_FIN
 outcome must be one of: COMPLETED, FAILED, PARTIAL, NOTE
 quality must be one of: GOOD, POOR, EXCELLENT
 category must be one of: SLEEP, WORK, HEALTH, MINDSET, FINANCE
-journal must be in first person ("I..."), detailed, and time-ordered; use concrete times when available.`;
+journal must be in first person ("I..."), detailed, and time-ordered; it must weave together factual events with deep emotional context and internal feelings. Treat psychological state with the same weight as physical execution.`;
 
 export const maxDuration = 120;
 export async function POST(req: Request) {
@@ -149,8 +150,8 @@ export async function POST(req: Request) {
 
         const userPrompt = `Here is today's complete coaching conversation and task data:
 
-CHAT HISTORY (UP TO 100 MESSAGES):
-${messages.slice(-100).map((m: Message) =>
+CHAT HISTORY (LAST 30 MESSAGES):
+${messages.slice(-30).map((m: Message) =>
     `[${String(m.role || 'user').toUpperCase()}${m.timestamp ? ` @ ${fmtTime(m.timestamp)}` : ''}]: ${String(m.content || '')}`
 ).join('\n')}
 
