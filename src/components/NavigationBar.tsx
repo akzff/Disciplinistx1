@@ -1,17 +1,29 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useCallback, useEffect } from 'react';
+
+const MENU_ITEMS = [
+    { label: 'CHAT', href: '/' },
+    { label: 'EXPENSES', href: '/expenses' },
+    { label: 'ANALYTICS', href: '/analytics' },
+    { label: 'RECORDS', href: '/records' },
+];
 
 export function NavigationBar() {
     const pathname = usePathname();
+    const router = useRouter();
 
-    const menu = [
-        { label: 'CHAT', href: '/' },
-        { label: 'EXPENSES', href: '/expenses' },
-        { label: 'ANALYTICS', href: '/analytics' },
-        { label: 'RECORDS', href: '/records' },
-    ];
+    const prefetchRoute = useCallback((href: string) => {
+        if (href !== pathname) {
+            router.prefetch(href);
+        }
+    }, [router, pathname]);
+
+    useEffect(() => {
+        MENU_ITEMS.forEach((item) => prefetchRoute(item.href));
+    }, [prefetchRoute]);
 
     return (
         <nav className="mobile-scroll-x" style={{
@@ -25,10 +37,17 @@ export function NavigationBar() {
             boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
             flexShrink: 0
         }}>
-            {menu.map((item) => {
+            {MENU_ITEMS.map((item) => {
                 const active = pathname === item.href;
                 return (
-                    <Link key={item.href} href={item.href} className="nav-item" style={{
+                    <Link
+                        key={item.href}
+                        href={item.href}
+                        prefetch
+                        onMouseEnter={() => prefetchRoute(item.href)}
+                        onFocus={() => prefetchRoute(item.href)}
+                        className="nav-item"
+                        style={{
                         padding: '8px 24px',
                         borderRadius: '100px',
                         textDecoration: 'none',

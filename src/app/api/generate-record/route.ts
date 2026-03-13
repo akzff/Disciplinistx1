@@ -126,12 +126,20 @@ export async function POST(req: Request) {
         const fmtTime = (ts: number) =>
             new Date(ts).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
+        const completedTasks = chatData.completedTasks ?? [];
+        const completedTasksLog = completedTasks.map((t: any) => 
+            `- ${t.name} (Active: ${((t.activeTime || 0) / 60000).toFixed(1)}m)${t.notes && t.notes.length > 0 ? `\n  Notes:\n  ${t.notes.map((n: any) => `  [${fmtTime(n.timestamp)}]: ${n.text}`).join('\n  ')}` : ''}`
+        ).join('\n');
+
         const userPrompt = `Here is today's complete coaching conversation and task data:
 
 CHAT HISTORY:
 ${messages.slice(-40).map((m: { role: string; content: string; timestamp?: number }) =>
     `[${m.role.toUpperCase()}${m.timestamp ? ` @ ${fmtTime(m.timestamp)}` : ''}]: ${m.content.slice(0, 400)}`
 ).join('\n')}
+
+COMPLETED TASKS LOG:
+${completedTasksLog || '(none)'}
 
 DAILIES STATUS:
 ${dailies.map((d: { text: string; completed: boolean }) => `- ${d.text}: ${d.completed ? 'DONE' : 'NOT DONE'}`).join('\n') || '(none)'}

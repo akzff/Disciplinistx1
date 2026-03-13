@@ -691,7 +691,7 @@ export default function ChatPage() {
           pausedTime: finalPausedTime,
           finishedAt: timestamp,
           abandonmentReason: '', // Will be filled when user responds
-          note: task.note
+          notes: task.notes
         }
       ]);
 
@@ -699,8 +699,15 @@ export default function ChatPage() {
     });
   };
 
-  const updateTaskNote = (taskId: string, note: string) => {
-    setActiveTasks(prev => prev.map(t => t.id === taskId ? { ...t, note } : t));
+  const addTaskNote = (taskId: string, text: string) => {
+    if (!text.trim()) return;
+    setActiveTasks(prev => prev.map(t => {
+      if (t.id === taskId) {
+        const newNote = { text, timestamp: Date.now() };
+        return { ...t, notes: [...(t.notes || []), newNote] };
+      }
+      return t;
+    }));
   };
 
   const rateCompletedMission = (messageIndex: number, taskName: string, rating: number) => {
@@ -1156,23 +1163,48 @@ export default function ChatPage() {
                         <p style={{ fontSize: '0.65rem', opacity: 0.5, marginTop: '2px' }}>
                           Active: {formatTime(activeTime, false)} | Paused: {formatTime(pausedTime, false)}
                         </p>
+                        {/* Notes List */}
+                        {(task.notes || []).length > 0 && (
+                          <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            {task.notes?.map((note, idx) => (
+                              <div key={idx} style={{ 
+                                background: 'rgba(255,255,255,0.03)', 
+                                padding: '6px 10px', 
+                                borderRadius: '6px',
+                                borderLeft: '2px solid rgba(212,160,23,0.3)'
+                              }}>
+                                <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.9)', lineHeight: '1.4' }}>{note.text}</p>
+                                <p style={{ fontSize: '0.6rem', opacity: 0.4, marginTop: '2px' }}>
+                                  {new Date(note.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
                         <input 
                           type="text" 
-                          placeholder="Add a note..." 
-                          value={task.note || ''} 
-                          onChange={(e) => updateTaskNote(task.id, e.target.value)}
-                          onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                          placeholder="Add a note... (Enter to save)" 
                           style={{
-                            width: '100%', marginTop: '8px', background: 'rgba(255,255,255,0.05)', 
+                            width: '100%', marginTop: '10px', background: 'rgba(255,255,255,0.05)', 
                             border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px',
                             padding: '8px', fontSize: '0.75rem', color: 'white', outline: 'none',
                             transition: 'border-color 0.2s'
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              const input = e.currentTarget;
+                              if (input.value.trim()) {
+                                addTaskNote(task.id, input.value);
+                                input.value = '';
+                              }
+                            }
                           }}
                           onFocus={(e) => e.currentTarget.style.borderColor = 'rgba(212,160,23,0.5)'}
                           onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}
                         />
                       </div>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <div className="task-actions" style={{ display: 'flex', gap: '0.5rem' }}>
                         <button onClick={() => toggleTask(task.id)} className="edit-cancel" style={{ fontSize: '0.7rem' }}>
                           {task.status === 'RUNNING' ? 'Pause' : 'Resume'}
                         </button>
@@ -1198,24 +1230,30 @@ export default function ChatPage() {
                   }}
                   style={{
                     position: 'absolute',
-                    bottom: '80px',
-                    right: '16px',
-                    zIndex: 10,
-                    background: '#d4a017',
+                    bottom: '100px',
+                    right: '20px',
+                    zIndex: 2000,
+                    background: 'var(--accent)',
                     border: 'none',
-                    borderRadius: '20px',
+                    borderRadius: '50%',
+                    width: '40px',
+                    height: '40px',
                     color: '#000',
-                    fontWeight: 700,
-                    fontSize: '12px',
-                    padding: '8px 16px',
-                    cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px',
-                    boxShadow: '0 4px 16px rgba(212,160,23,0.4)',
-                    animation: 'fadeIn 0.2s ease'
-                  }}>
-                  ↓ scroll to bottom
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    boxShadow: '0 8px 25px rgba(212,160,23,0.4)',
+                    animation: 'fadeIn 0.3s ease',
+                    transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-3px)'}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="7 13 12 18 17 13"></polyline>
+                    <polyline points="7 6 12 11 17 6"></polyline>
+                  </svg>
                 </button>
               )}
 
@@ -1296,6 +1334,38 @@ export default function ChatPage() {
                   min-width: 280px;
                   box-shadow: 0 0 30px rgba(16,185,129,0.08);
                 }
+
+                @media (max-width: 768px) {
+                  .chat-messages { padding: 1rem 0.75rem !important; }
+                  .message { max-width: 98% !important; margin: 0 !important; border-radius: 12px !important; }
+                  .message-wrapper { width: 100% !important; }
+                  .active-tasks-card { 
+                    flex-direction: column !important; 
+                    align-items: stretch !important;
+                    padding: 1.25rem !important;
+                    margin: 0.75rem 0 1.5rem 0 !important;
+                    gap: 1rem !important;
+                    background: rgba(212, 160, 23, 0.1) !important;
+                    backdrop-filter: blur(20px) !important;
+                    border: 1px solid rgba(212, 160, 23, 0.3) !important;
+                  }
+                  .active-tasks-card > div:first-child { align-self: center; margin-bottom: -0.5rem; }
+                  .active-tasks-card input { 
+                    font-size: 1rem !important; 
+                    padding: 14px !important; 
+                    background: rgba(0,0,0,0.3) !important;
+                    border-color: rgba(255,255,255,0.1) !important;
+                  }
+                  .gc-bubble { max-width: 94% !important; }
+                  .task-actions { 
+                    display: grid !important; 
+                    grid-template-columns: 1fr 1fr !important;
+                    gap: 0.75rem !important;
+                    width: 100% !important;
+                  }
+                  .task-actions button { width: 100% !important; padding: 12px 0 !important; font-size: 0.85rem !important; border-radius: 10px !important; }
+                }
+
                 .mc-header {
                   display: flex;
                   align-items: center;

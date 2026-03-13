@@ -16,6 +16,11 @@ export interface Message {
     };
 }
 
+export interface TaskNote {
+    text: string;
+    timestamp: number;
+}
+
 export interface ActiveTask {
     id: string;
     name: string;
@@ -26,7 +31,7 @@ export interface ActiveTask {
     totalPausedTime: number; // in milliseconds
     lastStartedAt: number;
     lastPausedAt?: number;
-    note?: string;
+    notes?: TaskNote[];
 }
 
 export interface HabitIssue {
@@ -71,7 +76,7 @@ export interface DailyChat {
         pausedTime: number;
         finishedAt: number;
         abandonmentReason?: string;
-        note?: string;
+        notes?: TaskNote[];
         rating?: number;
     }[];
     aiSummary?: string;

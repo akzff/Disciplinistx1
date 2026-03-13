@@ -91,7 +91,7 @@ function MessageBubble({
             <Avatar name={msg.user_name} avatar={msg.user_avatar} size={30} />
 
             {/* Bubble */}
-            <div style={{ maxWidth: '70%', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+            <div className="gc-bubble" style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                 {/* Name + time */}
                 <div style={{
                     display: 'flex',
@@ -320,22 +320,27 @@ export default function GroupChat({ userId, userName, userAvatar }: GroupChatPro
                         }}
                         style={{
                             position: 'absolute',
-                            bottom: '12px',
+                            bottom: '24px',
                             right: '24px',
-                            background: 'rgba(212,160,23,0.9)',
+                            background: 'var(--accent)',
                             border: 'none',
-                            borderRadius: '999px',
+                            borderRadius: '50%',
+                            width: '38px',
+                            height: '38px',
                             color: '#000',
-                            fontSize: '0.7rem',
-                            fontWeight: '800',
-                            padding: '6px 14px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
                             cursor: 'pointer',
-                            zIndex: 10,
-                            boxShadow: '0 4px 20px rgba(212,160,23,0.4)',
-                            letterSpacing: '0.04em',
+                            zIndex: 100,
+                            boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
+                            transition: 'all 0.2s',
                         }}
                     >
-                        ↓ New messages
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="7 13 12 18 17 13"></polyline>
+                            <polyline points="12 18 12 6"></polyline>
+                        </svg>
                     </button>
                 </div>
             )}

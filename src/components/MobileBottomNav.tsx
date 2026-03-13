@@ -1,7 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useCallback, useEffect } from 'react';
+
+const NAV_ROUTES = ['/', '/expenses', '/analytics', '/records'];
 
 interface MobileNavProps {
     onTasksPress?: () => void;
@@ -10,7 +13,18 @@ interface MobileNavProps {
 
 export function MobileBottomNav({ onTasksPress, tasksActive }: MobileNavProps) {
     const pathname = usePathname();
+    const router = useRouter();
     const isChatPage = pathname === '/';
+
+    const prefetchRoute = useCallback((href: string) => {
+        if (href !== pathname) {
+            router.prefetch(href);
+        }
+    }, [router, pathname]);
+
+    useEffect(() => {
+        NAV_ROUTES.forEach((route) => prefetchRoute(route));
+    }, [prefetchRoute]);
 
     return (
         <nav className="mobile-bottom-nav">
@@ -32,7 +46,13 @@ export function MobileBottomNav({ onTasksPress, tasksActive }: MobileNavProps) {
                 </button>
             )}
 
-            <Link href="/" className={`mbn-item${pathname === '/' ? ' mbn-item--current' : ''}`}>
+            <Link
+                href="/"
+                prefetch
+                onMouseEnter={() => prefetchRoute('/')}
+                onFocus={() => prefetchRoute('/')}
+                className={`mbn-item${pathname === '/' ? ' mbn-item--current' : ''}`}
+            >
                 <span className="mbn-icon">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
@@ -41,7 +61,13 @@ export function MobileBottomNav({ onTasksPress, tasksActive }: MobileNavProps) {
                 <span className="mbn-label">CHAT</span>
             </Link>
 
-            <Link href="/expenses" className={`mbn-item${pathname === '/expenses' ? ' mbn-item--current' : ''}`}>
+            <Link
+                href="/expenses"
+                prefetch
+                onMouseEnter={() => prefetchRoute('/expenses')}
+                onFocus={() => prefetchRoute('/expenses')}
+                className={`mbn-item${pathname === '/expenses' ? ' mbn-item--current' : ''}`}
+            >
                 <span className="mbn-icon">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <line x1="12" y1="1" x2="12" y2="23" />
@@ -51,7 +77,13 @@ export function MobileBottomNav({ onTasksPress, tasksActive }: MobileNavProps) {
                 <span className="mbn-label">EXPENSES</span>
             </Link>
 
-            <Link href="/analytics" className={`mbn-item${pathname === '/analytics' ? ' mbn-item--current' : ''}`}>
+            <Link
+                href="/analytics"
+                prefetch
+                onMouseEnter={() => prefetchRoute('/analytics')}
+                onFocus={() => prefetchRoute('/analytics')}
+                className={`mbn-item${pathname === '/analytics' ? ' mbn-item--current' : ''}`}
+            >
                 <span className="mbn-icon">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <line x1="18" y1="20" x2="18" y2="10" />
@@ -62,7 +94,13 @@ export function MobileBottomNav({ onTasksPress, tasksActive }: MobileNavProps) {
                 <span className="mbn-label">ANALYTICS</span>
             </Link>
 
-            <Link href="/records" className={`mbn-item${pathname === '/records' ? ' mbn-item--current' : ''}`}>
+            <Link
+                href="/records"
+                prefetch
+                onMouseEnter={() => prefetchRoute('/records')}
+                onFocus={() => prefetchRoute('/records')}
+                className={`mbn-item${pathname === '/records' ? ' mbn-item--current' : ''}`}
+            >
                 <span className="mbn-icon">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z" />
