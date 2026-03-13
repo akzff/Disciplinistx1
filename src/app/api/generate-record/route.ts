@@ -129,15 +129,15 @@ export async function POST(req: Request) {
             new Date(ts).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
         const completedTasks = chatData.completedTasks ?? [];
-        const completedTasksLog = completedTasks.map((t: CompletedTask) => 
-            `- ${t.name} (Active: ${((t.activeTime || 0) / 60000).toFixed(1)}m)${t.notes && t.notes.length > 0 ? `\n  Notes:\n  ${t.notes.map((n: TaskNote) => `  [${n.timestamp ? fmtTime(n.timestamp) : '??:??'}]: ${n.text}`).join('\n  ')}` : ''}`
+        const completedTasksLog = completedTasks.map((t: any) => 
+            `- ${t.name || 'Unnamed Task'} (Active: ${((t.activeTime || 0) / 60000).toFixed(1)}m)${t.notes && t.notes.length > 0 ? `\n  Notes:\n  ${t.notes.map((n: any) => `  [${n.timestamp ? fmtTime(n.timestamp) : '??:??'}]: ${n.text || ''}`).join('\n  ')}` : ''}`
         ).join('\n');
 
         const userPrompt = `Here is today's complete coaching conversation and task data:
 
 CHAT HISTORY:
-${messages.slice(-25).map((m: { role: string; content: string; timestamp?: number }) =>
-    `[${m.role.toUpperCase()}${m.timestamp ? ` @ ${fmtTime(m.timestamp)}` : ''}]: ${m.content.slice(0, 300)}`
+${messages.slice(-25).map((m: any) =>
+    `[${String(m.role || 'user').toUpperCase()}${m.timestamp ? ` @ ${fmtTime(m.timestamp)}` : ''}]: ${String(m.content || '').slice(0, 300)}`
 ).join('\n')}
 
 COMPLETED TASKS LOG:
@@ -238,8 +238,12 @@ Generate the complete daily record JSON now. Remember: respond with ONLY the JSO
             structured_data: structuredData,
         });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('generate-record route error:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        return NextResponse.json({ 
+            error: 'Internal Server Error', 
+            details: error?.message || String(error),
+            stack: error?.stack
+        }, { status: 500 });
     }
 }
