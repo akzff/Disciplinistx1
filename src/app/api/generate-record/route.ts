@@ -149,19 +149,22 @@ export async function POST(req: Request) {
 
         const userPrompt = `Here is today's complete coaching conversation and task data:
 
-CHAT HISTORY:
-${messages.slice(-25).map((m: Message) =>
-    `[${String(m.role || 'user').toUpperCase()}${m.timestamp ? ` @ ${fmtTime(m.timestamp)}` : ''}]: ${String(m.content || '').slice(0, 300)}`
+CHAT HISTORY (UP TO 100 MESSAGES):
+${messages.slice(-100).map((m: Message) =>
+    `[${String(m.role || 'user').toUpperCase()}${m.timestamp ? ` @ ${fmtTime(m.timestamp)}` : ''}]: ${String(m.content || '')}`
 ).join('\n')}
 
 COMPLETED TASKS LOG:
 ${completedTasksLog || '(none)'}
 
 DAILIES STATUS:
-${dailies.map((d: { text: string; completed: boolean }) => `- ${d.text}: ${d.completed ? 'DONE' : 'NOT DONE'}`).join('\n') || '(none)'}
+${dailies.map((d: any) => `- ${d.text}: ${d.completed ? 'DONE' : 'NOT DONE'}${d.subtasks?.length ? `\n  Subtasks: ${d.subtasks.map((s: any) => `[${s.completed ? 'x' : ' '}] ${s.text}`).join(', ')}` : ''}`).join('\n') || '(none)'}
 
 TO-DO STATUS:
-${todos.map((t: { text: string; completed: boolean }) => `- ${t.text}: ${t.completed ? 'DONE' : 'NOT DONE'}`).join('\n') || '(none)'}
+${todos.map((t: any) => `- ${t.text}: ${t.completed ? 'DONE' : 'NOT DONE'}${t.subtasks?.length ? `\n  Subtasks: ${t.subtasks.map((s: any) => `[${s.completed ? 'x' : ' '}] ${s.text}`).join(', ')}` : ''}`).join('\n') || '(none)'}
+
+DISTRACTIONS LOGGED:
+${chatData.distractions?.map((d: string) => `- ${d}`).join('\n') || '(none)'}
 
 DATE: ${date}
 FIRST_MESSAGE_TIME: ${firstTs ? fmtTime(firstTs) : 'unknown'}
