@@ -940,7 +940,16 @@ export default function ChatPage() {
           )}
 
           {/* ── AI Chat Tab ────────────────────────────────────── */}
-          <div style={{ display: liveTab ? 'none' : 'grid', gridTemplateColumns: '300px 1fr', flex: 1, height: '100%', width: '100%', overflow: 'hidden' }}>
+          <div style={{ 
+            display: liveTab ? 'none' : 'grid', 
+            gridTemplateColumns: '300px 1fr', 
+            gridTemplateRows: '1fr',
+            flex: 1, 
+            height: '100vh', 
+            maxHeight: '100vh',
+            width: '100%', 
+            overflow: 'hidden' 
+          }}>
 
             <MissionChecklist
               todos={todos}
@@ -960,7 +969,16 @@ export default function ChatPage() {
               onDeleteTodo={(id) => setTodos(prev => prev.filter(t => t.id !== id))}
             />
 
-            <main style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', minWidth: 0, position: 'relative' }}>
+            <main style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              height: '100%', 
+              maxHeight: '100%',
+              overflow: 'hidden', 
+              minWidth: 0, 
+              position: 'relative',
+              flex: 1
+            }}>
 
               {isPreviousDayOpen && !hideOverlay && (
                 <div className="overlay">

@@ -321,7 +321,7 @@ export default function MissionChecklist({
             }}>
                 <SectionHeader dot="#34d399" label="DAILIES" completed={completedDailies} total={totalDailies}
                     accentColor="#34d399" onAdd={() => { setAddingType('DAILIES'); setAddingText(''); }} />
-                <div className="mc-desktop-scroll" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '8px' }}>
+                <div className="mc-desktop-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', padding: '8px' }}>
                     {addingType === 'DAILIES' && (
                         <InlineInput placeholder="New daily habit..." value={addingText} onChange={setAddingText}
                             onSave={handleSaveAdd} onCancel={() => setAddingType(null)} accentColor="#34d399" />
@@ -364,7 +364,7 @@ export default function MissionChecklist({
             }}>
                 <SectionHeader dot="#a78bfa" label="TO-DO'S" completed={completedTodos} total={totalTodos}
                     accentColor="#a78bfa" onAdd={() => { setAddingType('TODOS'); setAddingText(''); }} />
-                <div className="mc-desktop-scroll" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '8px' }}>
+                <div className="mc-desktop-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', padding: '8px' }}>
                     {addingType === 'TODOS' && (
                         <InlineInput placeholder="New task..." value={addingText} onChange={setAddingText}
                             onSave={handleSaveAdd} onCancel={() => setAddingType(null)} accentColor="#a78bfa" />
@@ -588,7 +588,7 @@ export default function MissionChecklist({
             ─────────────────────────────────────────────────────────────── */}
             <div className="mc-desktop-only" style={{
                 width: '300px', minWidth: '300px', maxWidth: '300px',
-                height: '100%', overflow: 'hidden',
+                height: '100%', maxHeight: '100%', overflow: 'hidden',
                 borderRight: '1px solid rgba(212,160,23,0.1)',
                 backgroundColor: '#0a0a0a',
                 display: 'flex', flexDirection: 'column',

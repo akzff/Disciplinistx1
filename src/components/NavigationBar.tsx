@@ -35,7 +35,8 @@ export function NavigationBar() {
             border: '1px solid rgba(255,255,255,0.08)',
             backdropFilter: 'blur(16px)',
             boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-            flexShrink: 0
+            flexShrink: 0,
+            flexGrow: 0
         }}>
             {MENU_ITEMS.map((item) => {
                 const active = pathname === item.href;
