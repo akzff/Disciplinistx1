@@ -26,7 +26,15 @@ export async function POST(req: Request) {
             ...messages.map((m: { role: string; content: string }) => ({ role: m.role, content: m.content }))
         ];
 
-        const body: any = {
+        interface GroqRequest {
+            model: string;
+            messages: { role: string; content: string }[];
+            temperature: number;
+            max_tokens: number;
+            reasoning_effort?: string;
+        }
+
+        const body: GroqRequest = {
             model: selectedModel,
             messages: fullMessages,
             temperature: isGpt120b ? 2 : 0.4,
