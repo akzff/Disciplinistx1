@@ -1186,8 +1186,8 @@ export default function ChatPage() {
 
               {/* Input area (AI chat only) */}
               {messages.length > 0 && (
-                <div className="input-area">
-                  <div className="input-wrapper">
+                <div className="input-area" style={{ padding: '20px' }}>
+                  <div className="input-wrapper" style={{ alignItems: 'center', padding: '0 8px 0 16px', minHeight: '56px' }}>
                     {/* Scroll button embedded in input row for mobile */}
                     {showScrollBtn && (
                       <button
@@ -1198,20 +1198,20 @@ export default function ChatPage() {
                         }}
                         style={{
                           flexShrink: 0,
-                          width: '36px',
-                          height: '36px',
+                          width: '40px',
+                          height: '40px',
                           borderRadius: '50%',
-                          background: 'rgba(212,160,23,0.15)',
-                          border: '1px solid rgba(212,160,23,0.35)',
+                          background: 'rgba(212,160,23,0.12)',
+                          border: '1px solid rgba(212,160,23,0.25)',
                           color: '#d4a017',
-                          fontSize: '16px',
+                          fontSize: '18px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           cursor: 'pointer',
                           transition: 'all 0.2s',
                           animation: 'fadeIn 0.2s ease',
-                          marginRight: '-4px'
+                          marginRight: '8px'
                         }}
                       >
                         ↓
@@ -1224,14 +1224,35 @@ export default function ChatPage() {
                       onChange={(e) => setInput(e.target.value)}
                       onKeyDown={handleKeyDown}
                       rows={1}
+                      style={{ 
+                        flex: 1, 
+                        background: 'transparent', 
+                        padding: '14px 0', 
+                        fontSize: '0.95rem',
+                        lineHeight: '1.5',
+                        minHeight: '24px'
+                      }}
                       onInput={(e) => {
                         const target = e.target as HTMLTextAreaElement;
                         target.style.height = 'auto';
                         target.style.height = `${target.scrollHeight}px`;
                       }}
                     />
-                    <button className="send-button" onClick={() => handleSend()} disabled={!input.trim() || isLoading}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
+                    <button 
+                      className="send-button" 
+                      onClick={() => handleSend()} 
+                      disabled={!input.trim() || isLoading}
+                      style={{ 
+                        width: '40px', 
+                        height: '40px', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        marginLeft: '8px'
+                      }}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
                     </button>
                   </div>
                 </div>

@@ -31,6 +31,7 @@ Return this EXACT JSON structure:
 
 {
   "date": "YYYY-MM-DD",
+  "journal": "First-person detailed narrative of the day in chronological order",
   "headline": "One punchy sentence summarizing the day",
   "discipline_score": 75,
   "score_reason": "One sentence explaining the score",
@@ -93,7 +94,8 @@ mood must be one of: FOCUSED, DISTRACTED, DOMINATOR, DRIFTING, GRINDING
 energy_arc must be one of: RISING, PEAK_THEN_CRASH, FLAT, SLOW_START, STRONG_FINISH
 outcome must be one of: COMPLETED, FAILED, PARTIAL, NOTE
 quality must be one of: GOOD, POOR, EXCELLENT
-category must be one of: SLEEP, WORK, HEALTH, MINDSET, FINANCE`;
+category must be one of: SLEEP, WORK, HEALTH, MINDSET, FINANCE
+journal must be in first person ("I..."), detailed, and time-ordered; use concrete times when available.`;
 
 export const maxDuration = 120;
 export async function POST(req: Request) {

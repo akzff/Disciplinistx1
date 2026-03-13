@@ -17,6 +17,7 @@ import { EnhancedExportImport } from '@/lib/enhancedExportImport';
 
 interface StructuredRecord {
     date: string;
+    journal?: string;
     headline: string;
     discipline_score: number;
     score_reason: string;
@@ -197,6 +198,15 @@ function StructuredRecordView({ r }: { r: StructuredRecord }) {
                     <p style={{ fontSize: '9px', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em', marginTop: '2px' }}>DISCIPLINE</p>
                 </div>
             </div>
+
+            {/* Journal (Most Important) */}
+            {r.journal && (
+                <SectionCard icon="📓" title="DAILY JOURNAL" accent="#f5c842">
+                    <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', lineHeight: 1.7 }}>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{r.journal}</ReactMarkdown>
+                    </div>
+                </SectionCard>
+            )}
 
             {/* Stats Row */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
@@ -519,7 +529,7 @@ export default function RecordsPage() {
                     {/* Report Area */}
                     <div style={{ flex: 1, overflowY: 'auto', padding: '2rem 2.5rem' }}>
                         {chat ? (
-                            <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+                            <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
                                 {/* Header Row */}
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem' }}>
                                     <div>
