@@ -176,7 +176,8 @@ main {
   flex-direction: column;
   height: 100dvh;
   padding: 1.5rem 2rem;
-  max-width: 1400px;
+  max-width: none;
+  width: 100%;
   margin: 0 auto;
   position: relative;
 }
