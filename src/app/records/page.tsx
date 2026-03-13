@@ -222,7 +222,7 @@ function EditRecordModal({ dbRecord, onSave, onClose }: { dbRecord: DbRecord, on
     
     return (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(10px)' }}>
-            <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', width: '100%', maxWidth: '650px', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}>
+            <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', width: '100%', maxWidth: '850px', maxHeight: '95vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}>
                 <div style={{ padding: '24px 30px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                         <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: 900 }}>Edit Record</h3>
@@ -233,15 +233,15 @@ function EditRecordModal({ dbRecord, onSave, onClose }: { dbRecord: DbRecord, on
                 <div style={{ padding: '30px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '24px' }}>
                     <div>
                         <label style={{ color: '#d4a017', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', marginBottom: '10px', display: 'block', letterSpacing: '0.1em' }}>Daily Headline</label>
-                        <input value={headline} onChange={e => setHeadline(e.target.value)} style={{ width: '100%', background: '#111', border: '1px solid rgba(255,255,255,0.08)', color: '#fff', padding: '14px', borderRadius: '12px', fontSize: '15px' }} />
+                        <input value={headline} onChange={e => setHeadline(e.target.value)} style={{ width: '100%', background: '#111', border: '1px solid rgba(255,255,255,0.08)', color: '#fff', padding: '14px', borderRadius: '12px', fontSize: '16px' }} />
                     </div>
                     <div>
                         <label style={{ color: '#d4a017', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', marginBottom: '10px', display: 'block', letterSpacing: '0.1em' }}>Detailed Journal</label>
-                        <textarea value={journal} onChange={e => setJournal(e.target.value)} style={{ width: '100%', minHeight: '200px', background: '#111', border: '1px solid rgba(255,255,255,0.08)', color: '#fff', padding: '14px', borderRadius: '12px', fontSize: '14px', lineHeight: 1.6, resize: 'vertical' }} />
+                        <textarea value={journal} onChange={e => setJournal(e.target.value)} style={{ width: '100%', minHeight: '450px', background: '#111', border: '1px solid rgba(255,255,255,0.08)', color: '#fff', padding: '18px', borderRadius: '12px', fontSize: '15px', lineHeight: 1.7, resize: 'vertical' }} />
                     </div>
                     <div>
                         <label style={{ color: '#d4a017', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', marginBottom: '10px', display: 'block', letterSpacing: '0.1em' }}>Coach Verdict</label>
-                        <textarea value={verdict} onChange={e => setVerdict(e.target.value)} style={{ width: '100%', minHeight: '100px', background: '#111', border: '1px solid rgba(255,255,255,0.08)', color: '#fff', padding: '14px', borderRadius: '12px', fontSize: '14px', lineHeight: 1.6, resize: 'vertical' }} />
+                        <textarea value={verdict} onChange={e => setVerdict(e.target.value)} style={{ width: '100%', minHeight: '120px', background: '#111', border: '1px solid rgba(255,255,255,0.08)', color: '#fff', padding: '16px', borderRadius: '12px', fontSize: '15px', lineHeight: 1.6, resize: 'vertical' }} />
                     </div>
                 </div>
                 <div style={{ padding: '24px 30px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: '16px' }}>
@@ -292,11 +292,15 @@ function StructuredRecordView({ r }: { r: StructuredRecord }) {
 
             {/* Journal (Most Important) */}
             {r.journal && (
-                <SectionCard icon="📓" title="DAILY JOURNAL" accent="#f5c842">
-                    <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', lineHeight: 1.7 }}>
+                <div style={{ background: '#0f0f0f', border: '1px solid rgba(245,200,66,0.15)', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }}>
+                    <div style={{ padding: '18px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(245,200,66,0.03)' }}>
+                        <span style={{ fontSize: '20px' }}>📓</span>
+                        <span style={{ color: '#f5c842', fontSize: '12px', fontWeight: 900, letterSpacing: '0.15em' }}>DAILY JOURNAL</span>
+                    </div>
+                    <div style={{ padding: '28px 32px', color: 'rgba(255,255,255,0.85)', fontSize: '15px', lineHeight: 1.8, letterSpacing: '0.01em' }}>
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{r.journal}</ReactMarkdown>
                     </div>
-                </SectionCard>
+                </div>
             )}
 
             {/* Stats Row */}
