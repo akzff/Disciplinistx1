@@ -155,7 +155,9 @@ function RefinementItem({ item, index }: { item: { action: string; reason: strin
                     <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', fontWeight: 600 }}>{item.action}</span>
                     <span style={{ fontSize: '9px', background: `${c}22`, color: c, border: `1px solid ${c}44`, padding: '2px 6px', borderRadius: '10px', fontWeight: 700 }}>{item.category}</span>
                 </div>
-                <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px' }}>{item.reason}</p>
+                <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px' }}>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.reason}</ReactMarkdown>
+                </div>
             </div>
         </div>
     );
@@ -263,7 +265,9 @@ function StructuredRecordView({ r }: { r: StructuredRecord }) {
             {r.coach_verdict && (
                 <div style={{ background: '#0f0f0f', border: '1px solid rgba(255,255,255,0.06)', borderLeft: '3px solid #d4a017', borderRadius: '12px', padding: '16px 20px' }}>
                     <p style={{ color: '#d4a017', fontSize: '10px', fontWeight: 900, letterSpacing: '0.12em', marginBottom: '8px' }}>COACH VERDICT</p>
-                    <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', lineHeight: 1.7 }}>{r.coach_verdict}</p>
+                <div className="block-markdown" style={{ fontSize: '14px', opacity: 0.8 }}>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{r.coach_verdict || ''}</ReactMarkdown>
+                </div>
                 </div>
             )}
 
