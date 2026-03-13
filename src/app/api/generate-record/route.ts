@@ -174,9 +174,15 @@ Generate the complete daily record JSON now. Remember: respond with ONLY the JSO
         });
 
         if (!apiResponse.ok) {
-            const err = await apiResponse.json();
-            console.error('Groq API error generating record:', err);
-            return NextResponse.json({ error: 'AI generation failed' }, { status: 500 });
+            let errorDetail = 'Unknown AI service error';
+            try {
+                const err = await apiResponse.json();
+                errorDetail = JSON.stringify(err);
+            } catch (p) {
+                errorDetail = await apiResponse.text();
+            }
+            console.error('AI API error:', errorDetail);
+            throw new Error(`AI generation failed: ${apiResponse.status} ${apiResponse.statusText} - ${errorDetail}`);
         }
 
         const aiData = await apiResponse.json();
