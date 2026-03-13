@@ -25,7 +25,7 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider publishableKey="pk_test_ZXBpYy1seW54LTIuY2xlcmsuYWNjb3VudHMuZGV2JA">
-      <html lang="en">
+      <html lang="en" suppressHydrationWarning>
         <body className={inter.variable}>
           <AuthProvider>
             <AuthGate>
