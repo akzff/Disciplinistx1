@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-const pdfParse = require('pdf-parse'); // eslint-disable-line @typescript-eslint/no-require-imports
 import { GoogleGenAI } from '@google/genai';
 
 export const maxDuration = 60;
@@ -15,7 +14,6 @@ export async function POST(req: Request) {
 
         const fullText = text;
         
-        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
         
         // Send the extracted text to Gemini to parse into a structured JSON array
         const prompt = `You are an expert at extracting financial transactions from GPay statement PDFs.

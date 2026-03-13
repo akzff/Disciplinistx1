@@ -41,6 +41,16 @@ export interface HabitIssue {
     issue: string;
 }
 
+export interface CompletedTask {
+    name: string;
+    activeTime: number;
+    pausedTime: number;
+    finishedAt: number;
+    abandonmentReason?: string;
+    notes?: TaskNote[];
+    rating?: number;
+}
+
 export interface DailyChat {
     date: string; // YYYY-MM-DD
     messages: Message[];
@@ -70,15 +80,7 @@ export interface DailyChat {
         recurringDays?: string[]; // ['Mon', 'Tue', etc]
         subtasks?: { id: string; text: string; completed: boolean }[]
     }[];
-    completedTasks?: {
-        name: string;
-        activeTime: number;
-        pausedTime: number;
-        finishedAt: number;
-        abandonmentReason?: string;
-        notes?: TaskNote[];
-        rating?: number;
-    }[];
+    completedTasks?: CompletedTask[];
     aiSummary?: string;
     artifactUrl?: string;
     expenses?: { id: string; amount: number; text: string }[];

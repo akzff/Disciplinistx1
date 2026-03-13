@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { CompletedTask, TaskNote } from '@/lib/storage';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -127,8 +128,8 @@ export async function POST(req: Request) {
             new Date(ts).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
         const completedTasks = chatData.completedTasks ?? [];
-        const completedTasksLog = completedTasks.map((t: any) => 
-            `- ${t.name} (Active: ${((t.activeTime || 0) / 60000).toFixed(1)}m)${t.notes && t.notes.length > 0 ? `\n  Notes:\n  ${t.notes.map((n: any) => `  [${fmtTime(n.timestamp)}]: ${n.text}`).join('\n  ')}` : ''}`
+        const completedTasksLog = completedTasks.map((t: CompletedTask) => 
+            `- ${t.name} (Active: ${((t.activeTime || 0) / 60000).toFixed(1)}m)${t.notes && t.notes.length > 0 ? `\n  Notes:\n  ${t.notes.map((n: TaskNote) => `  [${fmtTime(n.timestamp)}]: ${n.text}`).join('\n  ')}` : ''}`
         ).join('\n');
 
         const userPrompt = `Here is today's complete coaching conversation and task data:

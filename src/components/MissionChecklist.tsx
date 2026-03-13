@@ -227,8 +227,6 @@ export default function MissionChecklist({
     const completedTodos = todos.filter(t => t.completed).length;
     const totalDailies = dailies.length;
     const totalTodos = todos.length;
-    const totalAll = totalDailies + totalTodos;
-    const completedAll = completedDailies + completedTodos;
 
     const handleSaveAdd = () => {
         if (!addingText.trim()) { setAddingType(null); return; }

@@ -98,7 +98,7 @@ function useRealtimeSync(
       setSyncStatus('LOCAL');
     };
     // Only re-subscribe when user or date changes — not on every render
-  }, [userId, currentDate]);
+  }, [userId, currentDate, myClientId]);
 
   return { syncStatus };
 }
@@ -171,7 +171,7 @@ export default function ChatPage() {
 
   const { signOut } = useAuthContext();
   const { user } = useUser();
-  const { allChats, preferences: globalPrefs, updatePreferences, setLocalChat, isSettingsOpen, setIsSettingsOpen, isCloudSynced } = useData();
+  const { allChats, preferences: globalPrefs, setLocalChat, isSettingsOpen, setIsSettingsOpen, isCloudSynced } = useData();
   const saveDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Always use the cloud-synced name so it matches across all devices
