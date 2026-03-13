@@ -31,7 +31,7 @@ Ignore any incoming money (credits, money received). Only extract expenses.
 Do not wrap your response in markdown blocks like \`\`\`json. Return ONLY the raw JSON array.
 
 Statement Text:
-${fullText.substring(0, 30000)} /* limit strictly in case of huge files */
+${fullText.substring(0, 150000)} /* limit strictly in case of huge files */
 `;
 
         const aiApiKey = process.env.GEMINI_API_KEY || '';

@@ -137,10 +137,14 @@ export default function ExpensesPage() {
                 fullText += textContent.items.map((item: any) => item.str).join(' ') + '\n';
             }
 
+            // Truncate text on the client side to avoid Vercel's 4.5MB request limit
+            // 150,000 characters is well under the limit and provides plenty of context
+            const cappedText = fullText.substring(0, 150000);
+
             const res = await fetch('/api/parse-gpay', { 
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: fullText })
+                body: JSON.stringify({ text: cappedText })
             });
 
             const contentType = res.headers.get('content-type');
