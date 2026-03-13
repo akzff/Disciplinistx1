@@ -35,7 +35,8 @@ function useRealtimeSync(
     setCompletedTasks: React.Dispatch<React.SetStateAction<DailyChat['completedTasks']>>;
     setExpenses: React.Dispatch<React.SetStateAction<DailyChat['expenses']>>;
     setLocalChat: (date: string, chatData: Partial<DailyChat>) => void;
-  }
+  },
+  myClientId: string
 ) {
   const [syncStatus, setSyncStatus] = useState<'LIVE' | 'CONNECTING' | 'LOCAL'>('LOCAL');
   // Keep setters in a ref so the channel never re-subscribes when the parent re-renders
@@ -62,7 +63,13 @@ function useRealtimeSync(
           // Only apply if this update is for the active date
           if (updated.date !== currentDate) return;
 
-          const incomingData = updated.data;
+          const incomingData = updated.data as DailyChat & { clientId?: string };
+          
+          if (incomingData.clientId === myClientId) {
+            console.log('🔄 Ignored own Realtime echo');
+            return;
+          }
+
           const s = settersRef.current;
 
           console.log('🔄 Chat updated from another device:', incomingData);
@@ -128,6 +135,7 @@ export default function ChatPage() {
   const [previousDate, setPreviousDate] = useState('');
   const [activeDay, setActiveDay] = useState('');
   const [liveTab, setLiveTab] = useState(false);
+  const myClientId = useRef(Math.random().toString(36).substring(7)).current;
   const [preferences, setPreferences] = useState<UserPreferences>({
     name: 'Disciple',
     bio: '',
@@ -191,7 +199,7 @@ export default function ChatPage() {
     setCompletedTasks,
     setExpenses,
     setLocalChat
-  });
+  }, myClientId);
 
   useEffect(() => {
     // Wait for cloud data before initializing — prevents stale localStorage flash
@@ -200,7 +208,11 @@ export default function ChatPage() {
       setPreferences(globalPrefs);
 
       const today = storage.getCurrentDate();
-      const prev = storage.getPreviousDay(today);
+      const exactPrev = storage.getPreviousDay(today);
+
+      // Find the most recent day with data, even if it wasn't exactly yesterday
+      const pastDates = Object.keys(allChats).filter(d => d < today).sort().reverse();
+      const prev = pastDates.length > 0 ? pastDates[0] : exactPrev;
 
       setCurrentDate(today);
       setPreviousDate(prev);
@@ -277,7 +289,7 @@ export default function ChatPage() {
     if (!activeDay || !isInitialized) return;
     if (saveDebounce.current) clearTimeout(saveDebounce.current);
     saveDebounce.current = setTimeout(() => {
-      const chatD = { messages, status: chatStatus, activeTasks, distractions, botMood, todos, dailies, completedTasks, expenses };
+      const chatD = { messages, status: chatStatus, activeTasks, distractions, botMood, todos, dailies, completedTasks, expenses, clientId: myClientId };
       cloudStorage.saveChat(activeDay, chatD, user?.id || undefined, true);
       setLocalChat(activeDay, chatD as DailyChat);
     }, 2000);

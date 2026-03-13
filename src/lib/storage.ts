@@ -43,6 +43,7 @@ export interface DailyChat {
     activeTasks: ActiveTask[];
     distractions: string[];
     botMood?: 'NEUTRAL' | 'DISAPPOINTED' | 'HOPEFUL' | 'DOMINATOR';
+    clientId?: string;
     todos: {
         id: string;
         text: string;
