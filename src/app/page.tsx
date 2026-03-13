@@ -134,7 +134,7 @@ export default function ChatPage() {
   const [showMissions, setShowMissions] = useState(false);
   const [previousDate, setPreviousDate] = useState('');
   const [activeDay, setActiveDay] = useState('');
-  const [liveTab, setLiveTab] = useState(false);
+  const liveTab = false;
   const myClientId = useRef(Math.random().toString(36).substring(7)).current;
   const [preferences, setPreferences] = useState<UserPreferences>({
     name: 'Disciple',
@@ -171,7 +171,7 @@ export default function ChatPage() {
 
   const { signOut } = useAuthContext();
   const { user } = useUser();
-  const { allChats, preferences: globalPrefs, setLocalChat, isSettingsOpen, setIsSettingsOpen, isCloudSynced } = useData();
+  const { allChats, preferences: globalPrefs, setLocalChat, setIsSettingsOpen, isCloudSynced } = useData();
   const saveDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Always use the cloud-synced name so it matches across all devices
@@ -1025,7 +1025,7 @@ export default function ChatPage() {
                                   <div className="mc-stat mc-wide" style={{ gap: '8px' }}>
                                     <span className="mc-stat-label">📔 SESSION NOTES</span>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                      {msg.completedMission.notes.map((n: any, idx: number) => (
+                                      {msg.completedMission.notes.map((n: { text: string; timestamp: number }, idx: number) => (
                                         <p key={idx} style={{ fontSize: '0.75rem', opacity: 0.9, margin: 0, lineHeight: '1.4' }}>• {n.text}</p>
                                       ))}
                                     </div>
