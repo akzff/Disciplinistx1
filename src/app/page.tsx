@@ -154,7 +154,12 @@ export default function ChatPage() {
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const isUserScrolledUp = useRef<boolean>(false);
+  const lastMessageCount = useRef<number>(0);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
+
   const { signOut } = useAuthContext();
   const { user } = useUser();
   const { allChats, preferences: globalPrefs, updatePreferences, setLocalChat, isSettingsOpen, setIsSettingsOpen, isCloudSynced } = useData();
@@ -280,11 +285,49 @@ export default function ChatPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, chatStatus, activeDay, activeTasks, distractions, botMood, todos, dailies, completedTasks, expenses, isInitialized]);
 
+  // --- SMART SCROLL LISTENER & HOOK ---
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+      // If more than 150px from bottom → user is reading history
+      const scrolledUp = distanceFromBottom > 150;
+      isUserScrolledUp.current = scrolledUp;
+      setShowScrollBtn(scrolledUp);
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    requestAnimationFrame(() => {
+      bottomRef.current?.scrollIntoView({ behavior, block: 'end' });
+    });
+  };
+
+  useEffect(() => {
+    if (!messages || messages.length === 0) return;
+
+    const newMessageArrived = messages.length > lastMessageCount.current;
+    lastMessageCount.current = messages.length;
+
+    if (!newMessageArrived) return; // ignore initial loads and re-renders that aren't length changes
+
+    const lastMessage = messages[messages.length - 1];
+    const isMyMessage = lastMessage?.role === 'user';
+
+    if (isMyMessage) {
+      // Always scroll when USER sends — immediate
+      scrollToBottom('auto');
+    } else if (!isUserScrolledUp.current) {
+      // Only scroll for AI reply if user is near bottom
+      scrollToBottom('smooth');
     }
-  }, [messages, isLoading]);
+  }, [messages]);
 
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000);
@@ -354,6 +397,8 @@ export default function ChatPage() {
     setMessages(newMessages);
     setInput('');
     setIsLoading(true);
+    isUserScrolledUp.current = false;
+    scrollToBottom('auto');
 
     try {
       // Compressed State for Token Optimization
@@ -867,7 +912,7 @@ export default function ChatPage() {
                 </div>
               )}
 
-              <div className="chat-messages" ref={scrollRef}>
+              <div className="chat-messages" ref={scrollContainerRef}>
 
                 {/* Loading spinner while waiting for cloud sync */}
                 {!isCloudSynced && (
@@ -1075,7 +1120,41 @@ export default function ChatPage() {
                     </div>
                   );
                 })}
+
+                {/* Invisible anchor at the very bottom */}
+                <div ref={bottomRef} style={{ height: '1px' }} />
               </div>
+
+              {/* Scroll To Bottom Button */}
+              {showScrollBtn && (
+                <button
+                  onClick={() => {
+                    isUserScrolledUp.current = false;
+                    setShowScrollBtn(false);
+                    scrollToBottom('smooth');
+                  }}
+                  style={{
+                    position: 'absolute',
+                    bottom: '80px',
+                    right: '16px',
+                    zIndex: 10,
+                    background: '#d4a017',
+                    border: 'none',
+                    borderRadius: '20px',
+                    color: '#000',
+                    fontWeight: 700,
+                    fontSize: '12px',
+                    padding: '8px 16px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 4px 16px rgba(212,160,23,0.4)',
+                    animation: 'fadeIn 0.2s ease'
+                  }}>
+                  ↓ scroll to bottom
+                </button>
+              )}
 
               {/* Input area (AI chat only) */}
               {messages.length > 0 && (
