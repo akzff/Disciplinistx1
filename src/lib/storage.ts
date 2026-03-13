@@ -42,6 +42,8 @@ export interface HabitIssue {
     issue: string;
 }
 
+export type PersonaId = 'monk' | 'friend' | 'disciplinist';
+
 export interface CompletedTask {
     name: string;
     activeTime: number;
@@ -95,7 +97,8 @@ export interface UserPreferences {
     dayVision: string;
     dailyModel: string;
     ambition: string;
-    mentorLevel: 1 | 2 | 3;
+    persona: PersonaId;
+    mentorLevel?: 1 | 2 | 3;
     habitNotes: HabitIssue[];
     selectedModel: string;
 }
@@ -147,13 +150,18 @@ export const storage = {
             dayVision: '',
             dailyModel: '',
             ambition: '',
-            mentorLevel: 1,
+            persona: 'disciplinist',
             habitNotes: [],
             selectedModel: 'qwen/qwen3-32b'
         };
         if (typeof window === 'undefined') return defaults;
         const stored = localStorage.getItem(getPrefsKey(userId));
-        return stored ? { ...defaults, ...JSON.parse(stored) } : defaults;
+        const merged = stored ? { ...defaults, ...JSON.parse(stored) } : defaults;
+        // Backward compatibility: map old mentorLevel to persona if missing
+        if (!merged.persona && merged.mentorLevel) {
+            merged.persona = merged.mentorLevel === 1 ? 'friend' : merged.mentorLevel === 2 ? 'monk' : 'disciplinist';
+        }
+        return merged;
     },
 
     saveUserPreferences: (prefs: UserPreferences, userId?: string) => {

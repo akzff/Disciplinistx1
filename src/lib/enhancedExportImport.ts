@@ -15,7 +15,8 @@ export interface ComprehensiveExportData {
             dayVision: string;
             dailyModel: string;
             ambition: string;
-            mentorLevel: 1 | 2 | 3;
+            persona: 'monk' | 'friend' | 'disciplinist';
+            mentorLevel?: 1 | 2 | 3;
             habitNotes: HabitIssue[];
             selectedModel: string;
         };
@@ -124,7 +125,8 @@ export class EnhancedExportImport {
                         dayVision: preferences?.dayVision || '',
                         dailyModel: preferences?.dailyModel || '',
                         ambition: preferences?.ambition || '',
-                        mentorLevel: preferences?.mentorLevel || 1,
+                        persona: preferences?.persona || 'disciplinist',
+                        mentorLevel: preferences?.mentorLevel,
                         habitNotes: preferences?.habitNotes || [],
                         selectedModel: preferences?.selectedModel || ''
                     },
@@ -291,7 +293,11 @@ export class EnhancedExportImport {
             // Import preferences and profile
             if (data.data.preferences && userId) {
                 try {
-                    await cloudStorage.savePreferences(data.data.preferences, userId);
+                    const prefs = { ...data.data.preferences } as UserPreferences;
+                    if (!prefs.persona && prefs.mentorLevel) {
+                        prefs.persona = prefs.mentorLevel === 1 ? 'friend' : prefs.mentorLevel === 2 ? 'monk' : 'disciplinist';
+                    }
+                    await cloudStorage.savePreferences(prefs, userId);
                     result.importedPreferences = true;
                     console.log('Preferences imported to cloud successfully');
                 } catch (error) {
@@ -301,7 +307,11 @@ export class EnhancedExportImport {
                 }
             } else if (data.data.preferences && !userId) {
                 // Import to local storage
-                storage.saveUserPreferences(data.data.preferences);
+                const prefs = { ...data.data.preferences } as UserPreferences;
+                if (!prefs.persona && prefs.mentorLevel) {
+                    prefs.persona = prefs.mentorLevel === 1 ? 'friend' : prefs.mentorLevel === 2 ? 'monk' : 'disciplinist';
+                }
+                storage.saveUserPreferences(prefs);
                 result.importedPreferences = true;
                 console.log('Preferences imported to local storage');
             }
@@ -311,7 +321,10 @@ export class EnhancedExportImport {
                 try {
                     // Update preferences with profile data
                     const existingPrefs = await cloudStorage.getPreferences(userId) || data.data.preferences;
-                    const updatedPrefs = { ...existingPrefs, ...profile };
+                    const updatedPrefs = { ...existingPrefs, ...profile } as UserPreferences;
+                    if (!updatedPrefs.persona && updatedPrefs.mentorLevel) {
+                        updatedPrefs.persona = updatedPrefs.mentorLevel === 1 ? 'friend' : updatedPrefs.mentorLevel === 2 ? 'monk' : 'disciplinist';
+                    }
                     await cloudStorage.savePreferences(updatedPrefs, userId);
                     console.log('Profile data imported to cloud successfully');
                 } catch (error) {
@@ -322,7 +335,10 @@ export class EnhancedExportImport {
             } else if (profile && !userId) {
                 // Import profile to local storage
                 const existingPrefs = storage.getUserPreferences();
-                const updatedPrefs = { ...existingPrefs, ...profile };
+                const updatedPrefs = { ...existingPrefs, ...profile } as UserPreferences;
+                if (!updatedPrefs.persona && updatedPrefs.mentorLevel) {
+                    updatedPrefs.persona = updatedPrefs.mentorLevel === 1 ? 'friend' : updatedPrefs.mentorLevel === 2 ? 'monk' : 'disciplinist';
+                }
                 storage.saveUserPreferences(updatedPrefs);
                 console.log('Profile data imported to local storage');
             }

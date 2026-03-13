@@ -34,6 +34,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
     // Run device heartbeat on every page automatically
     useDeviceHeartbeat(user?.id);
 
+    const normalizePrefs = (prefs: UserPreferences): UserPreferences => {
+        const normalized = { ...prefs };
+        if (!normalized.persona && normalized.mentorLevel) {
+            normalized.persona = normalized.mentorLevel === 1 ? 'friend' : normalized.mentorLevel === 2 ? 'monk' : 'disciplinist';
+        }
+        return normalized;
+    };
+
     const refreshData = useCallback(async () => {
         if (!userId) return;
 
@@ -93,8 +101,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
             }
 
             if (fetchedPrefs) {
-                setPreferences(fetchedPrefs);
-                storage.saveUserPreferences(fetchedPrefs, userId);
+                const normalized = normalizePrefs(fetchedPrefs);
+                setPreferences(normalized);
+                storage.saveUserPreferences(normalized, userId);
                 console.log('✅ Preferences loaded from CLOUD');
             } else {
                 // Fallback to local prefs

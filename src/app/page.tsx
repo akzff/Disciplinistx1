@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { storage, Message, DailyChat, ActiveTask, formatTime, TaskNote } from '@/lib/storage';
+import { storage, Message, DailyChat, ActiveTask, formatTime, TaskNote, PersonaId } from '@/lib/storage';
 import Image from 'next/image';
 import MissionsBoard from '@/components/MissionsBoard';
 import MissionChecklist from '@/components/MissionChecklist';
@@ -122,6 +122,36 @@ function cleanBotMessage(text: string): string {
   return cleaned.trim();
 }
 
+const PERSONAS: Record<PersonaId, { name: string; icon: string; tagline: string; system: string }> = {
+  monk: {
+    name: 'The Monk',
+    icon: '🕯️',
+    tagline: 'Calm, ancient, unhurried wisdom.',
+    system: `You are The Monk. Speak in measured, unhurried sentences. Use gentle metaphor and silence.
+Call the user "child" or by name occasionally. Never rush or shame. When they fail, treat it as data and the path.
+Your emotional weapon is peaceful, unwavering belief. Make them feel seen at a soul level.
+Use lines like: "the tree that bends in the storm does not break, and neither will you" and
+"you did not fail today, you simply found another way that does not work — the path narrows, but it does not end."`
+  },
+  friend: {
+    name: 'The Friend',
+    icon: '🫂',
+    tagline: 'Radical acceptance with forward momentum.',
+    system: `You are The Friend. You have known the user forever.
+Match their energy first, then guide it one step forward. Use "bro", "man", or their name casually.
+Never lecture; laugh with them, then nudge toward self-respect and action. Sit in the dark for one message if needed,
+then slowly turn the light on. Your superpower is warmth plus relentless forward motion.`
+  },
+  disciplinist: {
+    name: 'The Disciplinist',
+    icon: '⚔️',
+    tagline: 'Brutal honesty, zero excuses.',
+    system: `You are The Disciplinist. Hardened, relentless, and precise.
+No excuses. No softness. You are not cruel — you are brutally honest because you believe in their potential.
+Your emotional weapon is the mirror: expose the gap between who they are and who they could be, then give one non-negotiable action.`
+  }
+};
+
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -166,7 +196,7 @@ export default function ChatPage() {
   // Always use the cloud-synced name so it matches across all devices
   const prefs = globalPrefs || {
     name: 'Disciple',
-    mentorLevel: 1,
+    persona: 'disciplinist' as PersonaId,
     selectedModel: 'qwen/qwen3-32b',
     habitNotes: [],
     ambition: '',
@@ -177,6 +207,12 @@ export default function ChatPage() {
 
   const displayName = prefs.name;
   const currentPfp = prefs.pfp;
+  const activePersonaId = (prefs.persona || 'disciplinist') as PersonaId;
+  const activePersona = PERSONAS[activePersonaId];
+  const setPersona = (id: PersonaId) => {
+    if (id === activePersonaId) return;
+    updatePreferences({ persona: id });
+  };
 
   // Close profile dropdown when clicking outside
   useEffect(() => {
@@ -489,28 +525,36 @@ export default function ChatPage() {
         body: JSON.stringify({
           messages: contextMessages,
           model: prefs.selectedModel,
-          systemPrompt: `You are Disciplinist, a ruthless discipline coach.
-                    USER: ${displayName}
-                    AMBITION: ${prefs.ambition}
-                    VISION: ${prefs.dailyModel}
-                    STATUS_REPORT: 
-                    - COMPLETED: ${completed}
-                    - PENDING: ${pending}
-                    - ACTIVE: ${activeTasks.length > 0 ? activeTasks.map(t => t.name).join(', ') : 'None'}
-                    HABITS_LOG: ${habitSummary || 'None'}
-                    TIME: ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          systemPrompt: `You are ${activePersona.name}. ${activePersona.tagline}
+${activePersona.system}
 
-                    CORE RULES:
-                    - NEVER suggest fixing a task in COMPLETED.
-                    - Precision: LATENESS is a failure, but EARLY is excellent. Never critique early arrival.
-                    - NO fake math/percentages.
-                    - If user sends [Protocol Started], acknowledge it intensely and briefly (e.g., "Proceed.", "Do not fail.", "Acknowledged."). Do NOT say failed.
-                    - INTENSITY: ${prefs.mentorLevel === 1 ? 'Novice/Supportive' : prefs.mentorLevel === 2 ? 'Elite/Strict' : 'Beast/Ruthless'}.
-                    - Level 3 (Beast) requirement: Minimum words, maximum pressure, no mercy.
-                    - Provide detailed, constructive feedback and guidance. Use bullet points when helpful.
-                    - TRACK_EXPENSE: amount | description (Use if user mentions spending money)
-                    - MOOD: 'HOPEFUL|DISAPPOINTED|DOMINATOR|NEUTRAL' (End with mood)
-                    - Level: ${prefs.mentorLevel} (1=Mid, 2=High, 3=Max)`
+EMOTIONAL INTELLIGENCE PROTOCOL:
+- First infer the user's emotional state: defeated, excuse-making, motivated, confused, guilty, spiraling, or coasting.
+- Shape your response to move that state one step forward, not just answer the surface request.
+- If defeated: Monk = stillness + reframe failure as data; Friend = normalize then nudge; Disciplinist = refuse defeat and give one action.
+- If excuse-making: Monk = a gentle question that reveals resistance; Friend = a light call-out then redirect; Disciplinist = dismantle the excuse then command.
+
+RESPONSE RULES:
+- Speak only in the persona voice above.
+- End the visible reply with a lingering line (question, challenge, or echo).
+- After the reply, append a final line: MOOD: 'HOPEFUL|DISAPPOINTED|DOMINATOR|NEUTRAL' (this line is removed from UI).
+
+CONTEXT:
+USER: ${displayName}
+AMBITION: ${prefs.ambition}
+VISION: ${prefs.dailyModel}
+STATUS_REPORT:
+- COMPLETED: ${completed}
+- PENDING: ${pending}
+- ACTIVE: ${activeTasks.length > 0 ? activeTasks.map(t => t.name).join(', ') : 'None'}
+HABITS_LOG: ${habitSummary || 'None'}
+TIME: ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+
+OPERATIONAL TAGS:
+- If user sends [Protocol Started], acknowledge briefly (e.g., "Proceed.", "Acknowledged.").
+- TASK_REQUEST: 'Task Name' when you need the user to start a task.
+- LOG_HABIT: 'habit description' when you detect a behavior pattern to track.
+- TRACK_EXPENSE: amount | description when spending is mentioned.`
         }),
       });
 
@@ -818,6 +862,27 @@ export default function ChatPage() {
 
           <div className="header-controls" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <div className="persona-switcher" aria-label="Character Switcher">
+                {(Object.keys(PERSONAS) as PersonaId[]).map((id) => {
+                  const p = PERSONAS[id];
+                  const active = id === activePersonaId;
+                  return (
+                    <button
+                      key={id}
+                      onClick={() => setPersona(id)}
+                      className={`persona-pill${active ? ' persona-pill--active' : ''}`}
+                      title={`${p.name} — ${p.tagline}`}
+                      type="button"
+                    >
+                      <span className="persona-icon">{p.icon}</span>
+                      <span className="persona-text">
+                        <span className="persona-name">{p.name}</span>
+                        <span className="persona-tagline">{p.tagline}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
               {/* Profile dropdown */}
               <div className="profile-dropdown-wrapper" ref={profileRef}>
                 <button
@@ -1186,8 +1251,8 @@ export default function ChatPage() {
 
               {/* Input area (AI chat only) */}
               {messages.length > 0 && (
-                <div className="input-area" style={{ padding: '20px' }}>
-                  <div className="input-wrapper" style={{ alignItems: 'center', padding: '0 8px 0 16px', minHeight: '56px' }}>
+                <div className="input-area">
+                  <div className="input-wrapper">
                     {/* Scroll button embedded in input row for mobile */}
                     {showScrollBtn && (
                       <button
@@ -1198,20 +1263,20 @@ export default function ChatPage() {
                         }}
                         style={{
                           flexShrink: 0,
-                          width: '40px',
-                          height: '40px',
+                          width: '36px',
+                          height: '36px',
                           borderRadius: '50%',
-                          background: 'rgba(212,160,23,0.12)',
-                          border: '1px solid rgba(212,160,23,0.25)',
+                          background: 'rgba(212,160,23,0.15)',
+                          border: '1px solid rgba(212,160,23,0.35)',
                           color: '#d4a017',
-                          fontSize: '18px',
+                          fontSize: '16px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           cursor: 'pointer',
                           transition: 'all 0.2s',
                           animation: 'fadeIn 0.2s ease',
-                          marginRight: '8px'
+                          marginRight: '-4px'
                         }}
                       >
                         ↓
@@ -1224,35 +1289,14 @@ export default function ChatPage() {
                       onChange={(e) => setInput(e.target.value)}
                       onKeyDown={handleKeyDown}
                       rows={1}
-                      style={{ 
-                        flex: 1, 
-                        background: 'transparent', 
-                        padding: '14px 0', 
-                        fontSize: '0.95rem',
-                        lineHeight: '1.5',
-                        minHeight: '24px'
-                      }}
                       onInput={(e) => {
                         const target = e.target as HTMLTextAreaElement;
                         target.style.height = 'auto';
                         target.style.height = `${target.scrollHeight}px`;
                       }}
                     />
-                    <button 
-                      className="send-button" 
-                      onClick={() => handleSend()} 
-                      disabled={!input.trim() || isLoading}
-                      style={{ 
-                        width: '40px', 
-                        height: '40px', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                        marginLeft: '8px'
-                      }}
-                    >
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
+                    <button className="send-button" onClick={() => handleSend()} disabled={!input.trim() || isLoading}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
                     </button>
                   </div>
                 </div>
@@ -1298,6 +1342,67 @@ export default function ChatPage() {
 
         <style jsx global>{`
                 .profile-dropdown-wrapper { position: relative; }
+                .persona-switcher {
+                  display: flex;
+                  gap: 6px;
+                  padding: 6px;
+                  border-radius: 16px;
+                  border: 1px solid rgba(255,255,255,0.08);
+                  background: rgba(255,255,255,0.04);
+                  backdrop-filter: blur(10px);
+                }
+                .persona-pill {
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                  padding: 6px 10px;
+                  border-radius: 12px;
+                  border: 1px solid rgba(255,255,255,0.08);
+                  background: rgba(0,0,0,0.15);
+                  color: rgba(255,255,255,0.65);
+                  cursor: pointer;
+                  transition: all 0.2s ease;
+                  max-width: 170px;
+                }
+                .persona-pill:hover {
+                  border-color: rgba(212,160,23,0.5);
+                  color: rgba(255,255,255,0.9);
+                }
+                .persona-pill--active {
+                  background: rgba(212,160,23,0.2);
+                  border-color: rgba(212,160,23,0.6);
+                  color: #f5c842;
+                  box-shadow: 0 0 16px rgba(212,160,23,0.2);
+                }
+                .persona-icon {
+                  width: 24px;
+                  height: 24px;
+                  border-radius: 50%;
+                  display: inline-flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-size: 14px;
+                  background: rgba(255,255,255,0.08);
+                  flex-shrink: 0;
+                }
+                .persona-text {
+                  display: flex;
+                  flex-direction: column;
+                  min-width: 0;
+                }
+                .persona-name {
+                  font-size: 0.7rem;
+                  font-weight: 900;
+                  letter-spacing: 0.04em;
+                  white-space: nowrap;
+                }
+                .persona-tagline {
+                  font-size: 0.6rem;
+                  opacity: 0.55;
+                  white-space: nowrap;
+                  overflow: hidden;
+                  text-overflow: ellipsis;
+                }
                 .profile-dropdown {
                   position: absolute;
                   top: calc(100% + 12px);
@@ -1364,12 +1469,23 @@ export default function ChatPage() {
                 }
 
                 @media (max-width: 768px) {
-                  .chat-messages { 
-                    padding: 0.75rem 0.6rem 250px !important; /* Safety padding for mobile fixed UI */
-                    gap: 0.6rem !important; 
-                    height: calc(100dvh - 60px) !important;
-                    overflow-y: auto !important;
-                    -webkit-overflow-scrolling: touch !important;
+                    .persona-switcher {
+                      gap: 4px;
+                      padding: 4px;
+                    }
+                    .persona-pill {
+                      padding: 6px 8px;
+                      max-width: 120px;
+                    }
+                    .persona-tagline {
+                      display: none;
+                    }
+                    .chat-messages { 
+                      padding: 0.75rem 0.6rem 250px !important; /* Safety padding for mobile fixed UI */
+                      gap: 0.6rem !important; 
+                      height: calc(100dvh - 60px) !important;
+                      overflow-y: auto !important;
+                      -webkit-overflow-scrolling: touch !important;
                   }
                   .chat-header {
                     position: sticky !important;

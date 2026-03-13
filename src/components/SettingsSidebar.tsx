@@ -225,26 +225,6 @@ export default function SettingsSidebar() {
                             </div>
                         </div>
 
-                        {/* — MENTORING INTENSITY — */}
-                        <div style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '20px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            <p style={{ fontSize: '0.65rem', fontWeight: 800, color: '#d4a017', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Mentoring Intensity</p>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                                {([1, 2, 3] as const).map(lvl => {
-                                    const active = preferences?.mentorLevel === lvl;
-                                    return (
-                                        <button key={lvl} onClick={() => updateProfile({ mentorLevel: lvl })} style={{ padding: '12px', borderRadius: '14px', border: active ? 'none' : '1px solid rgba(255,255,255,0.1)', background: active ? '#d4a017' : 'transparent', color: active ? 'black' : 'rgba(255,255,255,0.4)', fontSize: '0.75rem', fontWeight: active ? 900 : 700, textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s', boxShadow: active ? '0 0 16px rgba(212,160,23,0.4)' : 'none', letterSpacing: '0.04em' }}>
-                                            {lvl === 1 ? 'NOVICE' : lvl === 2 ? 'ELITE' : 'BEAST'}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                            <p style={{ fontSize: '0.7rem', opacity: 0.4, lineHeight: 1.5 }}>
-                                {preferences?.mentorLevel === 1 && 'Supportive coaching for starting out.'}
-                                {preferences?.mentorLevel === 2 && 'Strict discipline for high performance.'}
-                                {preferences?.mentorLevel === 3 && 'Ruthless intensity for the top 1%.'}
-                            </p>
-                        </div>
-
                         {/* — DAILY MODEL — */}
                         <div style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '20px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             <p style={{ fontSize: '0.65rem', fontWeight: 800, color: '#d4a017', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Detailed Daily Model</p>
