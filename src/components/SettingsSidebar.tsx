@@ -234,7 +234,49 @@ export default function SettingsSidebar() {
                         {/* — YOUR MOTIVATION — */}
                         <div style={{ background: '#141414', border: '1px solid rgba(212,160,23,0.2)', borderRadius: '20px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             <p style={{ fontSize: '0.65rem', fontWeight: 800, color: '#d4a017', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Your Motivation</p>
-                            <textarea className="settings-input" placeholder="Why are you working this hard?" style={{ minHeight: '90px', width: '100%', borderLeft: '2px solid rgba(212,160,23,0.4)', lineHeight: 1.6, resize: 'vertical' }} value={preferences?.ambition ?? ''} onChange={e => updateProfile({ ambition: e.target.value })} />
+                            <textarea className="settings-input" placeholder="What makes you fight for what you want?" style={{ minHeight: '90px', width: '100%', borderLeft: '2px solid rgba(212,160,23,0.4)', lineHeight: 1.6, resize: 'vertical' }} value={preferences?.ambition ?? ''} onChange={e => updateProfile({ ambition: e.target.value })} />
+                        </div>
+
+                        {/* — CHARACTER MODE — */}
+                        <div style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '20px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <p style={{ fontSize: '0.65rem', fontWeight: 800, color: '#d4a017', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Character Mode</p>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                                {(['monk', 'friend', 'disciplinist'] as const).map(id => {
+                                    const active = preferences?.persona === id;
+                                    const label = id === 'monk' ? 'THE MONK' : id === 'friend' ? 'THE FRIEND' : 'THE DISCIPLINIST';
+                                    const tag = id === 'monk' ? 'Calm, ancient, unhurried wisdom.' : id === 'friend' ? 'Radical acceptance with forward motion.' : 'Brutal honesty, zero excuses.';
+                                    return (
+                                        <button
+                                            key={id}
+                                            onClick={() => updateProfile({ persona: id })}
+                                            style={{
+                                                padding: '12px',
+                                                borderRadius: '14px',
+                                                border: active ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                                                background: active ? '#d4a017' : 'transparent',
+                                                color: active ? 'black' : 'rgba(255,255,255,0.4)',
+                                                fontSize: '0.72rem',
+                                                fontWeight: active ? 900 : 700,
+                                                textAlign: 'left',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s',
+                                                boxShadow: active ? '0 0 16px rgba(212,160,23,0.4)' : 'none',
+                                                letterSpacing: '0.04em',
+                                                lineHeight: 1.3
+                                            }}
+                                        >
+                                            <div style={{ fontWeight: 900, marginBottom: '4px' }}>{label}</div>
+                                            <div style={{ fontSize: '0.62rem', opacity: active ? 0.8 : 0.5 }}>{tag}</div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* — WORDS THAT INSPIRE YOU — */}
+                        <div style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '20px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <p style={{ fontSize: '0.65rem', fontWeight: 800, color: '#d4a017', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Words That Inspire You</p>
+                            <textarea className="settings-input" placeholder="Quotes, lines, or reminders that spark you." style={{ minHeight: '90px', width: '100%', lineHeight: 1.6, resize: 'vertical' }} value={preferences?.inspirationQuotes ?? ''} onChange={e => updateProfile({ inspirationQuotes: e.target.value })} />
                         </div>
 
                         {/* — IDENTIFIED HABITS — */}

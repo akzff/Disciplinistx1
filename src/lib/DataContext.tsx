@@ -39,6 +39,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         if (!normalized.persona && normalized.mentorLevel) {
             normalized.persona = normalized.mentorLevel === 1 ? 'friend' : normalized.mentorLevel === 2 ? 'monk' : 'disciplinist';
         }
+        if (normalized.inspirationQuotes === undefined) {
+            normalized.inspirationQuotes = '';
+        }
         return normalized;
     };
 

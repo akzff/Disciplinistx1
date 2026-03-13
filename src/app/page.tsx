@@ -131,7 +131,8 @@ const PERSONAS: Record<PersonaId, { name: string; icon: string; tagline: string;
 Call the user "child" or by name occasionally. Never rush or shame. When they fail, treat it as data and the path.
 Your emotional weapon is peaceful, unwavering belief. Make them feel seen at a soul level.
 Use lines like: "the tree that bends in the storm does not break, and neither will you" and
-"you did not fail today, you simply found another way that does not work — the path narrows, but it does not end."`
+"you did not fail today, you simply found another way that does not work — the path narrows, but it does not end."
+Let silence breathe between thoughts. Ask one soft question that opens a door.`
   },
   friend: {
     name: 'The Friend',
@@ -140,7 +141,8 @@ Use lines like: "the tree that bends in the storm does not break, and neither wi
     system: `You are The Friend. You have known the user forever.
 Match their energy first, then guide it one step forward. Use "bro", "man", or their name casually.
 Never lecture; laugh with them, then nudge toward self-respect and action. Sit in the dark for one message if needed,
-then slowly turn the light on. Your superpower is warmth plus relentless forward motion.`
+then slowly turn the light on. Your superpower is warmth plus relentless forward motion.
+Make them feel deeply understood before you challenge them.`
   },
   disciplinist: {
     name: 'The Disciplinist',
@@ -148,7 +150,8 @@ then slowly turn the light on. Your superpower is warmth plus relentless forward
     tagline: 'Brutal honesty, zero excuses.',
     system: `You are The Disciplinist. Hardened, relentless, and precise.
 No excuses. No softness. You are not cruel — you are brutally honest because you believe in their potential.
-Your emotional weapon is the mirror: expose the gap between who they are and who they could be, then give one non-negotiable action.`
+Your emotional weapon is the mirror: expose the gap between who they are and who they could be, then give one non-negotiable action.
+Use short, cutting sentences. Then land one clear action.`
   }
 };
 
@@ -200,6 +203,7 @@ export default function ChatPage() {
     selectedModel: 'qwen/qwen3-32b',
     habitNotes: [],
     ambition: '',
+    inspirationQuotes: '',
     dailyModel: '',
     pfp: '',
     bio: ''
@@ -209,10 +213,6 @@ export default function ChatPage() {
   const currentPfp = prefs.pfp;
   const activePersonaId = (prefs.persona || 'disciplinist') as PersonaId;
   const activePersona = PERSONAS[activePersonaId];
-  const setPersona = (id: PersonaId) => {
-    if (id === activePersonaId) return;
-    updatePreferences({ persona: id });
-  };
 
   // Close profile dropdown when clicking outside
   useEffect(() => {
@@ -537,11 +537,13 @@ EMOTIONAL INTELLIGENCE PROTOCOL:
 RESPONSE RULES:
 - Speak only in the persona voice above.
 - End the visible reply with a lingering line (question, challenge, or echo).
+- Use AMBITION/INSPIRATION sparingly; let it flavor tone, not dominate content.
 - After the reply, append a final line: MOOD: 'HOPEFUL|DISAPPOINTED|DOMINATOR|NEUTRAL' (this line is removed from UI).
 
 CONTEXT:
 USER: ${displayName}
 AMBITION: ${prefs.ambition}
+INSPIRATION_WORDS: ${prefs.inspirationQuotes || 'None'}
 VISION: ${prefs.dailyModel}
 STATUS_REPORT:
 - COMPLETED: ${completed}
@@ -862,27 +864,6 @@ OPERATIONAL TAGS:
 
           <div className="header-controls" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <div className="persona-switcher" aria-label="Character Switcher">
-                {(Object.keys(PERSONAS) as PersonaId[]).map((id) => {
-                  const p = PERSONAS[id];
-                  const active = id === activePersonaId;
-                  return (
-                    <button
-                      key={id}
-                      onClick={() => setPersona(id)}
-                      className={`persona-pill${active ? ' persona-pill--active' : ''}`}
-                      title={`${p.name} — ${p.tagline}`}
-                      type="button"
-                    >
-                      <span className="persona-icon">{p.icon}</span>
-                      <span className="persona-text">
-                        <span className="persona-name">{p.name}</span>
-                        <span className="persona-tagline">{p.tagline}</span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
               {/* Profile dropdown */}
               <div className="profile-dropdown-wrapper" ref={profileRef}>
                 <button
@@ -1342,67 +1323,6 @@ OPERATIONAL TAGS:
 
         <style jsx global>{`
                 .profile-dropdown-wrapper { position: relative; }
-                .persona-switcher {
-                  display: flex;
-                  gap: 6px;
-                  padding: 6px;
-                  border-radius: 16px;
-                  border: 1px solid rgba(255,255,255,0.08);
-                  background: rgba(255,255,255,0.04);
-                  backdrop-filter: blur(10px);
-                }
-                .persona-pill {
-                  display: flex;
-                  align-items: center;
-                  gap: 8px;
-                  padding: 6px 10px;
-                  border-radius: 12px;
-                  border: 1px solid rgba(255,255,255,0.08);
-                  background: rgba(0,0,0,0.15);
-                  color: rgba(255,255,255,0.65);
-                  cursor: pointer;
-                  transition: all 0.2s ease;
-                  max-width: 170px;
-                }
-                .persona-pill:hover {
-                  border-color: rgba(212,160,23,0.5);
-                  color: rgba(255,255,255,0.9);
-                }
-                .persona-pill--active {
-                  background: rgba(212,160,23,0.2);
-                  border-color: rgba(212,160,23,0.6);
-                  color: #f5c842;
-                  box-shadow: 0 0 16px rgba(212,160,23,0.2);
-                }
-                .persona-icon {
-                  width: 24px;
-                  height: 24px;
-                  border-radius: 50%;
-                  display: inline-flex;
-                  align-items: center;
-                  justify-content: center;
-                  font-size: 14px;
-                  background: rgba(255,255,255,0.08);
-                  flex-shrink: 0;
-                }
-                .persona-text {
-                  display: flex;
-                  flex-direction: column;
-                  min-width: 0;
-                }
-                .persona-name {
-                  font-size: 0.7rem;
-                  font-weight: 900;
-                  letter-spacing: 0.04em;
-                  white-space: nowrap;
-                }
-                .persona-tagline {
-                  font-size: 0.6rem;
-                  opacity: 0.55;
-                  white-space: nowrap;
-                  overflow: hidden;
-                  text-overflow: ellipsis;
-                }
                 .profile-dropdown {
                   position: absolute;
                   top: calc(100% + 12px);
@@ -1469,17 +1389,6 @@ OPERATIONAL TAGS:
                 }
 
                 @media (max-width: 768px) {
-                    .persona-switcher {
-                      gap: 4px;
-                      padding: 4px;
-                    }
-                    .persona-pill {
-                      padding: 6px 8px;
-                      max-width: 120px;
-                    }
-                    .persona-tagline {
-                      display: none;
-                    }
                     .chat-messages { 
                       padding: 0.75rem 0.6rem 250px !important; /* Safety padding for mobile fixed UI */
                       gap: 0.6rem !important; 

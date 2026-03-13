@@ -15,6 +15,7 @@ export interface ComprehensiveExportData {
             dayVision: string;
             dailyModel: string;
             ambition: string;
+            inspirationQuotes: string;
             persona: 'monk' | 'friend' | 'disciplinist';
             mentorLevel?: 1 | 2 | 3;
             habitNotes: HabitIssue[];
@@ -125,6 +126,7 @@ export class EnhancedExportImport {
                         dayVision: preferences?.dayVision || '',
                         dailyModel: preferences?.dailyModel || '',
                         ambition: preferences?.ambition || '',
+                        inspirationQuotes: preferences?.inspirationQuotes || '',
                         persona: preferences?.persona || 'disciplinist',
                         mentorLevel: preferences?.mentorLevel,
                         habitNotes: preferences?.habitNotes || [],

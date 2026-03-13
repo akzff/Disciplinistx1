@@ -97,6 +97,7 @@ export interface UserPreferences {
     dayVision: string;
     dailyModel: string;
     ambition: string;
+    inspirationQuotes: string;
     persona: PersonaId;
     mentorLevel?: 1 | 2 | 3;
     habitNotes: HabitIssue[];
@@ -150,6 +151,7 @@ export const storage = {
             dayVision: '',
             dailyModel: '',
             ambition: '',
+            inspirationQuotes: '',
             persona: 'disciplinist',
             habitNotes: [],
             selectedModel: 'qwen/qwen3-32b'
