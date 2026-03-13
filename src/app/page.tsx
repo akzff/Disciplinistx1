@@ -136,17 +136,6 @@ export default function ChatPage() {
   const [activeDay, setActiveDay] = useState('');
   const liveTab = false;
   const myClientId = useRef(Math.random().toString(36).substring(7)).current;
-  const [preferences, setPreferences] = useState<UserPreferences>({
-    name: 'Disciple',
-    bio: '',
-    pfp: '',
-    dayVision: '',
-    dailyModel: '',
-    ambition: '',
-    mentorLevel: 1,
-    habitNotes: [],
-    selectedModel: 'qwen/qwen3-32b'
-  });
   const [activeTasks, setActiveTasks] = useState<ActiveTask[]>([]);
   const [distractions, setDistractions] = useState<string[]>([]);
   const [todos, setTodos] = useState<DailyChat['todos']>([]);
@@ -171,11 +160,23 @@ export default function ChatPage() {
 
   const { signOut } = useAuthContext();
   const { user } = useUser();
-  const { allChats, preferences: globalPrefs, setLocalChat, setIsSettingsOpen, isCloudSynced } = useData();
+  const { allChats, preferences: globalPrefs, setLocalChat, setIsSettingsOpen, isCloudSynced, updatePreferences } = useData();
   const saveDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Always use the cloud-synced name so it matches across all devices
-  const displayName = globalPrefs?.name || preferences.name;
+  const prefs = globalPrefs || {
+    name: 'Disciple',
+    mentorLevel: 1,
+    selectedModel: 'qwen/qwen3-32b',
+    habitNotes: [],
+    ambition: '',
+    dailyModel: '',
+    pfp: '',
+    bio: ''
+  };
+
+  const displayName = prefs.name;
+  const currentPfp = prefs.pfp;
 
   // Close profile dropdown when clicking outside
   useEffect(() => {
@@ -206,7 +207,7 @@ export default function ChatPage() {
     // Wait for cloud data before initializing — prevents stale localStorage flash
     if (isInitialized || !globalPrefs || !isCloudSynced) return;
     const init = async () => {
-      setPreferences(globalPrefs);
+      // setPreferences removed as we use global source
 
       const today = storage.getCurrentDate();
       const exactPrev = storage.getPreviousDay(today);
@@ -480,19 +481,18 @@ export default function ChatPage() {
         content: m.content
       }));
 
-      // Only send Bio on start or if habits are few to save tokens
-      const habitSummary = preferences.habitNotes.slice(0, 3).map(h => h.issue).join(', ');
+      const habitSummary = (prefs.habitNotes || []).slice(0, 3).map((h: any) => h.issue).join(', ');
 
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: contextMessages,
-          model: globalPrefs?.selectedModel || preferences.selectedModel,
+          model: prefs.selectedModel,
           systemPrompt: `You are Disciplinist, a ruthless discipline coach.
                     USER: ${displayName}
-                    AMBITION: ${globalPrefs?.ambition || preferences.ambition}
-                    VISION: ${globalPrefs?.dailyModel || preferences.dailyModel}
+                    AMBITION: ${prefs.ambition}
+                    VISION: ${prefs.dailyModel}
                     STATUS_REPORT: 
                     - COMPLETED: ${completed}
                     - PENDING: ${pending}
@@ -505,12 +505,12 @@ export default function ChatPage() {
                     - Precision: LATENESS is a failure, but EARLY is excellent. Never critique early arrival.
                     - NO fake math/percentages.
                     - If user sends [Protocol Started], acknowledge it intensely and briefly (e.g., "Proceed.", "Do not fail.", "Acknowledged."). Do NOT say failed.
-                    - INTENSITY: ${(globalPrefs?.mentorLevel || preferences.mentorLevel) === 1 ? 'Novice/Supportive' : (globalPrefs?.mentorLevel || preferences.mentorLevel) === 2 ? 'Elite/Strict' : 'Beast/Ruthless'}.
+                    - INTENSITY: ${prefs.mentorLevel === 1 ? 'Novice/Supportive' : prefs.mentorLevel === 2 ? 'Elite/Strict' : 'Beast/Ruthless'}.
                     - Level 3 (Beast) requirement: Minimum words, maximum pressure, no mercy.
                     - Provide detailed, constructive feedback and guidance. Use bullet points when helpful.
                     - TRACK_EXPENSE: amount | description (Use if user mentions spending money)
                     - MOOD: 'HOPEFUL|DISAPPOINTED|DOMINATOR|NEUTRAL' (End with mood)
-                    - Level: ${globalPrefs?.mentorLevel || preferences.mentorLevel} (1=Mid, 2=High, 3=Max)`
+                    - Level: ${prefs.mentorLevel} (1=Mid, 2=High, 3=Max)`
         }),
       });
 
@@ -553,9 +553,8 @@ export default function ChatPage() {
         if (match) {
           const issue = match[1];
           const newIssue = { id: Date.now().toString(), date: activeDay, context: textToSend, issue };
-          const newPrefs = { ...preferences, habitNotes: [newIssue, ...preferences.habitNotes] };
-          setPreferences(newPrefs);
-          storage.saveUserPreferences(newPrefs);
+          const newHabits = [newIssue, ...(prefs.habitNotes || [])];
+          updatePreferences({ habitNotes: newHabits });
           setDistractions([issue, ...distractions]);
         }
       }
@@ -789,7 +788,7 @@ export default function ChatPage() {
       <div className="bg-mesh"></div>
 
       <div className="chat-container">
-        <header className="chat-header">
+        <header className="chat-header" style={{ zIndex: 5000, position: 'relative' }}>
 
           <div className="chat-header__left" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <div
@@ -827,14 +826,23 @@ export default function ChatPage() {
                     display: 'flex', alignItems: 'center', gap: '10px',
                     padding: '6px 14px', borderRadius: '100px',
                     background: profileOpen ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.12)',
+                    border: '1px solid rgba(255,255,255,0.15)',
                     backdropFilter: 'blur(10px)', cursor: 'pointer',
-                    transition: 'all 0.2s ease'
+                    transition: 'all 0.2s ease',
+                    zIndex: 10000 
                   }}
                 >
-                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'linear-gradient(135deg, #8b5cf6, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: '900', boxShadow: '0 2px 10px rgba(139, 92, 246, 0.3)', flexShrink: 0 }}>
-                    {user?.primaryEmailAddress?.emailAddress?.charAt(0).toUpperCase() || 'U'}
-                  </div>
+                  {currentPfp ? (
+                    <img 
+                      src={currentPfp} 
+                      alt="avatar" 
+                      style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #10b981', flexShrink: 0 }} 
+                    />
+                  ) : (
+                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'linear-gradient(135deg, #8b5cf6, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', fontWeight: '900', boxShadow: '0 2px 10px rgba(139, 92, 246, 0.3)', flexShrink: 0 }}>
+                      {(globalPrefs?.name || user?.primaryEmailAddress?.emailAddress)?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                  )}
                   <span className="mobile-hidden" style={{ fontSize: '0.75rem', color: 'white', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: '800', letterSpacing: '0.02em' }}>
                     {displayName}
                   </span>
@@ -869,8 +877,8 @@ export default function ChatPage() {
           {liveTab && user && (
             <GroupChat
               userId={user.id}
-              userName={globalPrefs?.name || preferences.name || 'Disciple'}
-              userAvatar={globalPrefs?.pfp || preferences.pfp || undefined}
+              userName={globalPrefs?.name || 'Disciple'}
+              userAvatar={globalPrefs?.pfp || undefined}
             />
           )}
 
@@ -977,8 +985,8 @@ export default function ChatPage() {
                           {msg.role === 'user' ? (
                             <>
                               <span className="profile-name">{displayName}</span>
-                              {preferences.pfp ? (
-                                <Image src={preferences.pfp} alt="pfp" className="pfp-icon" width={32} height={32} />
+                              {currentPfp ? (
+                                <Image src={currentPfp} alt="pfp" className="pfp-icon" width={32} height={32} />
                               ) : (
                                 <div className="pfp-icon" style={{ background: 'var(--accent)', opacity: 0.5 }}></div>
                               )}
@@ -1271,19 +1279,21 @@ export default function ChatPage() {
                   position: absolute;
                   top: calc(100% + 12px);
                   right: 0;
-                  width: 240px;
-                  background: #0d0d0f !important;
-                  border: 1px solid rgba(255,255,255,0.12);
+                  width: 260px;
+                  background: #0d0d0f !important; /* Solid Dark Theme */
+                  border: 2px solid rgba(255,255,255,0.18);
                   border-radius: 16px;
-                  box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.05);
-                  z-index: 5000 !important;
+                  box-shadow: 0 30px 60px rgba(0,0,0,1), 0 0 40px rgba(0,0,0,0.6);
+                  z-index: 99999 !important;
                   overflow: hidden;
+                  opacity: 1 !important;
+                  pointer-events: auto !important;
                   animation: slideIn 0.2s cubic-bezier(0, 0, 0.2, 1);
                 }
                 .profile-dropdown__header {
                   padding: 16px;
-                  background: rgba(255,255,255,0.02);
-                  border-bottom: 1px solid rgba(255,255,255,0.08);
+                  background: rgba(255,255,255,0.03);
+                  border-bottom: 1px solid rgba(255,255,255,0.1);
                 }
                 .profile-dropdown__email {
                   font-size: 0.75rem;
@@ -1331,13 +1341,22 @@ export default function ChatPage() {
                 }
 
                 @media (max-width: 768px) {
-                  .chat-messages { padding: 0.75rem 0.6rem !important; gap: 0.6rem !important; }
-                  .message { 
-                    max-width: 88% !important; 
-                    margin: 0 !important; 
-                    border-radius: 12px !important;
-                    padding: 10px 12px !important;
-                    font-size: 14px !important;
+                  .chat-messages { 
+                    padding: 0.75rem 0.6rem 250px !important; /* Safety padding for mobile fixed UI */
+                    gap: 0.6rem !important; 
+                    height: calc(100dvh - 60px) !important;
+                    overflow-y: auto !important;
+                    -webkit-overflow-scrolling: touch !important;
+                  }
+                  .chat-header {
+                    position: sticky !important;
+                    top: 0;
+                    z-index: 5001 !important;
+                    background: #0a0a0b !important; /* Opaque header on mobile */
+                  }
+                  .input-area {
+                    z-index: 500 !important;
+                    background: #0a0a0b !important;
                   }
                   .message-wrapper { 
                     width: 100% !important; 
