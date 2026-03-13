@@ -33,7 +33,7 @@ export function useDeviceHeartbeat(userId: string | undefined) {
 
         const markOffline = () => {
             // Use sendBeacon for reliability on page close
-            const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/device_sessions?user_id=eq.${userId}&device_id=eq.${deviceId}`;
+            const url = `https://txqcuqhauipyzckefkqp.supabase.co/rest/v1/device_sessions?user_id=eq.${userId}&device_id=eq.${deviceId}`;
             const payload = JSON.stringify({ is_online: false });
             if (navigator.sendBeacon) {
                 const blob = new Blob([payload], { type: 'application/json' });
