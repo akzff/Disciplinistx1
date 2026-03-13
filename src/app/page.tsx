@@ -1102,7 +1102,7 @@ export default function ChatPage() {
                               </div>
                             </div>
                           ) : msg.role === 'assistant' ? (
-                            <div className="chat-md">
+                            <div className="chat-md chat-message-content">
                               <ReactMarkdown
                                 remarkPlugins={[remarkGfm]}
                                 components={{
@@ -1220,47 +1220,40 @@ export default function ChatPage() {
                 <div ref={bottomRef} style={{ height: '1px' }} />
               </div>
 
-              {/* Scroll To Bottom Button */}
-              {showScrollBtn && (
-                <button
-                  onClick={() => {
-                    isUserScrolledUp.current = false;
-                    setShowScrollBtn(false);
-                    scrollToBottom('smooth');
-                  }}
-                  style={{
-                    position: 'absolute',
-                    bottom: '100px',
-                    right: '20px',
-                    zIndex: 2000,
-                    background: 'var(--accent)',
-                    border: 'none',
-                    borderRadius: '50%',
-                    width: '40px',
-                    height: '40px',
-                    color: '#000',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    boxShadow: '0 8px 25px rgba(212,160,23,0.4)',
-                    animation: 'fadeIn 0.3s ease',
-                    transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-3px)'}
-                  onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="7 13 12 18 17 13"></polyline>
-                    <polyline points="7 6 12 11 17 6"></polyline>
-                  </svg>
-                </button>
-              )}
-
               {/* Input area (AI chat only) */}
               {messages.length > 0 && (
                 <div className="input-area">
                   <div className="input-wrapper">
+                    {/* Scroll button embedded in input row for mobile */}
+                    {showScrollBtn && (
+                      <button
+                        onClick={() => {
+                          isUserScrolledUp.current = false;
+                          setShowScrollBtn(false);
+                          scrollToBottom('smooth');
+                        }}
+                        style={{
+                          flexShrink: 0,
+                          width: '36px',
+                          height: '36px',
+                          borderRadius: '50%',
+                          background: 'rgba(212,160,23,0.15)',
+                          border: '1px solid rgba(212,160,23,0.35)',
+                          color: '#d4a017',
+                          fontSize: '16px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          animation: 'fadeIn 0.2s ease',
+                          marginRight: '-4px'
+                        }}
+                      >
+                        ↓
+                      </button>
+                    )}
+                    
                     <textarea
                       placeholder="Message your coach..."
                       value={input}
@@ -1336,9 +1329,39 @@ export default function ChatPage() {
                 }
 
                 @media (max-width: 768px) {
-                  .chat-messages { padding: 1rem 0.75rem !important; }
-                  .message { max-width: 98% !important; margin: 0 !important; border-radius: 12px !important; }
-                  .message-wrapper { width: 100% !important; }
+                  .chat-messages { padding: 0.75rem 0.6rem !important; gap: 0.6rem !important; }
+                  .message { 
+                    max-width: 88% !important; 
+                    margin: 0 !important; 
+                    border-radius: 12px !important;
+                    padding: 10px 12px !important;
+                    font-size: 14px !important;
+                  }
+                  .message-wrapper { 
+                    width: 100% !important; 
+                    padding: 4px 10px !important;
+                    gap: 2px !important;
+                  }
+                  
+                  /* Mobile AI Typography Tighter Density */
+                  .chat-message-content p {
+                    margin-bottom: 6px;
+                    line-height: 1.55;
+                  }
+                  .chat-message-content ul,
+                  .chat-message-content ol {
+                    padding-left: 16px;
+                    margin: 6px 0;
+                  }
+                  .chat-message-content li {
+                    margin-bottom: 4px;
+                    line-height: 1.5;
+                  }
+                  .chat-message-content h3,
+                  .chat-message-content h4 {
+                    margin: 8px 0 4px 0;
+                    font-size: 13px;
+                  }
                   .active-tasks-card { 
                     flex-direction: column !important; 
                     align-items: stretch !important;

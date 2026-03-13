@@ -310,44 +310,38 @@ export default function GroupChat({ userId, userName, userAvatar }: GroupChatPro
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* Scroll-to-bottom button */}
-            {!autoScroll && (
-                <div style={{ position: 'relative' }}>
-                    <button
-                        onClick={() => {
-                            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-                            setAutoScroll(true);
-                        }}
-                        style={{
-                            position: 'absolute',
-                            bottom: '24px',
-                            right: '24px',
-                            background: 'var(--accent)',
-                            border: 'none',
-                            borderRadius: '50%',
-                            width: '38px',
-                            height: '38px',
-                            color: '#000',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
-                            zIndex: 100,
-                            boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
-                            transition: 'all 0.2s',
-                        }}
-                    >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="7 13 12 18 17 13"></polyline>
-                            <polyline points="12 18 12 6"></polyline>
-                        </svg>
-                    </button>
-                </div>
-            )}
-
-            {/* Input */}
+            {/* Input area rendered below messages */}
             <div className="input-area">
                 <div className="input-wrapper">
+                    {/* Scroll-to-bottom embedded for mobile usability */}
+                    {!autoScroll && (
+                        <button
+                            onClick={() => {
+                                messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+                                setAutoScroll(true);
+                            }}
+                            style={{
+                                flexShrink: 0,
+                                width: '34px',
+                                height: '34px',
+                                borderRadius: '50%',
+                                background: 'rgba(212,160,23,0.15)',
+                                border: '1px solid rgba(212,160,23,0.3)',
+                                color: '#d4a017',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                marginRight: '-4px'
+                            }}
+                        >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="7 13 12 18 17 13"></polyline>
+                                <polyline points="12 18 12 6"></polyline>
+                            </svg>
+                        </button>
+                    )}
                     <textarea
                         ref={textareaRef}
                         value={inputValue}
@@ -379,6 +373,29 @@ export default function GroupChat({ userId, userName, userAvatar }: GroupChatPro
                     )}
                 </button>
             </div>
+
+            <style jsx>{`
+                @media (max-width: 768px) {
+                    .chat-messages {
+                        padding: 0.75rem 0.6rem !important;
+                        gap: 0.5rem !important;
+                    }
+                    .gc-message-wrapper {
+                        gap: 6px !important;
+                    }
+                    .gc-bubble {
+                        max-width: 88% !important;
+                    }
+                    .gc-bubble > div > div:first-child {
+                        padding: 8px 12px !important;
+                        font-size: 14px !important;
+                    }
+                    .input-area {
+                        padding: 0.75rem 0.6rem !important;
+                        gap: 0.5rem !important;
+                    }
+                }
+            `}</style>
         </div>
     );
 }
