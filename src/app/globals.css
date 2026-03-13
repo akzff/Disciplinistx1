@@ -190,6 +190,9 @@ main {
   height: 100dvh;
   padding: 0;
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
 }
 
 .chat-page .chat-container {
@@ -228,7 +231,7 @@ main {
   -webkit-backdrop-filter: blur(40px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 32px;
-  overflow: hidden;
+  overflow: visible;
   box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.6), 0 0 40px rgba(212, 160, 23, 0.05);
   position: relative;
 }
@@ -370,7 +373,6 @@ main {
 
 .chat-messages {
   flex: 1;
-  overflow-y: auto;
   padding: 2rem;
   display: flex;
   flex-direction: column;
