@@ -160,6 +160,7 @@ export default function ChatPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [autoGenerating, setAutoGenerating] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -296,6 +297,55 @@ export default function ChatPage() {
     return () => { if (saveDebounce.current) clearTimeout(saveDebounce.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, chatStatus, activeDay, activeTasks, distractions, botMood, todos, dailies, completedTasks, expenses, isInitialized]);
+
+  // Auto-generate yesterday's record when a new day starts (silent background job)
+  useEffect(() => {
+    if (!isInitialized || !user?.id) return;
+    const today = storage.getCurrentDate();
+    // Only run on a fresh today session (no messages yet means user just started)
+    const todayMessages = allChats[today]?.messages ?? [];
+    if (todayMessages.length > 0) return;
+
+    const pastDates = Object.keys(allChats).filter(d => d < today).sort().reverse();
+    if (pastDates.length === 0) return;
+    const yesterdayStr = pastDates[0];
+    const yestMessages = allChats[yesterdayStr]?.messages ?? [];
+    if (yestMessages.length < 3) return; // Too short to record
+
+    const autoGenKey = `disciplinist_autorecord_${user.id}_${yesterdayStr}`;
+    if (typeof window !== 'undefined' && localStorage.getItem(autoGenKey)) return; // Already triggered
+
+    // Mark as triggered immediately to prevent double-run
+    if (typeof window !== 'undefined') localStorage.setItem(autoGenKey, '1');
+
+    const doAutoGen = async () => {
+      setAutoGenerating(true);
+      try {
+        const res = await fetch('/api/generate-record', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.id,
+            date: yesterdayStr,
+            chatData: allChats[yesterdayStr],
+            autoTriggered: true
+          })
+        });
+        if (res.ok) {
+          const result = await res.json();
+          if (result.skipped) console.log('Auto-record already existed, skipped.');
+          else console.log('Yesterday\'s record auto-generated for', yesterdayStr);
+        }
+      } catch (e) {
+        console.warn('Auto-record generation failed:', e);
+      } finally {
+        setAutoGenerating(false);
+      }
+    };
+
+    doAutoGen();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isInitialized, user?.id]);
 
   // --- SMART SCROLL LISTENER & HOOK ---
   useEffect(() => {
@@ -1190,6 +1240,37 @@ export default function ChatPage() {
                   </div>
                 </div>
               )}
+
+            {/* Auto-generate record pill indicator */}
+            {autoGenerating && (
+              <div style={{
+                position: 'fixed',
+                bottom: '72px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                zIndex: 200,
+                background: '#1a1500',
+                border: '1px solid rgba(212,160,23,0.3)',
+                borderRadius: '20px',
+                padding: '8px 16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '12px',
+                color: 'rgba(212,160,23,0.8)',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+                backdropFilter: 'blur(10px)',
+                pointerEvents: 'none'
+              }}>
+                <div style={{
+                  width: '6px', height: '6px',
+                  borderRadius: '50%',
+                  background: '#d4a017',
+                  animation: 'dot-pulse 1s infinite'
+                }} />
+                Generating yesterday&apos;s record...
+              </div>
+            )}
 
             </main>
             {/* ── closes AI Chat Tab wrapper ── */}
