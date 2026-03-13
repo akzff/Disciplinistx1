@@ -940,16 +940,7 @@ export default function ChatPage() {
           )}
 
           {/* ── AI Chat Tab ────────────────────────────────────── */}
-          <div style={{ 
-            display: liveTab ? 'none' : 'grid', 
-            gridTemplateColumns: '300px 1fr', 
-            gridTemplateRows: '1fr',
-            flex: 1, 
-            height: '100vh', 
-            maxHeight: '100vh',
-            width: '100%', 
-            overflow: 'hidden' 
-          }}>
+          <div className="chat-layout-grid" style={{ display: liveTab ? 'none' : 'grid' }}>
 
             <MissionChecklist
               todos={todos}
@@ -1472,6 +1463,23 @@ export default function ChatPage() {
                   padding-top: 0.5rem;
                   border-top: 1px solid rgba(255,255,255,0.05);
                   font-style: italic;
+                }
+
+                /* Responsive Main Layout */
+                .chat-layout-grid {
+                  flex: 1;
+                  height: 100vh;
+                  max-height: 100vh;
+                  width: 100%;
+                  overflow: hidden;
+                  grid-template-columns: 1fr; /* Mobile default */
+                  grid-template-rows: 1fr;
+                }
+
+                @media (min-width: 768px) {
+                  .chat-layout-grid {
+                    grid-template-columns: 300px 1fr; /* Desktop sidebar */
+                  }
                 }
             `}</style>
         {
