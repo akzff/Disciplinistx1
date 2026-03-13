@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { storage, Message, DailyChat, UserPreferences, ActiveTask, formatTime } from '@/lib/storage';
+import { storage, Message, DailyChat, ActiveTask, formatTime, TaskNote } from '@/lib/storage';
 import Image from 'next/image';
 import MissionsBoard from '@/components/MissionsBoard';
 import MissionChecklist from '@/components/MissionChecklist';
@@ -481,7 +481,7 @@ export default function ChatPage() {
         content: m.content
       }));
 
-      const habitSummary = (prefs.habitNotes || []).slice(0, 3).map((h: any) => h.issue).join(', ');
+      const habitSummary = (prefs.habitNotes || []).slice(0, 3).map((h: { issue: string }) => h.issue).join(', ');
 
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -833,10 +833,12 @@ export default function ChatPage() {
                   }}
                 >
                   {currentPfp ? (
-                    <img 
+                    <Image 
                       src={currentPfp} 
                       alt="avatar" 
-                      style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #10b981', flexShrink: 0 }} 
+                      width={28}
+                      height={28}
+                      style={{ borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #10b981', flexShrink: 0 }} 
                     />
                   ) : (
                     <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'linear-gradient(135deg, #8b5cf6, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', fontWeight: '900', boxShadow: '0 2px 10px rgba(139, 92, 246, 0.3)', flexShrink: 0 }}>
@@ -1033,7 +1035,7 @@ export default function ChatPage() {
                                   <div className="mc-stat mc-wide" style={{ gap: '8px' }}>
                                     <span className="mc-stat-label">📔 SESSION NOTES</span>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                      {msg.completedMission.notes.map((n: { text: string; timestamp: number }, idx: number) => (
+                                      {msg.completedMission.notes.map((n: TaskNote, idx: number) => (
                                         <p key={idx} style={{ fontSize: '0.75rem', opacity: 0.9, margin: 0, lineHeight: '1.4' }}>• {n.text}</p>
                                       ))}
                                     </div>
