@@ -27,6 +27,7 @@ Analyze the full conversation and extract:
 - What went right vs wrong (both logistically and emotionally)
 - Key decisions made
 - Discipline score (0-100) based on: task completion, consistency with stated goals, and emotional resilience
+- Financial audit: examine expenses for discipline (was it necessary?)
 
 Return this EXACT JSON structure:
 
@@ -87,6 +88,15 @@ Return this EXACT JSON structure:
   ],
 
   "coach_verdict": "2-3 sentence brutal honest assessment of the day",
+
+  "financial_report": {
+    "total_spent": 1250.50,
+    "audit": "1-2 sentence audit of spending discipline",
+    "categories": [
+       {"name": "HEALTH", "amount": 500, "note": "Gym supplements"},
+       {"name": "WASTE", "amount": 750.50, "note": "Impulse junk food"}
+    ]
+  },
 
   "tomorrow_focus": "Single most important thing for tomorrow"
 }
@@ -166,6 +176,9 @@ ${todos.map((t: any) => `- ${t.text}: ${t.completed ? 'DONE' : 'NOT DONE'}${t.su
 
 DISTRACTIONS LOGGED:
 ${chatData.distractions?.map((d: string) => `- ${d}`).join('\n') || '(none)'}
+
+EXPENSES LOGGED:
+${chatData.expenses?.map((e: any) => `- ${e.text}: ${e.amount}`).join('\n') || '(none)'}
 
 DATE: ${date}
 FIRST_MESSAGE_TIME: ${firstTs ? fmtTime(firstTs) : 'unknown'}

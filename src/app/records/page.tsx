@@ -37,6 +37,11 @@ interface StructuredRecord {
     behavioral_analysis: { rights: string[]; wrongs: string[] };
     strategic_refinement: Array<{ priority: number; action: string; reason: string; category: string }>;
     coach_verdict: string;
+    financial_report?: {
+        total_spent: number;
+        audit: string;
+        categories: Array<{ name: string; amount: number; note: string }>;
+    };
     tomorrow_focus: string;
 }
 
@@ -164,6 +169,92 @@ function RefinementItem({ item, index }: { item: { action: string; reason: strin
     );
 }
 
+function FinancialReportView({ fr }: { fr: any }) {
+    if (!fr) return null;
+    return (
+        <SectionCard icon="💰" title="EXPENSE REPORT" accent="#fbbf24">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '12px' }}>
+                    <div>
+                        <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', marginBottom: '4px' }}>Daily Total</p>
+                        <p style={{ color: '#fff', fontSize: '24px', fontWeight: 900 }}>₹{fr.total_spent || 0}</p>
+                    </div>
+                </div>
+                
+                {fr.audit && (
+                    <div style={{ background: 'rgba(251,191,36,0.05)', border: '1px solid rgba(251,191,36,0.1)', padding: '12px', borderRadius: '10px' }}>
+                        <p style={{ color: '#fbbf24', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', marginBottom: '6px' }}>Financial Audit</p>
+                        <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '13px', fontStyle: 'italic' }}>&quot;{fr.audit}&quot;</p>
+                    </div>
+                )}
+
+                {fr.categories && fr.categories.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {fr.categories.map((cat: any, i: number) => (
+                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span style={{ fontSize: '9px', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.6)', padding: '3px 8px', borderRadius: '100px', fontWeight: 800 }}>{cat.name}</span>
+                                    <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>{cat.note}</span>
+                                </div>
+                                <span style={{ color: '#fff', fontSize: '13px', fontWeight: 700 }}>₹{cat.amount}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </SectionCard>
+    );
+}
+
+function EditRecordModal({ dbRecord, onSave, onClose }: { dbRecord: DbRecord, onSave: (data: Partial<StructuredRecord>) => void, onClose: () => void }) {
+    const struct = dbRecord.structured_data;
+    const [journal, setJournal] = useState(struct?.journal || '');
+    const [verdict, setVerdict] = useState(struct?.coach_verdict || '');
+    const [headline, setHeadline] = useState(struct?.headline || '');
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        await onSave({ journal, coach_verdict: verdict, headline });
+        setIsSaving(false);
+        onClose();
+    };
+    
+    return (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(10px)' }}>
+            <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', width: '100%', maxWidth: '650px', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}>
+                <div style={{ padding: '24px 30px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                        <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: 900 }}>Edit Record</h3>
+                        <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, marginTop: '4px' }}>Refine your narrative, Disciple.</p>
+                    </div>
+                    <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: '#666', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                </div>
+                <div style={{ padding: '30px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                    <div>
+                        <label style={{ color: '#d4a017', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', marginBottom: '10px', display: 'block', letterSpacing: '0.1em' }}>Daily Headline</label>
+                        <input value={headline} onChange={e => setHeadline(e.target.value)} style={{ width: '100%', background: '#111', border: '1px solid rgba(255,255,255,0.08)', color: '#fff', padding: '14px', borderRadius: '12px', fontSize: '15px' }} />
+                    </div>
+                    <div>
+                        <label style={{ color: '#d4a017', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', marginBottom: '10px', display: 'block', letterSpacing: '0.1em' }}>Detailed Journal</label>
+                        <textarea value={journal} onChange={e => setJournal(e.target.value)} style={{ width: '100%', minHeight: '200px', background: '#111', border: '1px solid rgba(255,255,255,0.08)', color: '#fff', padding: '14px', borderRadius: '12px', fontSize: '14px', lineHeight: 1.6, resize: 'vertical' }} />
+                    </div>
+                    <div>
+                        <label style={{ color: '#d4a017', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', marginBottom: '10px', display: 'block', letterSpacing: '0.1em' }}>Coach Verdict</label>
+                        <textarea value={verdict} onChange={e => setVerdict(e.target.value)} style={{ width: '100%', minHeight: '100px', background: '#111', border: '1px solid rgba(255,255,255,0.08)', color: '#fff', padding: '14px', borderRadius: '12px', fontSize: '14px', lineHeight: 1.6, resize: 'vertical' }} />
+                    </div>
+                </div>
+                <div style={{ padding: '24px 30px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: '16px' }}>
+                    <button onClick={onClose} style={{ flex: 1, padding: '14px', borderRadius: '12px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)', fontWeight: 700, cursor: 'pointer' }}>Discard</button>
+                    <button onClick={handleSave} disabled={isSaving} style={{ flex: 1, padding: '14px', borderRadius: '12px', background: '#d4a017', color: '#000', fontWeight: 900, border: 'none', cursor: 'pointer', opacity: isSaving ? 0.7 : 1 }}>
+                        {isSaving ? 'SAVING...' : 'SAVE CHANGES'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ── Structured Record Renderer ────────────────────────────
 function StructuredRecordView({ r }: { r: StructuredRecord }) {
     const sortedTimeline = [...(r.timeline ?? [])].sort((a, b) => {
@@ -271,6 +362,9 @@ function StructuredRecordView({ r }: { r: StructuredRecord }) {
                 </SectionCard>
             )}
 
+            {/* Financial Report */}
+            {r.financial_report && <FinancialReportView fr={r.financial_report} />}
+
             {/* Coach Verdict */}
             {r.coach_verdict && (
                 <div style={{ background: '#0f0f0f', border: '1px solid rgba(255,255,255,0.06)', borderLeft: '3px solid #d4a017', borderRadius: '12px', padding: '16px 20px' }}>
@@ -370,6 +464,7 @@ export default function RecordsPage() {
     const [isImporting, setIsImporting] = useState(false);
     const [dbRecord, setDbRecord] = useState<DbRecord | null>(null);
     const [loadingRecord, setLoadingRecord] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
 
     useEffect(() => {
         const today = storage.getCurrentDate();
@@ -438,6 +533,32 @@ export default function RecordsPage() {
             alert('Mission analysis failed. Try again, Disciple.');
         } finally {
             setIsGenerating(false);
+        }
+    };
+
+    const saveRecordEdit = async (updatedFields: Partial<StructuredRecord>) => {
+        if (!dbRecord || !user?.id) return;
+        const newStructuredData = {
+            ...dbRecord.structured_data,
+            ...updatedFields
+        };
+
+        const { error } = await supabase
+            .from('records')
+            .upsert({
+                user_id: user.id,
+                date: selectedDate,
+                structured_data: newStructuredData,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'user_id,date' });
+
+        if (error) {
+            alert('Failed to save edits to the cloud.');
+        } else {
+            setDbRecord({
+                ...dbRecord,
+                structured_data: newStructuredData as StructuredRecord
+            });
         }
     };
 
@@ -538,9 +659,19 @@ export default function RecordsPage() {
                                             {isStructured ? 'STRUCTURED RECORD v2' : 'DAY SUMMARY'}
                                         </p>
                                     </div>
-                                    <button onClick={generateReport} disabled={isGenerating} className="start-day-btn" style={{ margin: 0, padding: '0.75rem 1.4rem', fontSize: '0.78rem' }}>
-                                        {isGenerating ? '⏳ ANALYZING...' : hasAnyRecord ? '↻ RE-GENERATE' : '✦ GENERATE AI REPORT'}
-                                    </button>
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        {isStructured && (
+                                            <button 
+                                                onClick={() => setIsEditing(true)} 
+                                                style={{ border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.7)', padding: '0.75rem 1rem', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}
+                                            >
+                                                ✎ EDIT
+                                            </button>
+                                        )}
+                                        <button onClick={generateReport} disabled={isGenerating} className="start-day-btn" style={{ margin: 0, padding: '0.75rem 1.4rem', fontSize: '0.78rem' }}>
+                                            {isGenerating ? '⏳ ANALYZING...' : hasAnyRecord ? '↻ RE-GENERATE' : '✦ GENERATE AI REPORT'}
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {/* Quick stats (always shown) */}
@@ -603,6 +734,14 @@ export default function RecordsPage() {
                 </div>
                 <MobileBottomNav />
             </div>
+
+            {isEditing && dbRecord && (
+                <EditRecordModal 
+                    dbRecord={dbRecord} 
+                    onSave={saveRecordEdit} 
+                    onClose={() => setIsEditing(false)} 
+                />
+            )}
 
             <style jsx>{`
                 .stat-box { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 14px; padding: 1.25rem; display: flex; flex-direction: column; }
