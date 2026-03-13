@@ -169,7 +169,7 @@ function RefinementItem({ item, index }: { item: { action: string; reason: strin
     );
 }
 
-function FinancialReportView({ fr }: { fr: any }) {
+function FinancialReportView({ fr }: { fr: NonNullable<StructuredRecord['financial_report']> }) {
     if (!fr) return null;
     return (
         <SectionCard icon="💰" title="EXPENSE REPORT" accent="#fbbf24">
@@ -190,7 +190,7 @@ function FinancialReportView({ fr }: { fr: any }) {
 
                 {fr.categories && fr.categories.length > 0 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {fr.categories.map((cat: any, i: number) => (
+                        {fr.categories.map((cat: { name: string; amount: number; note: string }, i: number) => (
                             <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <span style={{ fontSize: '9px', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.6)', padding: '3px 8px', borderRadius: '100px', fontWeight: 800 }}>{cat.name}</span>

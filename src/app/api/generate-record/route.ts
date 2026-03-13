@@ -169,16 +169,16 @@ COMPLETED TASKS LOG:
 ${completedTasksLog || '(none)'}
 
 DAILIES STATUS:
-${dailies.map((d: any) => `- ${d.text}: ${d.completed ? 'DONE' : 'NOT DONE'}${d.subtasks?.length ? `\n  Subtasks: ${d.subtasks.map((s: any) => `[${s.completed ? 'x' : ' '}] ${s.text}`).join(', ')}` : ''}`).join('\n') || '(none)'}
+${dailies.map((d: { text: string; completed: boolean; subtasks?: { text: string; completed: boolean }[] }) => `- ${d.text}: ${d.completed ? 'DONE' : 'NOT DONE'}${d.subtasks?.length ? `\n  Subtasks: ${d.subtasks.map((s: { text: string; completed: boolean }) => `[${s.completed ? 'x' : ' '}] ${s.text}`).join(', ')}` : ''}`).join('\n') || '(none)'}
 
 TO-DO STATUS:
-${todos.map((t: any) => `- ${t.text}: ${t.completed ? 'DONE' : 'NOT DONE'}${t.subtasks?.length ? `\n  Subtasks: ${t.subtasks.map((s: any) => `[${s.completed ? 'x' : ' '}] ${s.text}`).join(', ')}` : ''}`).join('\n') || '(none)'}
+${todos.map((t: { text: string; completed: boolean; subtasks?: { text: string; completed: boolean }[] }) => `- ${t.text}: ${t.completed ? 'DONE' : 'NOT DONE'}${t.subtasks?.length ? `\n  Subtasks: ${t.subtasks.map((s: { text: string; completed: boolean }) => `[${s.completed ? 'x' : ' '}] ${s.text}`).join(', ')}` : ''}`).join('\n') || '(none)'}
 
 DISTRACTIONS LOGGED:
 ${chatData.distractions?.map((d: string) => `- ${d}`).join('\n') || '(none)'}
 
 EXPENSES LOGGED:
-${chatData.expenses?.map((e: any) => `- ${e.text}: ${e.amount}`).join('\n') || '(none)'}
+${chatData.expenses?.map((e: { text: string; amount: number }) => `- ${e.text}: ${e.amount}`).join('\n') || '(none)'}
 
 DATE: ${date}
 FIRST_MESSAGE_TIME: ${firstTs ? fmtTime(firstTs) : 'unknown'}
