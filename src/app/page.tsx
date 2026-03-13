@@ -228,14 +228,21 @@ export default function ChatPage() {
           date: today, messages: [], status: 'OPEN' as const,
           activeTasks: [], distractions: [], todos: [], dailies: [], expenses: []
         };
-        const base = todayChat || (prevChat ? {
+        // Only trust todayChat if it has actual data.
+        // An empty today record (todos=[], dailies=[]) was likely auto-created on first load
+        // of the day before carry-over ran — so treat it as non-existent and carry over instead.
+        const todayChatHasData = todayChat &&
+          ((todayChat.todos?.length ?? 0) > 0 || (todayChat.dailies?.length ?? 0) > 0 ||
+           (todayChat.messages?.length ?? 0) > 0);
+
+        const base = todayChatHasData ? todayChat! : (prevChat ? {
           ...defaults,
           todos: prevChat.todos?.filter(t => !t.completed) || [],
           dailies: prevChat.dailies?.map(d => ({ ...d, completed: false })) || []
-        } : defaults);
+        } : (todayChat || defaults));
 
         console.log('Task carry-over:', {
-          fromPrev: !!prevChat && !todayChat,
+          fromPrev: !!prevChat && !todayChatHasData,
           todosCarried: base.todos?.length || 0,
           dailiesCarried: base.dailies?.length || 0
         });
@@ -248,7 +255,8 @@ export default function ChatPage() {
         setDailies(base.dailies || []);
         setCompletedTasks((base as typeof todayChat)?.completedTasks || []);
         setExpenses(base.expenses || []);
-        if (!todayChat) {
+        if (!todayChatHasData) {
+          // Save the carried-over data to cloud immediately so it is not lost on next load
           cloudStorage.saveChat(today, base, user?.id || undefined, true);
           setLocalChat(today, base as DailyChat);
         }
@@ -575,11 +583,40 @@ export default function ChatPage() {
           activeTime: finalActiveTime,
           pausedTime: finalPausedTime,
           finishedAt: timestamp,
-          abandonmentReason: '' // Will be filled when user responds
+          abandonmentReason: '', // Will be filled when user responds
+          note: task.note
         }
       ]);
 
       return prev.filter(t => t.id !== taskId);
+    });
+  };
+
+  const updateTaskNote = (taskId: string, note: string) => {
+    setActiveTasks(prev => prev.map(t => t.id === taskId ? { ...t, note } : t));
+  };
+
+  const rateCompletedMission = (messageIndex: number, taskName: string, rating: number) => {
+    // update message
+    const newMessages = [...messages];
+    if (newMessages[messageIndex].completedMission) {
+      newMessages[messageIndex].completedMission = {
+        ...newMessages[messageIndex].completedMission,
+        rating
+      };
+      setMessages(newMessages);
+    }
+    // update completedTasks array list
+    setCompletedTasks(prev => {
+        if (!prev) return prev;
+        const updated = [...prev];
+        for (let i = updated.length - 1; i >= 0; i--) {
+            if (updated[i].name === taskName) {
+                updated[i] = { ...updated[i], rating };
+                break;
+            }
+        }
+        return updated;
     });
   };
 
@@ -928,6 +965,27 @@ export default function ChatPage() {
                                 </div>
                               </div>
                               <p className="mc-prompt">{msg.content}</p>
+                              <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(16,185,129,0.15)' }}>
+                                <p style={{ fontSize: '0.55rem', fontWeight: 900, letterSpacing: '0.2em', color: '#10b981', opacity: 0.7, marginBottom: '0.5rem' }}>RATE YOUR PERFORMANCE</p>
+                                <div style={{ display: 'flex', gap: '4px' }}>
+                                  {[1, 2, 3, 4, 5].map(star => (
+                                    <button 
+                                      key={star} 
+                                      onClick={() => rateCompletedMission(i, msg.completedMission!.name, star)}
+                                      style={{
+                                        background: 'none', border: 'none', cursor: 'pointer', padding: '0',
+                                        fontSize: '1.5rem', transition: 'all 0.2s',
+                                        color: msg.completedMission!.rating && msg.completedMission!.rating >= star ? '#f59e0b' : 'rgba(255,255,255,0.2)',
+                                        textShadow: msg.completedMission!.rating && msg.completedMission!.rating >= star ? '0 0 10px rgba(245, 158, 11, 0.4)' : 'none',
+                                        transform: msg.completedMission!.rating && msg.completedMission!.rating >= star ? 'scale(1.1)' : 'scale(1)'
+                                      }}
+                                      title={`Rate ${star} star${star > 1 ? 's' : ''}`}
+                                    >
+                                      ★
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
                             </div>
                           ) : msg.role === 'assistant' ? (
                             <div className="chat-md">
@@ -991,6 +1049,20 @@ export default function ChatPage() {
                         <p style={{ fontSize: '0.65rem', opacity: 0.5, marginTop: '2px' }}>
                           Active: {formatTime(activeTime, false)} | Paused: {formatTime(pausedTime, false)}
                         </p>
+                        <input 
+                          type="text" 
+                          placeholder="Add a note..." 
+                          value={task.note || ''} 
+                          onChange={(e) => updateTaskNote(task.id, e.target.value)}
+                          style={{
+                            width: '100%', marginTop: '8px', background: 'rgba(255,255,255,0.05)', 
+                            border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px',
+                            padding: '8px', fontSize: '0.75rem', color: 'white', outline: 'none',
+                            transition: 'border-color 0.2s'
+                          }}
+                          onFocus={(e) => e.currentTarget.style.borderColor = 'rgba(212,160,23,0.5)'}
+                          onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}
+                        />
                       </div>
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
                         <button onClick={() => toggleTask(task.id)} className="edit-cancel" style={{ fontSize: '0.7rem' }}>

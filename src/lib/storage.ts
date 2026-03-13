@@ -12,6 +12,7 @@ export interface Message {
         endTime: number;
         activeTime: number;
         pausedTime: number;
+        rating?: number;
     };
 }
 
@@ -25,6 +26,7 @@ export interface ActiveTask {
     totalPausedTime: number; // in milliseconds
     lastStartedAt: number;
     lastPausedAt?: number;
+    note?: string;
 }
 
 export interface HabitIssue {
@@ -68,6 +70,8 @@ export interface DailyChat {
         pausedTime: number;
         finishedAt: number;
         abandonmentReason?: string;
+        note?: string;
+        rating?: number;
     }[];
     aiSummary?: string;
     artifactUrl?: string;
