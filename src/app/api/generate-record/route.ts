@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { CompletedTask, TaskNote } from '@/lib/storage';
+import { Message, CompletedTask, TaskNote } from '@/lib/storage';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -129,14 +129,14 @@ export async function POST(req: Request) {
             new Date(ts).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
         const completedTasks = chatData.completedTasks ?? [];
-        const completedTasksLog = completedTasks.map((t: any) => 
-            `- ${t.name || 'Unnamed Task'} (Active: ${((t.activeTime || 0) / 60000).toFixed(1)}m)${t.notes && t.notes.length > 0 ? `\n  Notes:\n  ${t.notes.map((n: any) => `  [${n.timestamp ? fmtTime(n.timestamp) : '??:??'}]: ${n.text || ''}`).join('\n  ')}` : ''}`
+        const completedTasksLog = completedTasks.map((t: CompletedTask) => 
+            `- ${t.name || 'Unnamed Task'} (Active: ${((t.activeTime || 0) / 60000).toFixed(1)}m)${t.notes && t.notes.length > 0 ? `\n  Notes:\n  ${t.notes.map((n: TaskNote) => `  [${n.timestamp ? fmtTime(n.timestamp) : '??:??'}]: ${n.text || ''}`).join('\n  ')}` : ''}`
         ).join('\n');
 
         const userPrompt = `Here is today's complete coaching conversation and task data:
 
 CHAT HISTORY:
-${messages.slice(-25).map((m: any) =>
+${messages.slice(-25).map((m: Message) =>
     `[${String(m.role || 'user').toUpperCase()}${m.timestamp ? ` @ ${fmtTime(m.timestamp)}` : ''}]: ${String(m.content || '').slice(0, 300)}`
 ).join('\n')}
 
@@ -178,7 +178,7 @@ Generate the complete daily record JSON now. Remember: respond with ONLY the JSO
             try {
                 const err = await apiResponse.json();
                 errorDetail = JSON.stringify(err);
-            } catch (p) {
+            } catch {
                 errorDetail = await apiResponse.text();
             }
             console.error('AI API error:', errorDetail);
@@ -244,12 +244,13 @@ Generate the complete daily record JSON now. Remember: respond with ONLY the JSO
             structured_data: structuredData,
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('generate-record route error:', error);
+        const err = error as Error;
         return NextResponse.json({ 
             error: 'Internal Server Error', 
-            details: error?.message || String(error),
-            stack: error?.stack
+            details: err?.message || String(error),
+            stack: err?.stack
         }, { status: 500 });
     }
 }
