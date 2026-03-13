@@ -204,6 +204,24 @@ main {
   main {
     padding: 0;
   }
+  
+  .chat-page .chat-container {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    border-radius: 0;
+    margin: 0;
+  }
+
+  .input-area {
+    padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 20px)) !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+  
+  .chat-messages {
+    padding-bottom: 2rem !important;
+  }
 }
 
 .block-card {
