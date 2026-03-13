@@ -63,9 +63,11 @@ interface ImportPreview {
 // ── Helper: legacy block parser ───────────────────────────
 interface ReportBlocks { execution: string; alignment: string; refinement: string; }
 function parseBlocks(summary: string): ReportBlocks {
+    // Fix literal \n in summary strings that might come from escaped AI responses
+    const cleanedSummary = summary.replace(/\\n/g, '\n');
     const extract = (tag: string) => {
         const regex = new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, 'i');
-        const match = summary.match(regex);
+        const match = cleanedSummary.match(regex);
         return match ? match[1].trim() : '';
     };
     const b1 = extract('block1'), b2 = extract('block2'), b3 = extract('block3');
