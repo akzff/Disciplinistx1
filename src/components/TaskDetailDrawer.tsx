@@ -115,8 +115,8 @@ export default function TaskDetailDrawer({
         onUpdate({ ...currentTask, [key]: value } as Todo | Daily);
     };
 
-    const rec = (currentTask as any).recurrence || {};
-    const vis = (currentTask as any).visibility || {};
+    const rec = currentTask.recurrence || {};
+    const vis = currentTask.visibility || {};
 
     const nextPreview = () => {
         const step = rec.n || 1;

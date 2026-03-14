@@ -11,10 +11,11 @@ type Daily = DailyChat['dailies'][number];
 export function shouldShowToday(task: Todo | Daily): boolean {
     const today = new Date();
     const todayStr = format(today, 'yyyy-MM-dd');
-    const vis = (task as any).visibility ?? {};
-    const rec = (task as any).recurrence ?? {};
+    const vis = task.visibility ?? {};
+    const rec = task.recurrence ?? {};
 
-    if ((task as any).snoozed_until && (task as any).snoozed_until > todayStr) {
+    const snoozedUntil = (task as Todo).snoozed_until;
+    if (snoozedUntil && snoozedUntil > todayStr) {
         return false;
     }
 
@@ -22,9 +23,10 @@ export function shouldShowToday(task: Todo | Daily): boolean {
         case 'blackout_until':
             return vis.date ? todayStr >= vis.date : true;
         case 'pre_due': {
-            if (!(task as any).due_date) return true;
+            const dueDate = (task as Todo).due_date;
+            if (!dueDate) return true;
             const showFrom = format(
-                addDays(new Date((task as any).due_date), -(vis.days_before || 0)),
+                addDays(new Date(dueDate), -(vis.days_before || 0)),
                 'yyyy-MM-dd'
             );
             return todayStr >= showFrom;
@@ -47,9 +49,10 @@ export function shouldShowToday(task: Todo | Daily): boolean {
             break;
     }
 
-    if (!(task as any).last_completed) return true;
+    const lastCompleted = (task as Todo).last_completed;
+    if (!lastCompleted) return true;
 
-    const lastDone = new Date((task as any).last_completed);
+    const lastDone = new Date(lastCompleted);
 
     switch (rec.type) {
         case 'every_n_days':

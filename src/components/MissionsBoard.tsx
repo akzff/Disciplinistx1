@@ -21,7 +21,7 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
     const [isTimed, setIsTimed] = useState(false);
     const [dragIndex, setDragIndex] = useState<number | null>(null);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [editTarget, setEditTarget] = useState<{ item: any, type: 'DAILIES' | 'TODOS' } | null>(null);
+    const [editTarget, setEditTarget] = useState<{ item: DailyChat['todos'][number] | DailyChat['dailies'][number], type: 'DAILIES' | 'TODOS' } | null>(null);
 
     // Todo specific state
     const [todoScheduleMode, setTodoScheduleMode] = useState<'DATE' | 'DAYS_FROM_NOW' | 'DAY_OF_WEEK'>('DATE');
@@ -416,14 +416,14 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
                                         <div style={{ flex: 1 }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                                 <h4 style={{ fontSize: '1.1rem', fontWeight: '700', textDecoration: daily.completed ? 'line-through' : 'none', opacity: daily.completed ? 0.5 : 1 }}>{daily.text}</h4>
-                                                {(daily as any).visibility?.type === 'weekdays' && (
+                                                {daily.visibility?.type === 'weekdays' && (
                                                     <span style={{ fontSize: '0.65rem', fontWeight: '900', color: 'var(--accent)', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '4px' }}>
-                                                        {(daily as any).visibility.days?.join(', ')}
+                                                        {daily.visibility.days?.join(', ')}
                                                     </span>
                                                 )}
-                                                {(daily as any).recurrence?.type && (daily as any).recurrence.type !== 'once' && (
+                                                {daily.recurrence?.type && daily.recurrence.type !== 'once' && (
                                                     <span style={{ fontSize: '0.65rem', fontWeight: '900', color: 'var(--accent)', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '4px' }}>
-                                                        {(daily as any).recurrence.count}x / {(daily as any).recurrence.type.includes('weekly') ? 'WEEK' : 'MONTH'}
+                                                        {daily.recurrence.count}x / {daily.recurrence.type.includes('weekly') ? 'WEEK' : 'MONTH'}
                                                     </span>
                                                 )}
                                             </div>
