@@ -173,6 +173,8 @@ export default function MissionChecklist({
     const [presets, setPresets] = useState<Preset[]>([]);
     const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
     const [addingPreset, setAddingPreset] = useState(false);
+    const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
+    const [isManageMode, setIsManageMode] = useState(false);
     const [newPresetName, setNewPresetName] = useState('');
     const [newPresetEmoji, setNewPresetEmoji] = useState('⚡');
     const [justCompletedTodos, setJustCompletedTodos] = useState<string[]>([]);
@@ -246,31 +248,58 @@ export default function MissionChecklist({
 
     const savePreset = async () => {
         if (!newPresetName.trim() || !userId) return;
-        const { data, error } = await supabase
-            .from('task_presets')
-            .insert({
-                user_id: userId,
-                name: newPresetName.trim(),
-                emoji: newPresetEmoji || '⚡',
-                use_count: 0
-            })
-            .select()
-            .single();
 
-        if (!error && data) {
-            setPresets(prev => [data as Preset, ...prev]);
-            setSelectedPreset((data as Preset).id);
-            setLiveInput((data as Preset).name);
+        if (editingPresetId) {
+            const { error } = await supabase
+                .from('task_presets')
+                .update({
+                    name: newPresetName.trim(),
+                    emoji: newPresetEmoji || '⚡'
+                })
+                .eq('id', editingPresetId);
+
+            if (!error) {
+                setPresets(prev => prev.map(p => 
+                    p.id === editingPresetId 
+                        ? { ...p, name: newPresetName.trim(), emoji: newPresetEmoji || '⚡' } 
+                        : p
+                ));
+            }
+        } else {
+            const { data, error } = await supabase
+                .from('task_presets')
+                .insert({
+                    user_id: userId,
+                    name: newPresetName.trim(),
+                    emoji: newPresetEmoji || '⚡',
+                    use_count: 0
+                })
+                .select()
+                .single();
+
+            if (!error && data) {
+                setPresets(prev => [data as Preset, ...prev]);
+                setSelectedPreset((data as Preset).id);
+                setLiveInput((data as Preset).name);
+            }
         }
 
         setAddingPreset(false);
+        setEditingPresetId(null);
         setNewPresetName('');
         setNewPresetEmoji('⚡');
     };
 
+    const handleEditPreset = (preset: Preset) => {
+        setEditingPresetId(preset.id);
+        setNewPresetName(preset.name);
+        setNewPresetEmoji(preset.emoji);
+        setAddingPreset(true);
+    };
+
     const deletePreset = async (preset: Preset) => {
         if (preset.id.startsWith('d')) return;
-        await supabase
+        const { error } = await supabase
             .from('task_presets')
             .delete()
             .eq('id', preset.id);
@@ -574,7 +603,7 @@ export default function MissionChecklist({
 
     const PresetPill = ({ preset }: { preset: Preset }) => {
         const [hovering, setHovering] = useState(false);
-        const [showDelete, setShowDelete] = useState(false);
+        const [showActions, setShowActions] = useState(false);
         const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
         const longPressTriggered = useRef(false);
         const isDefault = preset.id.startsWith('d');
@@ -586,7 +615,7 @@ export default function MissionChecklist({
             if (longPressTimer.current) clearTimeout(longPressTimer.current);
             longPressTimer.current = setTimeout(() => {
                 longPressTriggered.current = true;
-                setShowDelete(true);
+                setShowActions(true);
             }, 500);
         };
 
@@ -597,13 +626,15 @@ export default function MissionChecklist({
             }
         };
 
+        const activeActions = (hovering || showActions || isManageMode) && !isDefault;
+
         return (
             <div
                 style={{ position: 'relative', display: 'inline-flex' }}
                 onMouseEnter={() => setHovering(true)}
                 onMouseLeave={() => {
                     setHovering(false);
-                    if (!longPressTriggered.current) setShowDelete(false);
+                    if (!longPressTriggered.current && !isManageMode) setShowActions(false);
                 }}
                 onTouchStart={startLongPress}
                 onTouchEnd={clearLongPress}
@@ -615,9 +646,14 @@ export default function MissionChecklist({
                             longPressTriggered.current = false;
                             return;
                         }
-                        setShowDelete(false);
+                        if (isManageMode) {
+                            handleEditPreset(preset);
+                            return;
+                        }
+                        setShowActions(false);
                         handleSelectPreset(preset);
                     }}
+                    className={isManageMode && !isDefault ? 'wiggle' : ''}
                     style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -652,33 +688,60 @@ export default function MissionChecklist({
                     )}
                 </button>
 
-                {(hovering || showDelete) && !isDefault && (
-                    <button
-                        onClick={async (e) => {
-                            e.stopPropagation();
-                            setShowDelete(false);
-                            await deletePreset(preset);
-                        }}
-                        style={{
-                            position: 'absolute',
-                            top: '-4px',
-                            right: '-4px',
-                            width: '14px',
-                            height: '14px',
-                            borderRadius: '50%',
-                            background: '#f87171',
-                            border: 'none',
-                            color: 'white',
-                            fontSize: '8px',
-                            fontWeight: 900,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            zIndex: 10
-                        }}>
-                        ✕
-                    </button>
+                {activeActions && (
+                    <div style={{
+                        position: 'absolute',
+                        top: '-8px',
+                        right: '-8px',
+                        display: 'flex',
+                        gap: '4px',
+                        zIndex: 10
+                    }}>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditPreset(preset);
+                            }}
+                            style={{
+                                width: '20px',
+                                height: '20px',
+                                borderRadius: '50%',
+                                background: '#d4a017',
+                                border: 'none',
+                                color: 'black',
+                                fontSize: '10px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.4)'
+                            }}>
+                            ✏️
+                        </button>
+                        <button
+                            onClick={async (e) => {
+                                e.stopPropagation();
+                                setShowActions(false);
+                                await deletePreset(preset);
+                            }}
+                            style={{
+                                width: '20px',
+                                height: '20px',
+                                borderRadius: '50%',
+                                background: '#f87171',
+                                border: 'none',
+                                color: 'white',
+                                fontSize: '10px',
+                                fontWeight: 900,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.4)'
+                            }}>
+                            ✕
+                        </button>
+                    </div>
                 )}
             </div>
         );
@@ -720,35 +783,56 @@ export default function MissionChecklist({
                     <div style={{ marginTop: '12px' }}>
                         <div style={{
                             display: 'flex',
-                            alignItems: 'center',
                             justifyContent: 'space-between',
-                            marginBottom: '8px'
+                            alignItems: 'center',
+                            marginBottom: '10px'
                         }}>
                             <span style={{
                                 color: 'rgba(255,255,255,0.3)',
-                                fontSize: '10px',
+                                fontSize: '11px',
                                 fontWeight: 700,
                                 letterSpacing: '0.12em'
                             }}>
                                 QUICK LAUNCH
                             </span>
-                            <button
-                                onClick={() => setAddingPreset(true)}
-                                style={{
-                                    background: 'rgba(212,160,23,0.1)',
-                                    border: '1px solid rgba(212,160,23,0.25)',
-                                    borderRadius: '20px',
-                                    color: '#d4a017',
-                                    fontSize: '10px',
-                                    fontWeight: 700,
-                                    padding: '3px 10px',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '4px'
-                                }}>
-                                + ADD PRESET
-                            </button>
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                                <button
+                                    onClick={() => setIsManageMode(!isManageMode)}
+                                    style={{
+                                        background: isManageMode ? 'rgba(212,160,23,0.2)' : 'rgba(255,255,255,0.05)',
+                                        border: `1px solid ${isManageMode ? 'rgba(212,160,23,0.4)' : 'rgba(255,255,255,0.1)'}`,
+                                        borderRadius: '20px',
+                                        color: isManageMode ? '#d4a017' : 'rgba(255,255,255,0.5)',
+                                        fontSize: '10px',
+                                        fontWeight: 700,
+                                        padding: '3px 10px',
+                                        cursor: 'pointer'
+                                    }}>
+                                    {isManageMode ? 'DONE' : 'MANAGE'}
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setEditingPresetId(null);
+                                        setNewPresetName('');
+                                        setNewPresetEmoji('⚡');
+                                        setAddingPreset(true);
+                                    }}
+                                    style={{
+                                        background: 'rgba(212,160,23,0.1)',
+                                        border: '1px solid rgba(212,160,23,0.25)',
+                                        borderRadius: '20px',
+                                        color: '#d4a017',
+                                        fontSize: '10px',
+                                        fontWeight: 700,
+                                        padding: '3px 10px',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px'
+                                    }}>
+                                    + ADD
+                                </button>
+                            </div>
                         </div>
 
                         <div style={{
@@ -777,7 +861,7 @@ export default function MissionChecklist({
                                 color: '#d4a017', fontSize: '10px',
                                 fontWeight: 700, letterSpacing: '0.1em'
                             }}>
-                                NEW PRESET
+                                {editingPresetId ? 'EDIT PRESET' : 'NEW PRESET'}
                             </p>
 
                             <div style={{ display: 'flex', gap: '8px' }}>
@@ -1038,6 +1122,16 @@ export default function MissionChecklist({
                 @media (min-width: 768px) {
                     .mission-checklist { display: none !important; }
                     .mc-backdrop { display: none !important; }
+                }
+                @keyframes wiggle {
+                    0% { transform: rotate(0deg); }
+                    25% { transform: rotate(1.5deg); }
+                    50% { transform: rotate(0deg); }
+                    75% { transform: rotate(-1.5deg); }
+                    100% { transform: rotate(0deg); }
+                }
+                .wiggle {
+                    animation: wiggle 0.25s infinite;
                 }
             `}</style>
         </>
