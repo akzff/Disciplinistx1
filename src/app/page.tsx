@@ -283,23 +283,21 @@ export default function ChatPage() {
           date: today, messages: [], status: 'OPEN' as const,
           activeTasks: [], distractions: [], todos: [], dailies: [], expenses: []
         };
-        // Only trust todayChat if it has actual data.
-        // An empty today record (todos=[], dailies=[]) was likely auto-created on first load
-        // of the day before carry-over ran — so treat it as non-existent and carry over instead.
-        const todayChatHasData = todayChat &&
-          ((todayChat.todos?.length ?? 0) > 0 || (todayChat.dailies?.length ?? 0) > 0 ||
-           (todayChat.messages?.length ?? 0) > 0);
+        // Carry tasks independently of messages so starting a chat doesn't wipe your lists.
+        const carryTodos = prevChat?.todos?.filter(t => !t.completed) || [];
+        const carryDailies = prevChat?.dailies?.map(d => ({ ...d, completed: false })) || [];
+        const seeded = { ...defaults, ...(todayChat || {}) };
+        const mergedTodos = (todayChat?.todos?.length ?? 0) > 0 ? todayChat!.todos : carryTodos;
+        const mergedDailies = (todayChat?.dailies?.length ?? 0) > 0 ? todayChat!.dailies : carryDailies;
+        const base = { ...seeded, todos: mergedTodos, dailies: mergedDailies };
 
-        const base = todayChatHasData ? todayChat! : (prevChat ? {
-          ...defaults,
-          todos: prevChat.todos?.filter(t => !t.completed) || [],
-          dailies: prevChat.dailies?.map(d => ({ ...d, completed: false })) || []
-        } : (todayChat || defaults));
+        const usedCarryTodos = (!todayChat || (todayChat?.todos?.length ?? 0) === 0) && carryTodos.length > 0;
+        const usedCarryDailies = (!todayChat || (todayChat?.dailies?.length ?? 0) === 0) && carryDailies.length > 0;
 
         console.log('Task carry-over:', {
-          fromPrev: !!prevChat && !todayChatHasData,
-          todosCarried: base.todos?.length || 0,
-          dailiesCarried: base.dailies?.length || 0
+          fromPrev: !!prevChat && (usedCarryTodos || usedCarryDailies),
+          todosCarried: usedCarryTodos ? carryTodos.length : 0,
+          dailiesCarried: usedCarryDailies ? carryDailies.length : 0
         });
         setMessages(base.messages);
         setChatStatus(base.status);
@@ -310,7 +308,7 @@ export default function ChatPage() {
         setDailies(base.dailies || []);
         setCompletedTasks((base as typeof todayChat)?.completedTasks || []);
         setExpenses(base.expenses || []);
-        if (!todayChatHasData) {
+        if (!todayChat || usedCarryTodos || usedCarryDailies) {
           // Save the carried-over data to cloud immediately so it is not lost on next load
           cloudStorage.saveChat(today, base, user?.id || undefined, true);
           setLocalChat(today, base as DailyChat);
@@ -793,9 +791,18 @@ OPERATIONAL TAGS:
     const today = storage.getCurrentDate();
     setActiveDay(today);
 
-    // Load today from cloud
-    const todayChat = await cloudStorage.getChat(today);
-    const base = todayChat || { date: today, messages: [], status: 'OPEN' as const, activeTasks: [], distractions: [], todos: [], dailies: [], expenses: [] };
+    // Load today from cloud (must include userId) and carry over tasks if today's list is empty
+    const todayChat = user?.id ? await cloudStorage.getChat(today, user.id) : null;
+    const defaults = { date: today, messages: [], status: 'OPEN' as const, activeTasks: [], distractions: [], todos: [], dailies: [], expenses: [] };
+    const carryTodos = todos.filter(t => !t.completed);
+    const carryDailies = dailies.map(d => ({ ...d, completed: false }));
+    const seeded = { ...defaults, ...(todayChat || {}) };
+    const mergedTodos = (todayChat?.todos?.length ?? 0) > 0 ? todayChat!.todos : carryTodos;
+    const mergedDailies = (todayChat?.dailies?.length ?? 0) > 0 ? todayChat!.dailies : carryDailies;
+    const base = { ...seeded, todos: mergedTodos, dailies: mergedDailies };
+
+    const usedCarryTodos = (!todayChat || (todayChat?.todos?.length ?? 0) === 0) && carryTodos.length > 0;
+    const usedCarryDailies = (!todayChat || (todayChat?.dailies?.length ?? 0) === 0) && carryDailies.length > 0;
 
     setMessages(base.messages);
     setChatStatus(base.status);
@@ -806,7 +813,7 @@ OPERATIONAL TAGS:
     setDailies(base.dailies || []);
     setCompletedTasks((base as typeof todayChat)?.completedTasks || []);
     setExpenses(base.expenses || []);
-    if (!todayChat) await cloudStorage.saveChat(today, base, user?.id || undefined, true);
+    if (!todayChat || usedCarryTodos || usedCarryDailies) await cloudStorage.saveChat(today, base, user?.id || undefined, true);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
