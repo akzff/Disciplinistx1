@@ -122,10 +122,11 @@ function cleanBotMessage(text: string): string {
   return cleaned.trim();
 }
 
-const PERSONAS: Record<PersonaId, { name: string; icon: string; tagline: string; system: string }> = {
+const PERSONAS: Record<PersonaId, { name: string; icon: string; avatar: string; tagline: string; system: string }> = {
   monk: {
     name: 'The Monk',
     icon: '🕯️',
+    avatar: '/avatars/monk.png',
     tagline: 'Calm, ancient, unhurried wisdom.',
     system: `You are The Monk. Speak in measured, unhurried sentences. Use gentle metaphor and silence.
 Call the user "child" or by name occasionally. Never rush or shame. When they fail, treat it as data and the path.
@@ -137,6 +138,7 @@ Let silence breathe between thoughts. Ask one soft question that opens a door.`
   friend: {
     name: 'The Friend',
     icon: '🫂',
+    avatar: '/avatars/friend.jpg',
     tagline: 'Radical acceptance with forward momentum.',
     system: `You are The Friend. You have known the user forever.
 Match their energy first, then guide it one step forward. Use "bro", "man", or their name casually.
@@ -147,6 +149,7 @@ Make them feel deeply understood before you challenge them.`
   disciplinist: {
     name: 'The Disciplinist',
     icon: '⚔️',
+    avatar: '/avatars/disciplinist.jpg',
     tagline: 'Brutal honesty, zero excuses.',
     system: `You are The Disciplinist. Hardened, relentless, and precise.
 No excuses. No softness. You are not cruel — you are brutally honest because you believe in their potential.
@@ -1048,8 +1051,23 @@ OPERATIONAL TAGS:
                             </>
                           ) : (
                             <>
-                              <div className="pfp-icon" style={{ background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem' }}>🧘</div>
-                              <span className="profile-name">DISCIPLINIST</span>
+                              {activePersona?.avatar ? (
+                                <Image
+                                  src={activePersona.avatar}
+                                  alt={`${activePersona.name} avatar`}
+                                  className="pfp-icon"
+                                  width={28}
+                                  height={28}
+                                />
+                              ) : (
+                                <div
+                                  className="pfp-icon"
+                                  style={{ background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem' }}
+                                >
+                                  {activePersona?.icon || '🧘'}
+                                </div>
+                              )}
+                              <span className="profile-name">{activePersona?.name || 'DISCIPLINIST'}</span>
                             </>
                           )}
                         </div>
