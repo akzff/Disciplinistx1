@@ -16,6 +16,9 @@ import { useUser } from '@clerk/nextjs';
 import '@/lib/manualMigration';
 import { supabase } from '@/lib/supabase';
 import GroupChat from '@/components/GroupChat';
+import SettingsSidebar from '@/components/SettingsSidebar';
+import { filterTasksForToday, getNextSeasonalDate } from '@/utils/taskVisibility';
+import { format } from 'date-fns';
 
 // ─── Cross-platform real-time message sync ─────────────────────────────────
 // Subscribes to Supabase Realtime on disciplinist_daily_chats.
@@ -80,7 +83,7 @@ function useRealtimeSync(
           if (incomingData.activeTasks) s.setActiveTasks(incomingData.activeTasks);
           if (incomingData.distractions) s.setDistractions(incomingData.distractions);
           if (incomingData.botMood) s.setBotMood(incomingData.botMood);
-          if (incomingData.todos) s.setTodos(incomingData.todos);
+          if (incomingData.todos) s.setTodos(filterTasksForToday(incomingData.todos));
           if (incomingData.dailies) s.setDailies(incomingData.dailies);
           if (incomingData.completedTasks) s.setCompletedTasks(incomingData.completedTasks);
           if (incomingData.expenses) s.setExpenses(incomingData.expenses);
@@ -202,7 +205,7 @@ export default function ChatPage() {
   // Always use the cloud-synced name so it matches across all devices
   const prefs = globalPrefs || {
     name: 'Disciple',
-    persona: 'disciplinist' as PersonaId,
+    persona: 'friend' as PersonaId,
     selectedModel: 'qwen/qwen3-32b',
     habitNotes: [],
     ambition: '',
@@ -214,7 +217,7 @@ export default function ChatPage() {
 
   const displayName = prefs.name;
   const currentPfp = prefs.pfp;
-  const activePersonaId = (prefs.persona || 'disciplinist') as PersonaId;
+  const activePersonaId = (prefs.persona || 'friend') as PersonaId;
   const activePersona = PERSONAS[activePersonaId];
 
   // Close profile dropdown when clicking outside
@@ -276,7 +279,7 @@ export default function ChatPage() {
         setBotMood(prevChat.botMood || 'NEUTRAL');
         setActiveTasks(prevChat.activeTasks || []);
         setDistractions(prevChat.distractions || []);
-        setTodos(prevChat.todos || []);
+        setTodos(filterTasksForToday(prevChat.todos || []));
         setDailies(prevChat.dailies || []);
         setCompletedTasks(prevChat.completedTasks || []);
         setExpenses(prevChat.expenses || []);
@@ -307,7 +310,7 @@ export default function ChatPage() {
         setBotMood((base as typeof todayChat & { botMood?: string })?.botMood as typeof botMood || 'NEUTRAL');
         setActiveTasks(base.activeTasks || []);
         setDistractions(base.distractions || []);
-        setTodos(base.todos || []);
+        setTodos(filterTasksForToday(base.todos || []));
         setDailies(base.dailies || []);
         setCompletedTasks((base as typeof todayChat)?.completedTasks || []);
         setExpenses(base.expenses || []);
@@ -781,6 +784,32 @@ OPERATIONAL TAGS:
     });
   };
 
+  const toggleTodoWithRecurrence = (id: string) => {
+    setTodos(prev => {
+      const todayStr = format(new Date(), 'yyyy-MM-dd');
+      return prev.map(t => {
+        if (t.id !== id) return t;
+        const recType = t.recurrence?.type;
+        if (recType && recType !== 'once') {
+          let newVisibility = t.visibility;
+          if (t.visibility?.type === 'seasonal' && t.visibility.every_months) {
+            newVisibility = {
+              ...t.visibility,
+              next_show: getNextSeasonalDate(t.visibility.every_months)
+            };
+          }
+          return {
+            ...t,
+            last_completed: todayStr,
+            completed: false,
+            visibility: newVisibility
+          };
+        }
+        return { ...t, completed: !t.completed };
+      });
+    });
+  };
+
   const startMyDay = () => {
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const greeting = `Namaste. It is ${time}. You are awake. How did you spend your time since last night? Give me a rough idea so we can begin your mission for today.`;
@@ -812,7 +841,7 @@ OPERATIONAL TAGS:
     setActiveTasks(base.activeTasks || []);
     setDistractions(base.distractions || []);
     setBotMood((base as typeof todayChat & { botMood?: string })?.botMood as typeof botMood || 'NEUTRAL');
-    setTodos(base.todos || []);
+    setTodos(filterTasksForToday(base.todos || []));
     setDailies(base.dailies || []);
     setCompletedTasks((base as typeof todayChat)?.completedTasks || []);
     setExpenses(base.expenses || []);
@@ -948,15 +977,38 @@ OPERATIONAL TAGS:
               dailies={dailies}
               sidebarOpen={sidebarOpen}
               onClose={() => setSidebarOpen(false)}
-              onToggleTodo={(id: string) => setTodos(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t))}
+              onToggleTodo={(id: string) => toggleTodoWithRecurrence(id)}
               onToggleDaily={(id: string) => setDailies(prev => prev.map(d => d.id === id ? { ...d, completed: !d.completed } : d))}
               onReorderTodo={(newTodos: DailyChat['todos']) => setTodos(newTodos)}
               onReorderDaily={(newDailies: DailyChat['dailies']) => setDailies(newDailies)}
               onStartLiveMission={startManualTask}
-              onAddDaily={(text) => setDailies(prev => [...prev, { id: Date.now().toString(), text, completed: false }])}
+              onAddDaily={(text) => setDailies(prev => [...prev, {
+                id: Date.now().toString(),
+                text,
+                completed: false,
+                importance: 0,
+                time_slot: 'anytime',
+                time_slot_time: '',
+                notes: '',
+                tags: []
+              }])}
               onEditDaily={(id, text) => setDailies(prev => prev.map(d => d.id === id ? { ...d, text } : d))}
               onDeleteDaily={(id) => setDailies(prev => prev.filter(d => d.id !== id))}
-              onAddTodo={(text) => setTodos(prev => [...prev, { id: Date.now().toString(), text, completed: false }])}
+              onAddTodo={(text) => setTodos(prev => [...prev, {
+                id: Date.now().toString(),
+                text,
+                completed: false,
+                importance: 0,
+                due_date: '',
+                emergency_date: '',
+                due_time: '',
+                recurrence: { type: 'once' },
+                visibility: { type: 'always' },
+                tags: [],
+                notes: '',
+                snoozed_until: '',
+                last_completed: ''
+              }])}
               onEditTodo={(id, text) => setTodos(prev => prev.map(t => t.id === id ? { ...t, text } : t))}
               onDeleteTodo={(id) => setTodos(prev => prev.filter(t => t.id !== id))}
             />
@@ -1044,7 +1096,7 @@ OPERATIONAL TAGS:
                             <>
                               <span className="profile-name">{displayName}</span>
                               {currentPfp ? (
-                                <Image src={currentPfp} alt="pfp" className="pfp-icon" width={32} height={32} />
+                                <Image src={currentPfp} alt="pfp" className="pfp-icon" width={36} height={36} />
                               ) : (
                                 <div className="pfp-icon" style={{ background: 'var(--accent)', opacity: 0.5 }}></div>
                               )}
@@ -1056,8 +1108,8 @@ OPERATIONAL TAGS:
                                   src={activePersona.avatar}
                                   alt={`${activePersona.name} avatar`}
                                   className="pfp-icon"
-                                  width={28}
-                                  height={28}
+                                  width={36}
+                                  height={36}
                                 />
                               ) : (
                                 <div
@@ -1582,6 +1634,7 @@ OPERATIONAL TAGS:
           onTasksPress={() => setSidebarOpen(v => !v)}
           tasksActive={sidebarOpen}
         />
+        <SettingsSidebar />
       </div>
     </div>
   );

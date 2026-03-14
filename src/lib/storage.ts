@@ -71,6 +71,29 @@ export interface DailyChat {
         time?: string;
         isTimed?: boolean;
         subtasks?: { id: string; text: string; completed: boolean }[]
+        importance?: number;
+        due_date?: string;
+        emergency_date?: string;
+        due_time?: string;
+        recurrence?: {
+            type?: string;
+            days?: string[];
+            count?: number;
+            n?: number;
+            day?: number;
+        };
+        visibility?: {
+            type?: string;
+            days?: string[];
+            every_months?: number;
+            next_show?: string;
+            days_before?: number;
+            date?: string;
+        };
+        tags?: string[];
+        notes?: string;
+        snoozed_until?: string;
+        last_completed?: string;
     }[];
     dailies: {
         id: string;
@@ -82,6 +105,11 @@ export interface DailyChat {
         frequency?: { count: number; period: 'WEEK' | 'MONTH' };
         recurringDays?: string[]; // ['Mon', 'Tue', etc]
         subtasks?: { id: string; text: string; completed: boolean }[]
+        importance?: number;
+        time_slot?: 'morning' | 'noon' | 'afternoon' | 'evening' | 'night' | 'anytime';
+        time_slot_time?: string;
+        notes?: string;
+        tags?: string[];
     }[];
     completedTasks?: CompletedTask[];
     aiSummary?: string;
@@ -152,7 +180,7 @@ export const storage = {
             dailyModel: '',
             ambition: '',
             inspirationQuotes: '',
-            persona: 'disciplinist',
+            persona: 'friend',
             habitNotes: [],
             selectedModel: 'qwen/qwen3-32b'
         };

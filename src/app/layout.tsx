@@ -5,7 +5,6 @@ import { ClerkProvider } from '@clerk/nextjs';
 import { AuthProvider } from "@/lib/AuthContext";
 import AuthGate from "@/components/AuthGate";
 import { DataProvider } from "@/lib/DataContext";
-import SettingsSidebar from "@/components/SettingsSidebar";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -31,7 +30,6 @@ export default function RootLayout({
             <AuthGate>
               <DataProvider>
                 {children}
-                <SettingsSidebar />
               </DataProvider>
             </AuthGate>
           </AuthProvider>

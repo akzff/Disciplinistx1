@@ -127,7 +127,7 @@ export class EnhancedExportImport {
                         dailyModel: preferences?.dailyModel || '',
                         ambition: preferences?.ambition || '',
                         inspirationQuotes: preferences?.inspirationQuotes || '',
-                        persona: preferences?.persona || 'disciplinist',
+                        persona: preferences?.persona || 'friend',
                         mentorLevel: preferences?.mentorLevel,
                         habitNotes: preferences?.habitNotes || [],
                         selectedModel: preferences?.selectedModel || ''

@@ -6,9 +6,9 @@ import { useCallback, useEffect } from 'react';
 
 const MENU_ITEMS = [
     { label: 'CHAT', href: '/' },
-    { label: 'EXPENSES', href: '/expenses' },
-    { label: 'ANALYTICS', href: '/analytics' },
     { label: 'RECORDS', href: '/records' },
+    { label: 'ANALYTICS', href: '/analytics' },
+    { label: 'EXPENSES', href: '/expenses' },
 ];
 
 export function NavigationBar() {

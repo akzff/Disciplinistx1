@@ -1,7 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { DailyChat } from '@/lib/storage';
+import { supabase } from '@/lib/supabase';
+import { useUser } from '@clerk/nextjs';
+import { MissionCheckbox } from '@/components/Checkbox';
+import TaskDetailDrawer from '@/components/TaskDetailDrawer';
+import { IMPORTANCE, TIME_SLOTS } from '@/utils/taskConstants';
+import { formatDueDate, formatRecurrence, formatHour } from '@/utils/taskFormatters';
+import { isBefore, isToday, parseISO, startOfDay } from 'date-fns';
 
 interface MissionChecklistProps {
     todos: DailyChat['todos'];
@@ -23,6 +30,25 @@ interface MissionChecklistProps {
     onEditTodo?: (id: string, text: string) => void;
     onDeleteTodo?: (id: string) => void;
 }
+
+type Preset = {
+    id: string;
+    name: string;
+    emoji: string;
+    use_count: number;
+};
+
+type Todo = DailyChat['todos'][number];
+type Daily = DailyChat['dailies'][number];
+
+const DEFAULT_PRESETS: Preset[] = [
+    { id: 'd1', name: 'Gym session', emoji: '🏋️', use_count: 0 },
+    { id: 'd2', name: 'Deep work', emoji: '💻', use_count: 0 },
+    { id: 'd3', name: 'Study block', emoji: '📚', use_count: 0 },
+    { id: 'd4', name: 'Meditation', emoji: '🧘', use_count: 0 },
+    { id: 'd5', name: 'Morning run', emoji: '🏃', use_count: 0 },
+    { id: 'd6', name: 'Review day', emoji: '🔄', use_count: 0 },
+];
 
 // ────────────────────────────────────────────────────────────────
 // Sub-components — all inline styles, zero Tailwind dependency
@@ -86,86 +112,6 @@ function SectionHeader({
     );
 }
 
-function CheckItem({
-    label, checked, onToggle, onEdit, onDelete, accentColor = '#34d399', date, time, recurring
-}: {
-    label: string; checked: boolean; onToggle: () => void;
-    onEdit?: () => void; onDelete?: () => void; accentColor?: string;
-    date?: string; time?: string; recurring?: string;
-}) {
-    const [hovered, setHovered] = useState(false);
-    return (
-        <div
-            onClick={onToggle}
-            onMouseEnter={() => setHovered(true)}
-            onMouseLeave={() => setHovered(false)}
-            style={{
-                display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px',
-                borderRadius: '10px', cursor: 'pointer',
-                background: hovered ? 'rgba(255,255,255,0.04)' : 'transparent',
-                opacity: checked ? 0.55 : 1,
-                transition: 'background 0.15s, opacity 0.15s',
-                overflow: 'hidden',
-            }}>
-            <div style={{
-                width: '18px', height: '18px', minWidth: '18px', borderRadius: '5px',
-                border: checked ? `2px solid ${accentColor}` : '2px solid rgba(255,255,255,0.2)',
-                background: checked ? accentColor : 'transparent',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: 'all 0.15s', flexShrink: 0,
-            }}>
-                {checked && (
-                    <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                        <path d="M1 4L3.5 6.5L9 1" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                )}
-            </div>
-            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-                <span style={{
-                    fontSize: '13px',
-                    color: checked ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.8)',
-                    textDecoration: checked ? 'line-through' : 'none',
-                    overflow: 'hidden', textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap' as const, display: 'block'
-                }}>
-                    {label}
-                </span>
-                {(date || time || recurring) && (
-                    <div style={{ display: 'flex', gap: '8px', marginTop: '2px', alignItems: 'center' }}>
-                        {date && <span style={{ fontSize: '10px', color: accentColor, opacity: 0.8, background: `${accentColor}1A`, padding: '1px 5px', borderRadius: '4px' }}>{date}</span>}
-                        {time && <span style={{ fontSize: '10px', color: accentColor, opacity: 0.8, background: `${accentColor}1A`, padding: '1px 5px', borderRadius: '4px' }}>⏰ {time}</span>}
-                        {recurring && <span style={{ fontSize: '10px', color: accentColor, opacity: 0.8, background: `${accentColor}1A`, padding: '1px 5px', borderRadius: '4px' }}>↻ {recurring}</span>}
-                    </div>
-                )}
-            </div>
-            {hovered && (
-                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
-                    {onEdit && (
-                        <button onClick={(e) => { e.stopPropagation(); onEdit(); }} style={{
-                            background: 'none', border: 'none', cursor: 'pointer',
-                            color: '#3b82f6', opacity: 0.7, padding: '2px',
-                            display: 'flex', alignItems: 'center'
-                        }} title="Edit">
-                            <span style={{ fontSize: '12px' }}>✎</span>
-                        </button>
-                    )}
-                    {onDelete && (
-                        <button onClick={(e) => { e.stopPropagation(); onDelete(); }} style={{
-                            background: 'none', border: 'none', cursor: 'pointer',
-                            color: 'rgba(248,113,113,0.7)', padding: '2px',
-                            display: 'flex', alignItems: 'center'
-                        }} title="Delete">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-                                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                            </svg>
-                        </button>
-                    )}
-                </div>
-            )}
-        </div>
-    );
-}
-
 function InlineInput({
     placeholder, value, onChange, onSave, onCancel, accentColor = '#d4a017'
 }: {
@@ -221,25 +167,125 @@ export default function MissionChecklist({
     const [liveInput, setLiveInput] = useState('');
     const [addingType, setAddingType] = useState<'DAILIES' | 'TODOS' | null>(null);
     const [addingText, setAddingText] = useState('');
-    const [editingItem, setEditingItem] = useState<{ id: string; type: 'DAILIES' | 'TODOS'; text: string } | null>(null);
+    const { user } = useUser();
+    const userId = user?.id;
+
+    const [presets, setPresets] = useState<Preset[]>([]);
+    const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
+    const [addingPreset, setAddingPreset] = useState(false);
+    const [newPresetName, setNewPresetName] = useState('');
+    const [newPresetEmoji, setNewPresetEmoji] = useState('⚡');
+    const [justCompletedTodos, setJustCompletedTodos] = useState<string[]>([]);
+
+    const [drawerOpen, setDrawerOpen] = useState(false);
+    const [drawerTask, setDrawerTask] = useState<Todo | Daily | null>(null);
+    const [drawerType, setDrawerType] = useState<'todo' | 'daily'>('todo');
+
+    const displayPresets = (presets.length > 0 ? presets : DEFAULT_PRESETS).slice(0, 12);
 
     const completedDailies = dailies.filter(d => d.completed).length;
     const completedTodos = todos.filter(t => t.completed).length;
     const totalDailies = dailies.length;
     const totalTodos = todos.length;
 
+    useEffect(() => {
+        if (!isStartingLive || !userId) return;
+        fetchPresets();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isStartingLive, userId]);
+
+    const fetchPresets = async () => {
+        if (!userId) return;
+        const { data } = await supabase
+            .from('task_presets')
+            .select('*')
+            .eq('user_id', userId)
+            .order('use_count', { ascending: false })
+            .limit(12);
+        setPresets(data ?? []);
+    };
+
+    const handleSelectPreset = (preset: Preset) => {
+        if (selectedPreset === preset.id) {
+            setSelectedPreset(null);
+            setLiveInput('');
+        } else {
+            setSelectedPreset(preset.id);
+            setLiveInput(preset.name);
+        }
+    };
+
+    const handleLiveInputChange = (val: string) => {
+        setLiveInput(val);
+        const match = displayPresets.find(p => p.name === val);
+        setSelectedPreset(match?.id ?? null);
+    };
+
+    const bumpPresetUse = async () => {
+        if (!selectedPreset || selectedPreset.startsWith('d')) return;
+        const preset = presets.find(p => p.id === selectedPreset);
+        if (!preset) return;
+        const newCount = (preset.use_count ?? 0) + 1;
+        await supabase
+            .from('task_presets')
+            .update({ use_count: newCount, last_used: new Date().toISOString() })
+            .eq('id', selectedPreset);
+        setPresets(prev => [...prev]
+            .map(p => p.id === selectedPreset ? { ...p, use_count: newCount } : p)
+            .sort((a, b) => (b.use_count ?? 0) - (a.use_count ?? 0))
+        );
+    };
+
+    const handleLaunchMission = async () => {
+        if (!liveInput.trim()) return;
+        onStartLiveMission(liveInput);
+        setIsStartingLive(false);
+        setLiveInput('');
+        await bumpPresetUse();
+    };
+
+    const savePreset = async () => {
+        if (!newPresetName.trim() || !userId) return;
+        const { data, error } = await supabase
+            .from('task_presets')
+            .insert({
+                user_id: userId,
+                name: newPresetName.trim(),
+                emoji: newPresetEmoji || '⚡',
+                use_count: 0
+            })
+            .select()
+            .single();
+
+        if (!error && data) {
+            setPresets(prev => [data as Preset, ...prev]);
+            setSelectedPreset((data as Preset).id);
+            setLiveInput((data as Preset).name);
+        }
+
+        setAddingPreset(false);
+        setNewPresetName('');
+        setNewPresetEmoji('⚡');
+    };
+
+    const deletePreset = async (preset: Preset) => {
+        if (preset.id.startsWith('d')) return;
+        await supabase
+            .from('task_presets')
+            .delete()
+            .eq('id', preset.id);
+        setPresets(prev => prev.filter(p => p.id !== preset.id));
+        if (selectedPreset === preset.id) {
+            setSelectedPreset(null);
+            setLiveInput('');
+        }
+    };
+
     const handleSaveAdd = () => {
         if (!addingText.trim()) { setAddingType(null); return; }
         if (addingType === 'DAILIES' && onAddDaily) onAddDaily(addingText.trim());
         if (addingType === 'TODOS' && onAddTodo) onAddTodo(addingText.trim());
         setAddingType(null); setAddingText('');
-    };
-
-    const handleSaveEdit = () => {
-        if (!editingItem?.text.trim()) { setEditingItem(null); return; }
-        if (editingItem.type === 'DAILIES' && onEditDaily) onEditDaily(editingItem.id, editingItem.text.trim());
-        if (editingItem.type === 'TODOS' && onEditTodo) onEditTodo(editingItem.id, editingItem.text.trim());
-        setEditingItem(null);
     };
 
     const handleDragStart = (e: React.DragEvent, index: number, type: 'DAILIES' | 'TODOS') => {
@@ -254,6 +300,388 @@ export default function MissionChecklist({
         items.splice(targetIndex, 0, moved);
         if (type === 'DAILIES') onReorderDaily(items); else onReorderTodo(items);
         setDragInfo(null);
+    };
+
+    const openDrawer = (task: Todo | Daily, type: 'todo' | 'daily') => {
+        setDrawerTask(task);
+        setDrawerType(type);
+        setDrawerOpen(true);
+    };
+
+    const updateTodo = (updated: Todo) => {
+        const next = todos.map(t => t.id === updated.id ? updated : t);
+        onReorderTodo(next);
+    };
+
+    const updateDaily = (updated: Daily) => {
+        const next = dailies.map(d => d.id === updated.id ? updated : d);
+        onReorderDaily(next);
+    };
+
+    const removeTodo = (id: string) => {
+        if (onDeleteTodo) onDeleteTodo(id);
+        else onReorderTodo(todos.filter(t => t.id !== id));
+    };
+
+    const removeDaily = (id: string) => {
+        if (onDeleteDaily) onDeleteDaily(id);
+        else onReorderDaily(dailies.filter(d => d.id !== id));
+    };
+
+    const triggerCompletionFlash = (id: string) => {
+        setJustCompletedTodos(prev => [...prev, id]);
+        setTimeout(() => {
+            setJustCompletedTodos(prev => prev.filter(tid => tid !== id));
+        }, 2000);
+    };
+
+    const handleToggleTodoClick = (todo: Todo) => {
+        if (todo.recurrence?.type && todo.recurrence.type !== 'once') {
+            triggerCompletionFlash(todo.id);
+        }
+        onToggleTodo(todo.id);
+    };
+
+    const groupedDailies = useMemo(() => {
+        const groups: Record<string, { item: Daily; index: number }[]> = {
+            morning: [],
+            noon: [],
+            afternoon: [],
+            evening: [],
+            night: [],
+            anytime: []
+        };
+        dailies.forEach((daily, index) => {
+            const slot = daily.time_slot && daily.time_slot !== 'anytime' ? daily.time_slot : 'anytime';
+            if (!groups[slot]) groups[slot] = [];
+            groups[slot].push({ item: daily, index });
+        });
+        return groups;
+    }, [dailies]);
+
+    const isOverdue = (todo: Todo) => {
+        if (!todo.due_date) return false;
+        return isBefore(parseISO(todo.due_date), startOfDay(new Date()));
+    };
+
+    const renderTodoItem = (todo: Todo, idx: number) => {
+        const importance = IMPORTANCE[todo.importance ?? 0] || IMPORTANCE[0];
+        const overdue = isOverdue(todo);
+        const emergency = overdue && !!todo.emergency_date;
+        const isSelectedFlash = justCompletedTodos.includes(todo.id);
+        const recurrenceType = todo.recurrence?.type;
+        const seasonal = todo.visibility?.type === 'seasonal';
+
+        return (
+            <div key={todo.id} draggable
+                onDragStart={(e) => handleDragStart(e, idx, 'TODOS')}
+                onDragEnd={() => setDragInfo(null)}
+                onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, idx, 'TODOS')}
+                style={{ opacity: dragInfo?.index === idx && dragInfo.type === 'TODOS' ? 0.4 : 1 }}
+            >
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '10px',
+                    padding: '10px 12px',
+                    borderRadius: '10px',
+                    background: emergency
+                        ? 'rgba(249,115,22,0.05)'
+                        : overdue
+                            ? 'rgba(239,68,68,0.05)'
+                            : isSelectedFlash ? 'rgba(16,185,129,0.08)' : 'transparent',
+                    border: emergency
+                        ? '1px solid rgba(249,115,22,0.2)'
+                        : '1px solid transparent'
+                }}>
+                    <MissionCheckbox
+                        checked={todo.completed}
+                        onChange={() => handleToggleTodoClick(todo)}
+                        variant="todo"
+                        style={{ marginTop: '2px' }}
+                    />
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            {(todo.importance ?? 0) > 0 && (
+                                <div style={{
+                                    width: '6px', height: '6px', borderRadius: '50%', flexShrink: 0,
+                                    background: importance.color,
+                                    boxShadow: `0 0 4px ${importance.color}`
+                                }} />
+                            )}
+                            <span style={{
+                                fontSize: '13px',
+                                color: todo.completed ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.85)',
+                                textDecoration: todo.completed ? 'line-through' : 'none',
+                                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                            }}>
+                                {todo.text}
+                            </span>
+                        </div>
+
+                        {(todo.due_date || recurrenceType) && (
+                            <div style={{ display: 'flex', gap: '6px', marginTop: '4px', flexWrap: 'wrap' }}>
+                                {todo.due_date && (
+                                    <span style={{
+                                        fontSize: '10px', padding: '1px 6px', borderRadius: '10px',
+                                        background: overdue
+                                            ? 'rgba(239,68,68,0.15)'
+                                            : isToday(parseISO(todo.due_date))
+                                                ? 'rgba(251,191,36,0.15)'
+                                                : 'rgba(255,255,255,0.06)',
+                                        color: overdue
+                                            ? '#ef4444'
+                                            : isToday(parseISO(todo.due_date))
+                                                ? '#fbbf24'
+                                                : 'rgba(255,255,255,0.3)',
+                                        display: 'flex', alignItems: 'center', gap: '3px'
+                                    }}>
+                                        📅 {formatDueDate(todo.due_date)}
+                                        {todo.due_time && ` ${formatHour(todo.due_time)}`}
+                                    </span>
+                                )}
+
+                                {overdue && todo.emergency_date && (
+                                    <span style={{
+                                        fontSize: '10px', padding: '1px 6px', borderRadius: '10px',
+                                        background: 'rgba(239,68,68,0.2)',
+                                        color: '#ef4444',
+                                        fontWeight: 700,
+                                        display: 'flex', alignItems: 'center', gap: '3px'
+                                    }}>
+                                        ⚠️ DEADLINE {formatDueDate(todo.emergency_date)}
+                                    </span>
+                                )}
+
+                                {recurrenceType && recurrenceType !== 'once' && (
+                                    <span style={{
+                                        fontSize: '10px', padding: '1px 6px', borderRadius: '10px',
+                                        background: 'rgba(212,160,23,0.1)',
+                                        color: 'rgba(212,160,23,0.7)',
+                                        display: 'flex', alignItems: 'center', gap: '3px'
+                                    }}>
+                                        🔄 {formatRecurrence(todo.recurrence)}
+                                    </span>
+                                )}
+
+                                {seasonal && (
+                                    <span style={{
+                                        fontSize: '10px', padding: '1px 6px', borderRadius: '10px',
+                                        background: 'rgba(167,139,250,0.1)',
+                                        color: 'rgba(167,139,250,0.7)'
+                                    }}>
+                                        📆 every {todo.visibility?.every_months}mo
+                                    </span>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    <button
+                        onClick={() => openDrawer(todo, 'todo')}
+                        style={{
+                            color: 'rgba(255,255,255,0.2)',
+                            fontSize: '12px',
+                            padding: '4px',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            flexShrink: 0
+                        }}
+                    >
+                        ✏️
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
+    const renderDailyItem = (daily: Daily, idx: number) => {
+        const importance = IMPORTANCE[daily.importance ?? 0] || IMPORTANCE[0];
+        const slot = TIME_SLOTS.find(s => s.id === (daily.time_slot || 'anytime'));
+        return (
+            <div key={daily.id} draggable
+                onDragStart={(e) => handleDragStart(e, idx, 'DAILIES')}
+                onDragEnd={() => setDragInfo(null)}
+                onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, idx, 'DAILIES')}
+                style={{ opacity: dragInfo?.index === idx && dragInfo.type === 'DAILIES' ? 0.4 : 1 }}
+            >
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '10px',
+                    padding: '10px 12px',
+                    borderRadius: '10px'
+                }}>
+                    <MissionCheckbox
+                        checked={daily.completed}
+                        onChange={() => onToggleDaily(daily.id)}
+                        variant="daily"
+                        style={{ marginTop: '2px' }}
+                    />
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            {(daily.importance ?? 0) > 0 && (
+                                <div style={{
+                                    width: '6px', height: '6px', borderRadius: '50%', flexShrink: 0,
+                                    background: importance.color,
+                                    boxShadow: `0 0 4px ${importance.color}`
+                                }} />
+                            )}
+                            <span style={{
+                                fontSize: '13px',
+                                color: daily.completed ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.85)',
+                                textDecoration: daily.completed ? 'line-through' : 'none',
+                                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                            }}>
+                                {daily.text}
+                            </span>
+                        </div>
+                        {slot && slot.id !== 'anytime' && (
+                            <div style={{ display: 'flex', gap: '6px', marginTop: '4px', flexWrap: 'wrap' }}>
+                                <span style={{
+                                    fontSize: '10px', padding: '1px 6px', borderRadius: '10px',
+                                    background: 'rgba(255,255,255,0.05)',
+                                    color: 'rgba(255,255,255,0.3)'
+                                }}>
+                                    {slot.icon} {slot.label}
+                                    {daily.time_slot_time ? ` ${daily.time_slot_time}` : ''}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+
+                    <button
+                        onClick={() => openDrawer(daily, 'daily')}
+                        style={{
+                            color: 'rgba(255,255,255,0.2)',
+                            fontSize: '12px',
+                            padding: '4px',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            flexShrink: 0
+                        }}
+                    >
+                        ✏️
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
+    const PresetPill = ({ preset }: { preset: Preset }) => {
+        const [hovering, setHovering] = useState(false);
+        const [showDelete, setShowDelete] = useState(false);
+        const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+        const longPressTriggered = useRef(false);
+        const isDefault = preset.id.startsWith('d');
+        const isSelected = selectedPreset === preset.id;
+
+        const startLongPress = () => {
+            if (isDefault) return;
+            longPressTriggered.current = false;
+            if (longPressTimer.current) clearTimeout(longPressTimer.current);
+            longPressTimer.current = setTimeout(() => {
+                longPressTriggered.current = true;
+                setShowDelete(true);
+            }, 500);
+        };
+
+        const clearLongPress = () => {
+            if (longPressTimer.current) {
+                clearTimeout(longPressTimer.current);
+                longPressTimer.current = null;
+            }
+        };
+
+        return (
+            <div
+                style={{ position: 'relative', display: 'inline-flex' }}
+                onMouseEnter={() => setHovering(true)}
+                onMouseLeave={() => {
+                    setHovering(false);
+                    if (!longPressTriggered.current) setShowDelete(false);
+                }}
+                onTouchStart={startLongPress}
+                onTouchEnd={clearLongPress}
+                onTouchCancel={clearLongPress}
+            >
+                <button
+                    onClick={() => {
+                        if (longPressTriggered.current) {
+                            longPressTriggered.current = false;
+                            return;
+                        }
+                        setShowDelete(false);
+                        handleSelectPreset(preset);
+                    }}
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        padding: '6px 12px',
+                        borderRadius: '20px',
+                        border: isSelected
+                            ? '1px solid rgba(212,160,23,0.7)'
+                            : '1px solid rgba(255,255,255,0.1)',
+                        background: isSelected
+                            ? 'rgba(212,160,23,0.15)'
+                            : 'rgba(255,255,255,0.04)',
+                        color: isSelected
+                            ? '#d4a017'
+                            : 'rgba(255,255,255,0.6)',
+                        fontSize: '12px',
+                        fontWeight: isSelected ? 700 : 400,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s',
+                        whiteSpace: 'nowrap'
+                    }}>
+                    <span style={{ fontSize: '13px' }}>{preset.emoji}</span>
+                    {preset.name}
+                    {preset.use_count > 0 && (
+                        <span style={{
+                            fontSize: '9px',
+                            color: 'rgba(255,255,255,0.25)',
+                            marginLeft: '2px'
+                        }}>
+                            ×{preset.use_count}
+                        </span>
+                    )}
+                </button>
+
+                {(hovering || showDelete) && !isDefault && (
+                    <button
+                        onClick={async (e) => {
+                            e.stopPropagation();
+                            setShowDelete(false);
+                            await deletePreset(preset);
+                        }}
+                        style={{
+                            position: 'absolute',
+                            top: '-4px',
+                            right: '-4px',
+                            width: '14px',
+                            height: '14px',
+                            borderRadius: '50%',
+                            background: '#f87171',
+                            border: 'none',
+                            color: 'white',
+                            fontSize: '8px',
+                            fontWeight: 900,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            zIndex: 10
+                        }}>
+                        ✕
+                    </button>
+                )}
+            </div>
+        );
     };
 
     // The inner content — shared logic, rendered into the right container below
@@ -276,9 +704,9 @@ export default function MissionChecklist({
                         <button onClick={() => setIsStartingLive(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '12px' }}>✕</button>
                     </div>
                     <input autoFocus placeholder="e.g. Deep work session..." value={liveInput}
-                        onChange={(e) => setLiveInput(e.target.value)}
+                        onChange={(e) => handleLiveInputChange(e.target.value)}
                         onKeyDown={(e) => {
-                            if (e.key === 'Enter' && liveInput.trim()) { onStartLiveMission(liveInput); setIsStartingLive(false); setLiveInput(''); }
+                            if (e.key === 'Enter' && liveInput.trim()) { handleLaunchMission(); }
                             else if (e.key === 'Escape') setIsStartingLive(false);
                         }}
                         style={{
@@ -287,7 +715,148 @@ export default function MissionChecklist({
                             outline: 'none', width: '100%', boxSizing: 'border-box',
                         }}
                     />
-                    <button onClick={() => { if (liveInput.trim()) { onStartLiveMission(liveInput); setIsStartingLive(false); setLiveInput(''); } }}
+
+                    {/* QUICK LAUNCH SECTION */}
+                    <div style={{ marginTop: '12px' }}>
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            marginBottom: '8px'
+                        }}>
+                            <span style={{
+                                color: 'rgba(255,255,255,0.3)',
+                                fontSize: '10px',
+                                fontWeight: 700,
+                                letterSpacing: '0.12em'
+                            }}>
+                                QUICK LAUNCH
+                            </span>
+                            <button
+                                onClick={() => setAddingPreset(true)}
+                                style={{
+                                    background: 'rgba(212,160,23,0.1)',
+                                    border: '1px solid rgba(212,160,23,0.25)',
+                                    borderRadius: '20px',
+                                    color: '#d4a017',
+                                    fontSize: '10px',
+                                    fontWeight: 700,
+                                    padding: '3px 10px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
+                                }}>
+                                + ADD PRESET
+                            </button>
+                        </div>
+
+                        <div style={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: '6px'
+                        }}>
+                            {displayPresets.map(preset => (
+                                <PresetPill key={preset.id} preset={preset} />
+                            ))}
+                        </div>
+                    </div>
+
+                    {addingPreset && (
+                        <div style={{
+                            marginTop: '10px',
+                            padding: '12px',
+                            background: 'rgba(255,255,255,0.03)',
+                            border: '1px solid rgba(212,160,23,0.2)',
+                            borderRadius: '12px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '8px'
+                        }}>
+                            <p style={{
+                                color: '#d4a017', fontSize: '10px',
+                                fontWeight: 700, letterSpacing: '0.1em'
+                            }}>
+                                NEW PRESET
+                            </p>
+
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <input
+                                    value={newPresetEmoji}
+                                    onChange={e => setNewPresetEmoji(e.target.value)}
+                                    maxLength={2}
+                                    style={{
+                                        width: '44px',
+                                        textAlign: 'center',
+                                        fontSize: '18px',
+                                        background: 'rgba(255,255,255,0.06)',
+                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        borderRadius: '8px',
+                                        padding: '8px',
+                                        color: 'white',
+                                        flexShrink: 0
+                                    }}
+                                />
+
+                                <input
+                                    autoFocus
+                                    placeholder="Task name..."
+                                    value={newPresetName}
+                                    onChange={e => setNewPresetName(e.target.value)}
+                                    onKeyDown={e => {
+                                        if (e.key === 'Enter') savePreset();
+                                        if (e.key === 'Escape') setAddingPreset(false);
+                                    }}
+                                    style={{
+                                        flex: 1,
+                                        background: 'rgba(255,255,255,0.06)',
+                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        borderRadius: '8px',
+                                        padding: '8px 12px',
+                                        color: 'white',
+                                        fontSize: '13px'
+                                    }}
+                                />
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                                <button
+                                    onClick={() => {
+                                        setAddingPreset(false);
+                                        setNewPresetName('');
+                                        setNewPresetEmoji('⚡');
+                                    }}
+                                    style={{
+                                        flex: 1, padding: '8px',
+                                        background: 'transparent',
+                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        borderRadius: '8px', color: 'rgba(255,255,255,0.4)',
+                                        fontSize: '12px', fontWeight: 700, cursor: 'pointer'
+                                    }}>
+                                    CANCEL
+                                </button>
+                                <button
+                                    onClick={savePreset}
+                                    disabled={!newPresetName.trim()}
+                                    style={{
+                                        flex: 2, padding: '8px',
+                                        background: newPresetName.trim()
+                                            ? '#d4a017' : 'rgba(212,160,23,0.2)',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        color: newPresetName.trim()
+                                            ? '#000' : 'rgba(212,160,23,0.4)',
+                                        fontSize: '12px', fontWeight: 900,
+                                        cursor: newPresetName.trim() ? 'pointer' : 'default',
+                                        letterSpacing: '0.08em'
+                                    }}>
+                                    SAVE PRESET
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    <button onClick={handleLaunchMission}
                         style={{
                             background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none',
                             borderRadius: '8px', color: 'white', padding: '8px', fontSize: '10px',
@@ -334,25 +903,20 @@ export default function MissionChecklist({
                             </p>
                         </div>
                     )}
-                    {dailies.map((daily, idx) => (
-                        editingItem?.id === daily.id ? (
-                            <InlineInput key={daily.id} placeholder="Edit daily..." value={editingItem.text}
-                                onChange={(v) => setEditingItem({ ...editingItem, text: v })}
-                                onSave={handleSaveEdit} onCancel={() => setEditingItem(null)} accentColor="#34d399" />
-                        ) : (
-                            <div key={daily.id} draggable
-                                onDragStart={(e) => handleDragStart(e, idx, 'DAILIES')}
-                                onDragEnd={() => setDragInfo(null)}
-                                onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, idx, 'DAILIES')}
-                                style={{ opacity: dragInfo?.index === idx && dragInfo.type === 'DAILIES' ? 0.4 : 1 }}>
-                                <CheckItem label={daily.text} checked={daily.completed} accentColor="#34d399"
-                                    recurring={daily.recurringDays ? daily.recurringDays.join(', ') : daily.frequency ? `${daily.frequency.count}x/${daily.frequency.period}` : undefined}
-                                    onToggle={() => onToggleDaily(daily.id)}
-                                    onEdit={() => setEditingItem({ id: daily.id, type: 'DAILIES', text: daily.text })}
-                                    onDelete={onDeleteDaily ? () => onDeleteDaily(daily.id) : undefined} />
+                    {Object.entries(groupedDailies)
+                        .filter(([_, tasks]) => tasks.length > 0)
+                        .map(([slot, tasks]) => (
+                            <div key={slot}>
+                                <p style={{
+                                    fontSize: '9px', color: 'rgba(255,255,255,0.2)',
+                                    letterSpacing: '0.1em', fontWeight: 700,
+                                    padding: '4px 10px', marginTop: '8px'
+                                }}>
+                                    {TIME_SLOTS.find(s => s.id === slot)?.icon} {slot.toUpperCase()}
+                                </p>
+                                {tasks.map(({ item, index }) => renderDailyItem(item, index))}
                             </div>
-                        )
-                    ))}
+                        ))}
                 </div>
             </div>
 
@@ -377,25 +941,7 @@ export default function MissionChecklist({
                             </p>
                         </div>
                     )}
-                    {todos.map((todo, idx) => (
-                        editingItem?.id === todo.id ? (
-                            <InlineInput key={todo.id} placeholder="Edit task..." value={editingItem.text}
-                                onChange={(v) => setEditingItem({ ...editingItem, text: v })}
-                                onSave={handleSaveEdit} onCancel={() => setEditingItem(null)} accentColor="#a78bfa" />
-                        ) : (
-                            <div key={todo.id} draggable
-                                onDragStart={(e) => handleDragStart(e, idx, 'TODOS')}
-                                onDragEnd={() => setDragInfo(null)}
-                                onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, idx, 'TODOS')}
-                                style={{ opacity: dragInfo?.index === idx && dragInfo.type === 'TODOS' ? 0.4 : 1 }}>
-                                <CheckItem label={todo.text} checked={todo.completed} accentColor="#a78bfa"
-                                    date={todo.date} time={todo.isTimed ? todo.time : undefined}
-                                    onToggle={() => onToggleTodo(todo.id)}
-                                    onEdit={() => setEditingItem({ id: todo.id, type: 'TODOS', text: todo.text })}
-                                    onDelete={onDeleteTodo ? () => onDeleteTodo(todo.id) : undefined} />
-                            </div>
-                        )
-                    ))}
+                    {todos.map((todo, idx) => renderTodoItem(todo, idx))}
                 </div>
             </div>
         </div>
@@ -435,149 +981,9 @@ export default function MissionChecklist({
                     <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: 'white', letterSpacing: '0.05em' }}>MISSIONS</h2>
                     <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: '20px', padding: '4px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
                 </div>
-
-                <div className="mc-start-section">
-                    {isStartingLive ? (
-                        <div className="mc-task-input-box">
-                            <div className="mc-task-input-header">
-                                <span>⚡ NAME YOUR MISSION</span>
-                                <button onClick={() => setIsStartingLive(false)} className="mc-task-cancel">✕</button>
-                            </div>
-                            <input autoFocus placeholder="e.g. Deep work session..." value={liveInput}
-                                onChange={(e) => setLiveInput(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && liveInput.trim()) { onStartLiveMission(liveInput); setIsStartingLive(false); setLiveInput(''); }
-                                    else if (e.key === 'Escape') setIsStartingLive(false);
-                                }}
-                                className="mc-task-input" />
-                            <button onClick={() => { if (liveInput.trim()) { onStartLiveMission(liveInput); setIsStartingLive(false); setLiveInput(''); } }}
-                                className="mc-task-start-btn">🔥 LAUNCH MISSION</button>
-                        </div>
-                    ) : (
-                        <button onClick={() => setIsStartingLive(true)} className="mc-start-btn">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3" /></svg>
-                            START TASK
-                        </button>
-                    )}
+                <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+                    {renderContent()}
                 </div>
-
-                <section className="mc-section">
-                    <div className="mc-section__header">
-                        <div className="mc-section__title" style={{ width: '100%' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: '4px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <span className="mc-section__dot mc-section__dot--daily" />
-                                    <span>DAILIES</span>
-                                    {totalDailies > 0 && <span className="mc-section__count" style={{ background: 'rgba(52, 211, 153, 0.1)', color: '#34d399', border: '1px solid rgba(52, 211, 153, 0.2)' }}>{completedDailies}/{totalDailies}</span>}
-                                </div>
-                            </div>
-                            {totalDailies > 0 && (
-                                <div style={{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden', width: '100%' }}>
-                                    <div style={{ height: '100%', width: `${Math.round((completedDailies / totalDailies) * 100)}%`, background: '#34d399', transition: 'width 0.5s' }} />
-                                </div>
-                            )}
-                        </div>
-                        <button onClick={() => { setAddingType('DAILIES'); setAddingText(''); }} className="mc-add-btn" aria-label="Add daily">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-                        </button>
-                    </div>
-                    {addingType === 'DAILIES' && (
-                        <div className="mc-add-row">
-                            <input autoFocus value={addingText} onChange={(e) => setAddingText(e.target.value)}
-                                onKeyDown={(e) => { if (e.key === 'Enter') handleSaveAdd(); else if (e.key === 'Escape') setAddingType(null); }}
-                                placeholder="New daily habit..." className="mc-add-input mc-add-input--daily" />
-                            <button onClick={handleSaveAdd} className="mc-add-confirm mc-add-confirm--daily">ADD</button>
-                        </div>
-                    )}
-                    <div className="mc-item-list">
-                        {dailies.length === 0 && <p className="mc-empty">No dailies yet.</p>}
-                        {dailies.map((daily, idx) => (
-                            <div key={daily.id} draggable onDragStart={(e) => handleDragStart(e, idx, 'DAILIES')}
-                                onDragEnd={() => setDragInfo(null)}
-                                onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, idx, 'DAILIES')}
-                                className={`mc-item${dragInfo?.index === idx && dragInfo.type === 'DAILIES' ? ' mc-item--dragging' : ''}`}>
-                                <div className="mc-item__drag">⋮⋮</div>
-                                <div className="mc-item__content">
-                                    {editingItem?.id === daily.id ? (
-                                        <input autoFocus value={editingItem.text}
-                                            onChange={(e) => setEditingItem({ ...editingItem, text: e.target.value })}
-                                            onKeyDown={(e) => { if (e.key === 'Enter') handleSaveEdit(); else if (e.key === 'Escape') setEditingItem(null); }}
-                                            onBlur={handleSaveEdit} className="mc-item__edit-input" />
-                                    ) : (
-                                        <span onClick={() => onToggleDaily(daily.id)}
-                                            className={`mc-item__text${daily.completed ? ' mc-item__text--done' : ''}`}>
-                                            {daily.text}
-                                        </span>
-                                    )}
-                                </div>
-                                {onDeleteDaily && (
-                                    <button onClick={() => onDeleteDaily(daily.id)} className="mc-item__delete" aria-label="Delete">
-                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                                    </button>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </section>
-
-                <section className="mc-section">
-                    <div className="mc-section__header">
-                        <div className="mc-section__title" style={{ width: '100%' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: '4px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <span className="mc-section__dot mc-section__dot--todo" />
-                                    <span>TO-DO&apos;S</span>
-                                    {totalTodos > 0 && <span className="mc-section__count" style={{ background: 'rgba(167, 139, 250, 0.1)', color: '#a78bfa', border: '1px solid rgba(167, 139, 250, 0.2)' }}>{completedTodos}/{totalTodos}</span>}
-                                </div>
-                            </div>
-                            {totalTodos > 0 && (
-                                <div style={{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden', width: '100%' }}>
-                                    <div style={{ height: '100%', width: `${Math.round((completedTodos / totalTodos) * 100)}%`, background: '#a78bfa', transition: 'width 0.5s' }} />
-                                </div>
-                            )}
-                        </div>
-                        <button onClick={() => { setAddingType('TODOS'); setAddingText(''); }} className="mc-add-btn" aria-label="Add todo">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-                        </button>
-                    </div>
-                    {addingType === 'TODOS' && (
-                        <div className="mc-add-row">
-                            <input autoFocus value={addingText} onChange={(e) => setAddingText(e.target.value)}
-                                onKeyDown={(e) => { if (e.key === 'Enter') handleSaveAdd(); else if (e.key === 'Escape') setAddingType(null); }}
-                                placeholder="New task..." className="mc-add-input mc-add-input--todo" />
-                            <button onClick={handleSaveAdd} className="mc-add-confirm mc-add-confirm--todo">ADD</button>
-                        </div>
-                    )}
-                    <div className="mc-item-list">
-                        {todos.length === 0 && <p className="mc-empty">No tasks yet.</p>}
-                        {todos.map((todo, idx) => (
-                            <div key={todo.id} draggable onDragStart={(e) => handleDragStart(e, idx, 'TODOS')}
-                                onDragEnd={() => setDragInfo(null)}
-                                onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, idx, 'TODOS')}
-                                className={`mc-item${dragInfo?.index === idx && dragInfo.type === 'TODOS' ? ' mc-item--dragging' : ''}`}>
-                                <div className="mc-item__drag">⋮⋮</div>
-                                <div className="mc-item__content">
-                                    {editingItem?.id === todo.id ? (
-                                        <input autoFocus value={editingItem.text}
-                                            onChange={(e) => setEditingItem({ ...editingItem, text: e.target.value })}
-                                            onKeyDown={(e) => { if (e.key === 'Enter') handleSaveEdit(); else if (e.key === 'Escape') setEditingItem(null); }}
-                                            onBlur={handleSaveEdit} className="mc-item__edit-input" />
-                                    ) : (
-                                        <span onClick={() => onToggleTodo(todo.id)}
-                                            className={`mc-item__text${todo.completed ? ' mc-item__text--done' : ''}`}>
-                                            {todo.text}
-                                        </span>
-                                    )}
-                                </div>
-                                {onDeleteTodo && (
-                                    <button onClick={() => onDeleteTodo(todo.id)} className="mc-item__delete" aria-label="Delete">
-                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                                    </button>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </section>
             </aside>
 
             {/* ── DESKTOP SIDEBAR ─────────────────────────────────────────
@@ -598,6 +1004,23 @@ export default function MissionChecklist({
             }}>
                 {renderContent()}
             </div>
+
+            <TaskDetailDrawer
+                open={drawerOpen}
+                type={drawerType}
+                task={drawerTask}
+                onClose={() => setDrawerOpen(false)}
+                onUpdate={(task) => {
+                    if (drawerType === 'todo') updateTodo(task as Todo);
+                    else updateDaily(task as Daily);
+                    setDrawerTask(task);
+                }}
+                onDelete={(task) => {
+                    if (drawerType === 'todo') removeTodo((task as Todo).id);
+                    else removeDaily((task as Daily).id);
+                    setDrawerOpen(false);
+                }}
+            />
 
             {/* Media query: hide desktop sidebar on mobile, hide mobile aside on desktop */}
             <style>{`

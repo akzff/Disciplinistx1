@@ -12,6 +12,7 @@ import { useUser } from '@clerk/nextjs';
 import { useAuthContext } from '@/lib/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { EnhancedExportImport } from '@/lib/enhancedExportImport';
+import Image from 'next/image';
 
 // ── Types ────────────────────────────────────────────────
 
@@ -458,7 +459,7 @@ function LegacyRecordView({ chat }: { chat: DailyChat }) {
 
 // ── Main Page ─────────────────────────────────────────────
 export default function RecordsPage() {
-    const { allChats, preferences: globalPrefs, setLocalChat, isSettingsOpen, setIsSettingsOpen } = useData();
+    const { allChats, preferences: globalPrefs, setLocalChat } = useData();
     const { user } = useUser();
     const { signOut } = useAuthContext();
     const [selectedDate, setSelectedDate] = useState('');
@@ -596,9 +597,9 @@ export default function RecordsPage() {
     const isStructured = dbRecord?.generation_version === 2 && dbRecord?.structured_data != null;
     const hasAnyRecord = isStructured || (chat?.aiSummary != null);
 
+    const displayName = globalPrefs?.name || 'User';
+    const currentPfp = globalPrefs?.pfp;
     void globalPrefs;
-    void isSettingsOpen;
-    void setIsSettingsOpen;
     void formatTime;
 
     return (
@@ -616,10 +617,20 @@ export default function RecordsPage() {
                     <div className="header-controls" style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                             <div className="profile-badge" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 10px', borderRadius: '100px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'linear-gradient(135deg, #8b5cf6, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: '900' }}>
-                                    {user?.primaryEmailAddress?.emailAddress?.charAt(0).toUpperCase() || 'U'}
-                                </div>
-                                <span className="mobile-hidden" style={{ fontSize: '0.7rem', opacity: 0.7, maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: '600' }}>{user?.primaryEmailAddress?.emailAddress || 'User'}</span>
+                                {currentPfp ? (
+                                    <Image
+                                        src={currentPfp}
+                                        alt="avatar"
+                                        width={28}
+                                        height={28}
+                                        style={{ borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #10b981', flexShrink: 0 }}
+                                    />
+                                ) : (
+                                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'linear-gradient(135deg, #8b5cf6, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: '900' }}>
+                                        {displayName.charAt(0).toUpperCase() || 'U'}
+                                    </div>
+                                )}
+                                <span className="mobile-hidden" style={{ fontSize: '0.7rem', opacity: 0.7, maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: '600' }}>{displayName}</span>
                                 <button onClick={signOut} title="Sign Out" className="logout-btn" style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.8rem', padding: '0 2px' }}>
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                                 </button>
