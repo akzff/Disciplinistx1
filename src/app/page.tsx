@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, type CSSProperties } from 'react';
 import { storage, Message, DailyChat, ActiveTask, formatTime, TaskNote, PersonaId } from '@/lib/storage';
 import Image from 'next/image';
 import MissionsBoard from '@/components/MissionsBoard';
@@ -176,6 +176,7 @@ export default function ChatPage() {
   const liveTab = false;
   const myClientId = useRef(Math.random().toString(36).substring(7)).current;
   const [activeTasks, setActiveTasks] = useState<ActiveTask[]>([]);
+  const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
   const [distractions, setDistractions] = useState<string[]>([]);
   const [todos, setTodos] = useState<DailyChat['todos']>([]);
   const [dailies, setDailies] = useState<DailyChat['dailies']>([]);
@@ -461,6 +462,45 @@ export default function ChatPage() {
     }
   }, [activeTasks, now]);
 
+  useEffect(() => {
+    setNoteDrafts(prev => {
+      const activeIds = new Set(activeTasks.map(t => t.id));
+      const next = Object.fromEntries(Object.entries(prev).filter(([id]) => activeIds.has(id)));
+      return Object.keys(next).length === Object.keys(prev).length ? prev : next;
+    });
+  }, [activeTasks]);
+
+  const persistChatSnapshot = (overrides: Partial<DailyChat>) => {
+    if (!activeDay || !isInitialized) return;
+    const chatD: DailyChat = {
+      date: activeDay,
+      messages,
+      status: chatStatus,
+      activeTasks,
+      distractions,
+      botMood,
+      todos,
+      dailies,
+      completedTasks,
+      expenses,
+      clientId: myClientId,
+      ...overrides,
+    };
+    cloudStorage.saveChat(activeDay, chatD, user?.id || undefined, true);
+    setLocalChat(activeDay, chatD as DailyChat);
+  };
+
+  const updateNoteDraft = (taskId: string, value: string) => {
+    setNoteDrafts(prev => ({ ...prev, [taskId]: value }));
+  };
+
+  const submitTaskNote = (taskId: string) => {
+    const text = (noteDrafts[taskId] || '').trim();
+    if (!text) return;
+    addTaskNote(taskId, text);
+    setNoteDrafts(prev => ({ ...prev, [taskId]: '' }));
+  };
+
   const handleSend = async (overrideInput?: string, overrideMessages?: Message[]) => {
     const textToSend = overrideInput || input;
     if (!textToSend.trim() || isLoading) return;
@@ -647,7 +687,9 @@ OPERATIONAL TAGS:
     };
 
     setMessages(updatedMessages);
-    setActiveTasks(prev => [newTask, ...prev]);
+    const nextActiveTasks = [newTask, ...activeTasks];
+    setActiveTasks(nextActiveTasks);
+    persistChatSnapshot({ messages: updatedMessages, activeTasks: nextActiveTasks });
   };
 
   const startManualTask = (name: string) => {
@@ -661,7 +703,9 @@ OPERATIONAL TAGS:
       totalPausedTime: 0,
       lastStartedAt: Date.now()
     };
-    setActiveTasks(prev => [newTask, ...prev]);
+    const nextActiveTasks = [newTask, ...activeTasks];
+    setActiveTasks(nextActiveTasks);
+    persistChatSnapshot({ activeTasks: nextActiveTasks });
 
     // Notify the bot
     handleSend(`[Protocol Started]: Mission "${name.trim()}" is now live.`);
@@ -681,9 +725,9 @@ OPERATIONAL TAGS:
   };
 
   const toggleTask = (taskId: string) => {
-    setActiveTasks(prev => prev.map(t => {
+    const timestamp = Date.now();
+    const nextActiveTasks = activeTasks.map(t => {
       if (t.id === taskId) {
-        const timestamp = Date.now();
         if (t.status === 'RUNNING') {
           const activeNow = timestamp - (t.lastStartedAt || t.startTime || timestamp);
           return {
@@ -692,72 +736,81 @@ OPERATIONAL TAGS:
             totalActiveTime: (t.totalActiveTime || 0) + (activeNow > 0 ? activeNow : 0),
             lastPausedAt: timestamp
           };
-        } else {
-          const pausedNow = timestamp - (t.lastPausedAt || t.startTime || timestamp);
-          return {
-            ...t,
-            status: 'RUNNING',
-            totalPausedTime: (t.totalPausedTime || 0) + (pausedNow > 0 ? pausedNow : 0),
-            lastStartedAt: timestamp
-          };
         }
+        const pausedNow = timestamp - (t.lastPausedAt || t.startTime || timestamp);
+        return {
+          ...t,
+          status: 'RUNNING',
+          totalPausedTime: (t.totalPausedTime || 0) + (pausedNow > 0 ? pausedNow : 0),
+          lastStartedAt: timestamp
+        };
       }
       return t;
-    }));
+    });
+    setActiveTasks(nextActiveTasks);
+    persistChatSnapshot({ activeTasks: nextActiveTasks });
   };
 
   const closeTask = (taskId: string) => {
-    setActiveTasks(prev => {
-      const task = prev.find(t => t.id === taskId);
-      if (!task) return prev;
-      const timestamp = Date.now();
-      const finalActiveTime = task.status === 'RUNNING'
-        ? (task.totalActiveTime || 0) + Math.max(0, timestamp - (task.lastStartedAt || task.startTime || timestamp))
-        : (task.totalActiveTime || 0);
-      const finalPausedTime = task.status === 'PAUSED'
-        ? (task.totalPausedTime || 0) + Math.max(0, timestamp - (task.lastPausedAt || task.startTime || timestamp))
-        : (task.totalPausedTime || 0);
+    const task = activeTasks.find(t => t.id === taskId);
+    if (!task) return;
+    const timestamp = Date.now();
+    const finalActiveTime = task.status === 'RUNNING'
+      ? (task.totalActiveTime || 0) + Math.max(0, timestamp - (task.lastStartedAt || task.startTime || timestamp))
+      : (task.totalActiveTime || 0);
+    const finalPausedTime = task.status === 'PAUSED'
+      ? (task.totalPausedTime || 0) + Math.max(0, timestamp - (task.lastPausedAt || task.startTime || timestamp))
+      : (task.totalPausedTime || 0);
 
-      // Emit a rich completedMission card instead of plain text
-      setMessages(prevMsgs => [...prevMsgs, {
-        role: 'assistant',
-        content: `How did "${task.name}" go? Share your reflection. If you abandoned or switched tasks, explain what triggered it.`,
-        completedMission: {
-          name: task.name,
-          startTime: task.startTime,
-          endTime: timestamp,
-          activeTime: finalActiveTime,
-          pausedTime: finalPausedTime,
-          notes: task.notes || []
-        },
-        timestamp: timestamp
-      }]);
+    const completionMessage: Message = {
+      role: 'assistant',
+      content: `How did "${task.name}" go? Share your reflection. If you abandoned or switched tasks, explain what triggered it.`,
+      completedMission: {
+        name: task.name,
+        startTime: task.startTime,
+        endTime: timestamp,
+        activeTime: finalActiveTime,
+        pausedTime: finalPausedTime,
+        notes: task.notes || []
+      },
+      timestamp: timestamp
+    };
 
-      setCompletedTasks(prevCompleted => [
-        ...(prevCompleted || []),
-        {
-          name: task.name,
-          activeTime: finalActiveTime,
-          pausedTime: finalPausedTime,
-          finishedAt: timestamp,
-          abandonmentReason: '', // Will be filled when user responds
-          notes: task.notes
-        }
-      ]);
+    const updatedMessages = [...messages, completionMessage];
+    const updatedCompleted = [
+      ...(completedTasks || []),
+      {
+        name: task.name,
+        activeTime: finalActiveTime,
+        pausedTime: finalPausedTime,
+        finishedAt: timestamp,
+        abandonmentReason: '',
+        notes: task.notes
+      }
+    ];
+    const remaining = activeTasks.filter(t => t.id !== taskId);
 
-      return prev.filter(t => t.id !== taskId);
+    setMessages(updatedMessages);
+    setCompletedTasks(updatedCompleted);
+    setActiveTasks(remaining);
+    setNoteDrafts(prev => {
+      const { [taskId]: _removed, ...rest } = prev;
+      return rest;
     });
+    persistChatSnapshot({ messages: updatedMessages, completedTasks: updatedCompleted, activeTasks: remaining });
   };
 
   const addTaskNote = (taskId: string, text: string) => {
     if (!text.trim()) return;
-    setActiveTasks(prev => prev.map(t => {
+    const nextActiveTasks = activeTasks.map(t => {
       if (t.id === taskId) {
         const newNote = { text, timestamp: Date.now() };
         return { ...t, notes: [...(t.notes || []), newNote] };
       }
       return t;
-    }));
+    });
+    setActiveTasks(nextActiveTasks);
+    persistChatSnapshot({ activeTasks: nextActiveTasks });
   };
 
   const rateCompletedMission = (messageIndex: number, taskName: string, rating: number) => {
@@ -1240,63 +1293,99 @@ OPERATIONAL TAGS:
                   const pausedTime = task.status === 'PAUSED'
                     ? (task.totalPausedTime || 0) + Math.max(0, now - (task.lastPausedAt || task.startTime || now))
                     : (task.totalPausedTime || 0);
+                  const totalTime = activeTime + pausedTime;
+                  const activePct = totalTime > 0
+                    ? Math.round((activeTime / totalTime) * 100)
+                    : (task.status === 'RUNNING' ? 100 : 0);
+                  const startedAt = task.startTime
+                    ? new Date(task.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    : '—';
+                  const statusLabel = task.status === 'RUNNING' ? 'LIVE' : 'PAUSED';
+                  const statusIcon = task.status === 'RUNNING' ? '🔥' : '⏸';
+                  const progressStyle = { '--active-pct': `${activePct}%` } as CSSProperties;
 
                   return (
-                    <div key={task.id} className="active-tasks-card">
-                      <div style={{ fontSize: '1.5rem' }}>{task.status === 'RUNNING' ? '🔥' : '⏸️'}</div>
-                      <div style={{ flex: 1 }}>
-                        <p style={{ fontSize: '0.7rem', opacity: 0.6, fontWeight: '700', textTransform: 'uppercase' }}>Current Task</p>
-                        <p style={{ fontWeight: '800' }}>{task.name}</p>
-                        <p style={{ fontSize: '0.65rem', opacity: 0.5, marginTop: '2px' }}>
-                          Active: {formatTime(activeTime, false)} | Paused: {formatTime(pausedTime, false)}
-                        </p>
-                        {/* Notes List */}
-                        {(task.notes || []).length > 0 && (
-                          <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            {task.notes?.map((note, idx) => (
-                              <div key={idx} style={{ 
-                                background: 'rgba(255,255,255,0.03)', 
-                                padding: '6px 10px', 
-                                borderRadius: '6px',
-                                borderLeft: '2px solid rgba(212,160,23,0.3)'
-                              }}>
-                                <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.9)', lineHeight: '1.4' }}>{note.text}</p>
-                                <p style={{ fontSize: '0.6rem', opacity: 0.4, marginTop: '2px' }}>
-                                  {new Date(note.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                    <div
+                      key={task.id}
+                      className={`active-task-card ${task.status === 'RUNNING' ? 'is-running' : 'is-paused'}`}
+                      style={progressStyle}
+                    >
+                      <div className="active-task-top">
+                        <div className="active-task-status">
+                          <span className="active-task-dot" />
+                          <span className="active-task-state">{statusLabel}</span>
+                          <span className="active-task-started">Started {startedAt}</span>
+                        </div>
+                        <div className="active-task-actions">
+                          <button onClick={() => toggleTask(task.id)} className="active-task-btn ghost">
+                            {task.status === 'RUNNING' ? 'Pause' : 'Resume'}
+                          </button>
+                          <button onClick={() => closeTask(task.id)} className="active-task-btn solid">
+                            Finish
+                          </button>
+                        </div>
+                      </div>
 
-                        <input 
-                          type="text" 
-                          placeholder="Add a note... (Enter to save)" 
-                          style={{
-                            width: '100%', marginTop: '10px', background: 'rgba(255,255,255,0.05)', 
-                            border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px',
-                            padding: '8px', fontSize: '0.75rem', color: 'white', outline: 'none',
-                            transition: 'border-color 0.2s'
-                          }}
+                      <div className="active-task-main">
+                        <div className="active-task-icon">{statusIcon}</div>
+                        <div className="active-task-body">
+                          <div className="active-task-title-row">
+                            <p className="active-task-title">{task.name}</p>
+                            <span className="active-task-total">{formatTime(totalTime, false)}</span>
+                          </div>
+                          <div className="active-task-metrics">
+                            <div className="active-task-metric">
+                              <span>Active</span>
+                              <strong>{formatTime(activeTime, false)}</strong>
+                            </div>
+                            <div className="active-task-metric">
+                              <span>Paused</span>
+                              <strong>{formatTime(pausedTime, false)}</strong>
+                            </div>
+                            <div className="active-task-metric">
+                              <span>Notes</span>
+                              <strong>{(task.notes || []).length}</strong>
+                            </div>
+                          </div>
+                          <div className="active-task-bar">
+                            <div className="active-task-bar-fill" />
+                          </div>
+                        </div>
+                      </div>
+
+                      {(task.notes || []).length > 0 && (
+                        <div className="active-task-notes">
+                          {(task.notes || []).map((note, idx) => (
+                            <div key={idx} className="active-task-note">
+                              <p className="active-task-note-text">{note.text}</p>
+                              <p className="active-task-note-time">
+                                {new Date(note.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="active-task-input-row">
+                        <input
+                          type="text"
+                          className="active-task-input"
+                          placeholder="Add a note... (Enter to save)"
+                          value={noteDrafts[task.id] || ''}
+                          onChange={(e) => updateNoteDraft(task.id, e.target.value)}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
-                              const input = e.currentTarget;
-                              if (input.value.trim()) {
-                                addTaskNote(task.id, input.value);
-                                input.value = '';
-                              }
+                              e.preventDefault();
+                              submitTaskNote(task.id);
                             }
                           }}
-                          onFocus={(e) => e.currentTarget.style.borderColor = 'rgba(212,160,23,0.5)'}
-                          onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}
                         />
-                      </div>
-                      <div className="task-actions" style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button onClick={() => toggleTask(task.id)} className="edit-cancel" style={{ fontSize: '0.7rem' }}>
-                          {task.status === 'RUNNING' ? 'Pause' : 'Resume'}
-                        </button>
-                        <button onClick={() => closeTask(task.id)} className="edit-save" style={{ fontSize: '0.7rem' }}>
-                          Finish
+                        <button
+                          onClick={() => submitTaskNote(task.id)}
+                          className="active-task-btn icon"
+                          disabled={!noteDrafts[task.id]?.trim()}
+                        >
+                          Add
                         </button>
                       </div>
                     </div>
@@ -1508,31 +1597,23 @@ OPERATIONAL TAGS:
                     margin: 8px 0 4px 0;
                     font-size: 13px;
                   }
-                  .active-tasks-card { 
-                    flex-direction: column !important; 
-                    align-items: stretch !important;
-                    padding: 1.25rem !important;
-                    margin: 0.75rem 0 1.5rem 0 !important;
-                    gap: 1rem !important;
-                    background: rgba(212, 160, 23, 0.1) !important;
-                    backdrop-filter: blur(20px) !important;
-                    border: 1px solid rgba(212, 160, 23, 0.3) !important;
+                  .active-task-card { 
+                    padding: 1.1rem !important;
+                    margin: 0.75rem 0 1.4rem 0 !important;
+                    gap: 0.9rem !important;
                   }
-                  .active-tasks-card > div:first-child { align-self: center; margin-bottom: -0.5rem; }
-                  .active-tasks-card input { 
-                    font-size: 1rem !important; 
+                  .active-task-main { flex-direction: column !important; align-items: flex-start !important; }
+                  .active-task-icon { margin-bottom: -0.2rem !important; }
+                  .active-task-actions { width: 100% !important; justify-content: space-between !important; }
+                  .active-task-input-row { flex-direction: column !important; align-items: stretch !important; }
+                  .active-task-input { 
+                    font-size: 0.95rem !important; 
                     padding: 14px !important; 
                     background: rgba(0,0,0,0.3) !important;
                     border-color: rgba(255,255,255,0.1) !important;
                   }
+                  .active-task-btn.icon { width: 100% !important; }
                   .gc-bubble { max-width: 94% !important; }
-                  .task-actions { 
-                    display: grid !important; 
-                    grid-template-columns: 1fr 1fr !important;
-                    gap: 0.75rem !important;
-                    width: 100% !important;
-                  }
-                  .task-actions button { width: 100% !important; padding: 12px 0 !important; font-size: 0.85rem !important; border-radius: 10px !important; }
                 }
 
                 .mc-header {
