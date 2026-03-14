@@ -171,6 +171,7 @@ export default function MissionChecklist({
     const userId = user?.id;
 
     const [presets, setPresets] = useState<Preset[]>([]);
+    const [hiddenPresetIds, setHiddenPresetIds] = useState<string[]>([]);
     const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
     const [addingPreset, setAddingPreset] = useState(false);
     const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
@@ -183,7 +184,11 @@ export default function MissionChecklist({
     const [drawerTask, setDrawerTask] = useState<Todo | Daily | null>(null);
     const [drawerType, setDrawerType] = useState<'todo' | 'daily'>('todo');
 
-    const displayPresets = (presets.length > 0 ? presets : DEFAULT_PRESETS).slice(0, 12);
+    const displayPresets = useMemo(() => {
+        const userPresets = presets;
+        const visibleDefaults = DEFAULT_PRESETS.filter(p => !hiddenPresetIds.includes(p.id));
+        return [...userPresets, ...visibleDefaults].slice(0, 12);
+    }, [presets, hiddenPresetIds]);
 
     const completedDailies = dailies.filter(d => d.completed).length;
     const completedTodos = todos.filter(t => t.completed).length;
@@ -250,20 +255,42 @@ export default function MissionChecklist({
         if (!newPresetName.trim() || !userId) return;
 
         if (editingPresetId) {
-            const { error } = await supabase
-                .from('task_presets')
-                .update({
-                    name: newPresetName.trim(),
-                    emoji: newPresetEmoji || '⚡'
-                })
-                .eq('id', editingPresetId);
+            if (editingPresetId.startsWith('d')) {
+                // If editing a default preset, we save it as a NEW custom preset
+                // and hide the default one
+                const { data, error } = await supabase
+                    .from('task_presets')
+                    .insert({
+                        user_id: userId,
+                        name: newPresetName.trim(),
+                        emoji: newPresetEmoji || '⚡',
+                        use_count: presets.find(p => p.id === editingPresetId)?.use_count || 0
+                    })
+                    .select()
+                    .single();
 
-            if (!error) {
-                setPresets(prev => prev.map(p => 
-                    p.id === editingPresetId 
-                        ? { ...p, name: newPresetName.trim(), emoji: newPresetEmoji || '⚡' } 
-                        : p
-                ));
+                if (!error && data) {
+                    setPresets(prev => [data as Preset, ...prev]);
+                    setHiddenPresetIds(prev => [...prev, editingPresetId]);
+                    setSelectedPreset((data as Preset).id);
+                    setLiveInput((data as Preset).name);
+                }
+            } else {
+                const { error } = await supabase
+                    .from('task_presets')
+                    .update({
+                        name: newPresetName.trim(),
+                        emoji: newPresetEmoji || '⚡'
+                    })
+                    .eq('id', editingPresetId);
+
+                if (!error) {
+                    setPresets(prev => prev.map(p => 
+                        p.id === editingPresetId 
+                            ? { ...p, name: newPresetName.trim(), emoji: newPresetEmoji || '⚡' } 
+                            : p
+                    ));
+                }
             }
         } else {
             const { data, error } = await supabase
@@ -298,12 +325,18 @@ export default function MissionChecklist({
     };
 
     const deletePreset = async (preset: Preset) => {
-        if (preset.id.startsWith('d')) return;
-        const { error } = await supabase
-            .from('task_presets')
-            .delete()
-            .eq('id', preset.id);
-        setPresets(prev => prev.filter(p => p.id !== preset.id));
+        if (preset.id.startsWith('d')) {
+            // "Delete" for default presets means hiding them
+            setHiddenPresetIds(prev => [...prev, preset.id]);
+        } else {
+            const { error } = await supabase
+                .from('task_presets')
+                .delete()
+                .eq('id', preset.id);
+            if (!error) {
+                setPresets(prev => prev.filter(p => p.id !== preset.id));
+            }
+        }
         if (selectedPreset === preset.id) {
             setSelectedPreset(null);
             setLiveInput('');
@@ -626,7 +659,7 @@ export default function MissionChecklist({
             }
         };
 
-        const activeActions = (hovering || showActions || isManageMode) && !isDefault;
+        const activeActions = (hovering || showActions || isManageMode);
 
         return (
             <div
@@ -653,7 +686,7 @@ export default function MissionChecklist({
                         setShowActions(false);
                         handleSelectPreset(preset);
                     }}
-                    className={isManageMode && !isDefault ? 'wiggle' : ''}
+                    className={isManageMode ? 'wiggle' : ''}
                     style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -865,42 +898,85 @@ export default function MissionChecklist({
                             </p>
 
                             <div style={{ display: 'flex', gap: '8px' }}>
-                                <input
-                                    value={newPresetEmoji}
-                                    onChange={e => setNewPresetEmoji(e.target.value)}
-                                    maxLength={2}
-                                    style={{
-                                        width: '44px',
-                                        textAlign: 'center',
-                                        fontSize: '18px',
-                                        background: 'rgba(255,255,255,0.06)',
-                                        border: '1px solid rgba(255,255,255,0.1)',
-                                        borderRadius: '8px',
-                                        padding: '8px',
-                                        color: 'white',
-                                        flexShrink: 0
-                                    }}
-                                />
+                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <div style={{ position: 'relative' }}>
+                                        <input
+                                            value={newPresetEmoji}
+                                            onChange={e => setNewPresetEmoji(e.target.value)}
+                                            maxLength={2}
+                                            style={{
+                                                width: '44px',
+                                                textAlign: 'center',
+                                                fontSize: '18px',
+                                                background: 'rgba(255,255,255,0.06)',
+                                                border: '1px solid rgba(255,255,255,0.1)',
+                                                borderRadius: '8px',
+                                                padding: '8px',
+                                                color: 'white',
+                                                flexShrink: 0
+                                            }}
+                                        />
+                                    </div>
 
-                                <input
-                                    autoFocus
-                                    placeholder="Task name..."
-                                    value={newPresetName}
-                                    onChange={e => setNewPresetName(e.target.value)}
-                                    onKeyDown={e => {
-                                        if (e.key === 'Enter') savePreset();
-                                        if (e.key === 'Escape') setAddingPreset(false);
-                                    }}
-                                    style={{
-                                        flex: 1,
-                                        background: 'rgba(255,255,255,0.06)',
-                                        border: '1px solid rgba(255,255,255,0.1)',
+                                    <input
+                                        autoFocus
+                                        placeholder="Task name..."
+                                        value={newPresetName}
+                                        onChange={e => setNewPresetName(e.target.value)}
+                                        onKeyDown={e => {
+                                            if (e.key === 'Enter') savePreset();
+                                            if (e.key === 'Escape') setAddingPreset(false);
+                                        }}
+                                        style={{
+                                            flex: 1,
+                                            background: 'rgba(255,255,255,0.06)',
+                                            border: '1px solid rgba(255,255,255,0.1)',
+                                            borderRadius: '8px',
+                                            padding: '8px 12px',
+                                            color: 'white',
+                                            fontSize: '13px'
+                                        }}
+                                    />
+                                </div>
+
+                                <div style={{ marginTop: '4px' }}>
+                                    <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '9px', fontWeight: 700, marginBottom: '4px', letterSpacing: '0.05em' }}>
+                                        PICK AN EMOJI
+                                    </p>
+                                    <div style={{
+                                        display: 'flex',
+                                        flexWrap: 'wrap',
+                                        gap: '4px',
+                                        background: 'rgba(255,255,255,0.03)',
+                                        padding: '8px',
                                         borderRadius: '8px',
-                                        padding: '8px 12px',
-                                        color: 'white',
-                                        fontSize: '13px'
-                                    }}
-                                />
+                                        border: '1px solid rgba(255,255,255,0.05)'
+                                    }}>
+                                        {['🏋️', '💻', '📚', '🧘', '🏃', '🔄', '⚡', '🎯', '💡', '🛠️', '🎨', '📝', '🥦', '💧', '💰', '🏠', '🛌', '🧹', '🛒', '🚶', '🍱', '🧼', '🔭', '🌱', '🔋'].map(e => (
+                                            <button
+                                                key={e}
+                                                onClick={() => setNewPresetEmoji(e)}
+                                                style={{
+                                                    background: newPresetEmoji === e ? 'rgba(212,160,23,0.3)' : 'transparent',
+                                                    border: 'none',
+                                                    borderRadius: '6px',
+                                                    fontSize: '20px',
+                                                    padding: '4px',
+                                                    cursor: 'pointer',
+                                                    width: '32px',
+                                                    height: '32px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    transition: 'all 0.1s'
+                                                }}>
+                                                {e}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
                             </div>
 
                             <div style={{ display: 'flex', gap: '6px' }}>
