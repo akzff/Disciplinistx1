@@ -19,7 +19,7 @@ export function shouldShowToday(task: Todo): boolean {
 
     switch (vis.type) {
         case 'blackout_until':
-            return todayStr >= vis.date;
+            return vis.date ? todayStr >= vis.date : true;
         case 'pre_due': {
             if (!task.due_date) return true;
             const showFrom = format(
