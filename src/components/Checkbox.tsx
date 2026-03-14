@@ -59,9 +59,12 @@ export function Checkbox({
                 style={{
                     position: 'absolute',
                     opacity: 0,
-                    width: 0,
-                    height: 0,
-                    margin: 0
+                    width: '100%',
+                    height: '100%',
+                    top: 0,
+                    left: 0,
+                    zIndex: 1,
+                    cursor: 'inherit',
                 }}
             />
             <div
@@ -163,9 +166,12 @@ export function MissionCheckbox({
                 style={{
                     position: 'absolute',
                     opacity: 0,
-                    width: 0,
-                    height: 0,
-                    margin: 0
+                    width: '100%',
+                    height: '100%',
+                    top: 0,
+                    left: 0,
+                    zIndex: 1,
+                    cursor: 'inherit',
                 }}
             />
             <div

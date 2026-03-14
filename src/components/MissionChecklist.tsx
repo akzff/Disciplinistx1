@@ -410,7 +410,7 @@ export default function MissionChecklist({
             >
                 <div style={{
                     display: 'flex',
-                    alignItems: 'flex-start',
+                    alignItems: 'center',
                     gap: '10px',
                     padding: '10px 12px',
                     borderRadius: '10px',
@@ -427,7 +427,6 @@ export default function MissionChecklist({
                         checked={todo.completed}
                         onChange={() => handleToggleTodoClick(todo)}
                         variant="todo"
-                        style={{ marginTop: '2px' }}
                     />
 
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -538,7 +537,7 @@ export default function MissionChecklist({
             >
                 <div style={{
                     display: 'flex',
-                    alignItems: 'flex-start',
+                    alignItems: 'center',
                     gap: '10px',
                     padding: '10px 12px',
                     borderRadius: '10px'
@@ -547,7 +546,6 @@ export default function MissionChecklist({
                         checked={daily.completed}
                         onChange={() => onToggleDaily(daily.id)}
                         variant="daily"
-                        style={{ marginTop: '2px' }}
                     />
 
                     <div style={{ flex: 1, minWidth: 0 }}>
