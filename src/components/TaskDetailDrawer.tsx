@@ -110,7 +110,8 @@ export default function TaskDetailDrawer({
 
     if (!open || !currentTask) return null;
 
-    const update = <K extends keyof (Todo | Daily)>(key: K, value: (Todo | Daily)[K]) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const update = (key: string, value: any) => {
         onUpdate({ ...currentTask, [key]: value } as Todo | Daily);
     };
 
