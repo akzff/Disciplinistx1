@@ -42,12 +42,12 @@ type Todo = DailyChat['todos'][number];
 type Daily = DailyChat['dailies'][number];
 
 const DEFAULT_PRESETS: Preset[] = [
-    { id: 'd1', name: 'Elite Gym', emoji: '🏋️', use_count: 0 },
-    { id: 'd2', name: 'Deep Focus', emoji: '💻', use_count: 0 },
-    { id: 'd3', name: 'Knowledge', emoji: '📚', use_count: 0 },
-    { id: 'd4', name: 'Zen Mind', emoji: '🧘', use_count: 0 },
-    { id: 'd5', name: 'Active Run', emoji: '🏃', use_count: 0 },
-    { id: 'd6', name: 'Sync Cycle', emoji: '🔄', use_count: 0 },
+    { id: 'd1', name: 'Gym session', emoji: '🏋️', use_count: 0 },
+    { id: 'd2', name: 'Deep work', emoji: '💻', use_count: 0 },
+    { id: 'd3', name: 'Study block', emoji: '📚', use_count: 0 },
+    { id: 'd4', name: 'Meditation', emoji: '🧘', use_count: 0 },
+    { id: 'd5', name: 'Morning run', emoji: '🏃', use_count: 0 },
+    { id: 'd6', name: 'Review day', emoji: '🔄', use_count: 0 },
 ];
 
 // ────────────────────────────────────────────────────────────────
@@ -171,7 +171,6 @@ export default function MissionChecklist({
     const userId = user?.id;
 
     const [presets, setPresets] = useState<Preset[]>([]);
-    const [hiddenPresetIds, setHiddenPresetIds] = useState<string[]>([]);
     const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
     const [addingPreset, setAddingPreset] = useState(false);
     const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
@@ -184,11 +183,7 @@ export default function MissionChecklist({
     const [drawerTask, setDrawerTask] = useState<Todo | Daily | null>(null);
     const [drawerType, setDrawerType] = useState<'todo' | 'daily'>('todo');
 
-    const displayPresets = useMemo(() => {
-        const userPresets = presets;
-        const visibleDefaults = DEFAULT_PRESETS.filter(p => !hiddenPresetIds.includes(p.id));
-        return [...userPresets, ...visibleDefaults].slice(0, 12);
-    }, [presets, hiddenPresetIds]);
+    const displayPresets = (presets.length > 0 ? presets : DEFAULT_PRESETS).slice(0, 12);
 
     const completedDailies = dailies.filter(d => d.completed).length;
     const completedTodos = todos.filter(t => t.completed).length;
@@ -255,42 +250,20 @@ export default function MissionChecklist({
         if (!newPresetName.trim() || !userId) return;
 
         if (editingPresetId) {
-            if (editingPresetId.startsWith('d')) {
-                // If editing a default preset, we save it as a NEW custom preset
-                // and hide the default one
-                const { data, error } = await supabase
-                    .from('task_presets')
-                    .insert({
-                        user_id: userId,
-                        name: newPresetName.trim(),
-                        emoji: newPresetEmoji || '⚡',
-                        use_count: presets.find(p => p.id === editingPresetId)?.use_count || 0
-                    })
-                    .select()
-                    .single();
+            const { error } = await supabase
+                .from('task_presets')
+                .update({
+                    name: newPresetName.trim(),
+                    emoji: newPresetEmoji || '⚡'
+                })
+                .eq('id', editingPresetId);
 
-                if (!error && data) {
-                    setPresets(prev => [data as Preset, ...prev]);
-                    setHiddenPresetIds(prev => [...prev, editingPresetId]);
-                    setSelectedPreset((data as Preset).id);
-                    setLiveInput((data as Preset).name);
-                }
-            } else {
-                const { error } = await supabase
-                    .from('task_presets')
-                    .update({
-                        name: newPresetName.trim(),
-                        emoji: newPresetEmoji || '⚡'
-                    })
-                    .eq('id', editingPresetId);
-
-                if (!error) {
-                    setPresets(prev => prev.map(p => 
-                        p.id === editingPresetId 
-                            ? { ...p, name: newPresetName.trim(), emoji: newPresetEmoji || '⚡' } 
-                            : p
-                    ));
-                }
+            if (!error) {
+                setPresets(prev => prev.map(p => 
+                    p.id === editingPresetId 
+                        ? { ...p, name: newPresetName.trim(), emoji: newPresetEmoji || '⚡' } 
+                        : p
+                ));
             }
         } else {
             const { data, error } = await supabase
@@ -325,18 +298,12 @@ export default function MissionChecklist({
     };
 
     const deletePreset = async (preset: Preset) => {
-        if (preset.id.startsWith('d')) {
-            // "Delete" for default presets means hiding them
-            setHiddenPresetIds(prev => [...prev, preset.id]);
-        } else {
-            const { error } = await supabase
-                .from('task_presets')
-                .delete()
-                .eq('id', preset.id);
-            if (!error) {
-                setPresets(prev => prev.filter(p => p.id !== preset.id));
-            }
-        }
+        if (preset.id.startsWith('d')) return;
+        const { error } = await supabase
+            .from('task_presets')
+            .delete()
+            .eq('id', preset.id);
+        setPresets(prev => prev.filter(p => p.id !== preset.id));
         if (selectedPreset === preset.id) {
             setSelectedPreset(null);
             setLiveInput('');
@@ -637,67 +604,97 @@ export default function MissionChecklist({
     const PresetPill = ({ preset }: { preset: Preset }) => {
         const [hovering, setHovering] = useState(false);
         const [showActions, setShowActions] = useState(false);
+        const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+        const longPressTriggered = useRef(false);
+        const isDefault = preset.id.startsWith('d');
         const isSelected = selectedPreset === preset.id;
 
-        const activeActions = isManageMode && (hovering || showActions);
+        const startLongPress = () => {
+            if (isDefault) return;
+            longPressTriggered.current = false;
+            if (longPressTimer.current) clearTimeout(longPressTimer.current);
+            longPressTimer.current = setTimeout(() => {
+                longPressTriggered.current = true;
+                setShowActions(true);
+            }, 500);
+        };
+
+        const clearLongPress = () => {
+            if (longPressTimer.current) {
+                clearTimeout(longPressTimer.current);
+                longPressTimer.current = null;
+            }
+        };
+
+        const activeActions = (hovering || showActions || isManageMode) && !isDefault;
 
         return (
             <div
-                style={{ position: 'relative', display: 'inline-flex', transition: 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}
+                style={{ position: 'relative', display: 'inline-flex' }}
                 onMouseEnter={() => setHovering(true)}
-                onMouseLeave={() => setHovering(false)}
+                onMouseLeave={() => {
+                    setHovering(false);
+                    if (!longPressTriggered.current && !isManageMode) setShowActions(false);
+                }}
+                onTouchStart={startLongPress}
+                onTouchEnd={clearLongPress}
+                onTouchCancel={clearLongPress}
             >
                 <button
                     onClick={() => {
+                        if (longPressTriggered.current) {
+                            longPressTriggered.current = false;
+                            return;
+                        }
                         if (isManageMode) {
                             handleEditPreset(preset);
                             return;
                         }
+                        setShowActions(false);
                         handleSelectPreset(preset);
                     }}
-                    className={isManageMode ? 'wiggle' : ''}
+                    className={isManageMode && !isDefault ? 'wiggle' : ''}
                     style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '8px',
-                        padding: '8px 16px',
-                        borderRadius: '14px',
+                        gap: '5px',
+                        padding: '6px 12px',
+                        borderRadius: '20px',
                         border: isSelected
-                            ? '1px solid #d4a017'
-                            : isManageMode 
-                                ? '1px dashed rgba(212,160,23,0.4)' 
-                                : '1px solid rgba(255,255,255,0.08)',
+                            ? '1px solid rgba(212,160,23,0.7)'
+                            : '1px solid rgba(255,255,255,0.1)',
                         background: isSelected
-                            ? 'rgba(212,160,23,0.12)'
-                            : isManageMode
-                                ? 'rgba(212,160,23,0.03)'
-                                : 'rgba(255,255,255,0.03)',
-                        color: isSelected ? '#d4a017' : 'rgba(255,255,255,0.7)',
+                            ? 'rgba(212,160,23,0.15)'
+                            : 'rgba(255,255,255,0.04)',
+                        color: isSelected
+                            ? '#d4a017'
+                            : 'rgba(255,255,255,0.6)',
                         fontSize: '12px',
-                        fontWeight: isSelected ? 700 : 500,
+                        fontWeight: isSelected ? 700 : 400,
                         cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        whiteSpace: 'nowrap',
-                        boxShadow: isSelected ? '0 0 15px rgba(212,160,23,0.1)' : 'none'
+                        transition: 'all 0.15s',
+                        whiteSpace: 'nowrap'
                     }}>
-                    <span style={{ fontSize: '16px', filter: isManageMode ? 'grayscale(0.5)' : 'none' }}>{preset.emoji}</span>
-                    <span style={{ opacity: isManageMode ? 0.7 : 1 }}>{preset.name}</span>
+                    <span style={{ fontSize: '13px' }}>{preset.emoji}</span>
+                    {preset.name}
+                    {preset.use_count > 0 && (
+                        <span style={{
+                            fontSize: '9px',
+                            color: 'rgba(255,255,255,0.25)',
+                            marginLeft: '2px'
+                        }}>
+                            ×{preset.use_count}
+                        </span>
+                    )}
                 </button>
 
-                {isManageMode && (
+                {activeActions && (
                     <div style={{
                         position: 'absolute',
-                        inset: 0,
-                        borderRadius: '14px',
-                        background: hovering ? 'rgba(0,0,0,0.6)' : 'transparent',
-                        backdropFilter: hovering ? 'blur(2px)' : 'none',
+                        top: '-8px',
+                        right: '-8px',
                         display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '12px',
-                        opacity: hovering ? 1 : 0,
-                        transition: 'all 0.2s ease',
-                        pointerEvents: hovering ? 'all' : 'none',
+                        gap: '4px',
                         zIndex: 10
                     }}>
                         <button
@@ -706,30 +703,42 @@ export default function MissionChecklist({
                                 handleEditPreset(preset);
                             }}
                             style={{
-                                background: 'transparent',
+                                width: '20px',
+                                height: '20px',
+                                borderRadius: '50%',
+                                background: '#d4a017',
                                 border: 'none',
-                                fontSize: '16px',
+                                color: 'black',
+                                fontSize: '10px',
                                 cursor: 'pointer',
-                                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))'
-                            }}
-                            title="Edit"
-                        >
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.4)'
+                            }}>
                             ✏️
                         </button>
                         <button
                             onClick={async (e) => {
                                 e.stopPropagation();
+                                setShowActions(false);
                                 await deletePreset(preset);
                             }}
                             style={{
-                                background: 'transparent',
+                                width: '20px',
+                                height: '20px',
+                                borderRadius: '50%',
+                                background: '#f87171',
                                 border: 'none',
-                                fontSize: '16px',
+                                color: 'white',
+                                fontSize: '10px',
+                                fontWeight: 900,
                                 cursor: 'pointer',
-                                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))'
-                            }}
-                            title="Remove"
-                        >
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.4)'
+                            }}>
                             ✕
                         </button>
                     </div>
@@ -757,63 +766,47 @@ export default function MissionChecklist({
                         <span style={{ color: '#10b981', fontWeight: 900, fontSize: '10px', letterSpacing: '0.12em' }}>⚡ NAME YOUR MISSION</span>
                         <button onClick={() => setIsStartingLive(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '12px' }}>✕</button>
                     </div>
-                    <input
-                        autoFocus
-                        placeholder="e.g. Deep work session..."
-                        value={liveInput}
+                    <input autoFocus placeholder="e.g. Deep work session..." value={liveInput}
                         onChange={(e) => handleLiveInputChange(e.target.value)}
                         onKeyDown={(e) => {
                             if (e.key === 'Enter' && liveInput.trim()) { handleLaunchMission(); }
                             else if (e.key === 'Escape') setIsStartingLive(false);
                         }}
                         style={{
-                            background: 'rgba(255,255,255,0.05)',
-                            border: '1px solid rgba(255,255,255,0.1)',
-                            borderRadius: '12px',
-                            color: 'white',
-                            padding: '12px 16px',
-                            fontSize: '14px',
-                            outline: 'none',
-                            width: '100%',
-                            boxSizing: 'border-box',
-                            transition: 'all 0.2s ease'
+                            background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                            borderRadius: '8px', color: 'white', padding: '8px', fontSize: '13px',
+                            outline: 'none', width: '100%', boxSizing: 'border-box',
                         }}
                     />
 
                     {/* QUICK LAUNCH SECTION */}
-                    <div style={{ marginTop: '20px' }}>
+                    <div style={{ marginTop: '12px' }}>
                         <div style={{
                             display: 'flex',
                             justifyContent: 'space-between',
-                            alignItems: 'baseline',
-                            marginBottom: '16px',
-                            padding: '0 4px'
+                            alignItems: 'center',
+                            marginBottom: '10px'
                         }}>
-                            <div>
-                                <h3 style={{
-                                    margin: 0,
-                                    fontSize: '11px',
-                                    fontWeight: 950,
-                                    color: 'rgba(212,160,23,0.9)',
-                                    letterSpacing: '0.2em',
-                                    textTransform: 'uppercase'
-                                }}>Quick Launch</h3>
-                                <p style={{ margin: '2px 0 0 0', fontSize: '9px', color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>READY TO START?</p>
-                            </div>
-                            <div style={{ display: 'flex', gap: '8px' }}>
+                            <span style={{
+                                color: 'rgba(255,255,255,0.3)',
+                                fontSize: '11px',
+                                fontWeight: 700,
+                                letterSpacing: '0.12em'
+                            }}>
+                                QUICK LAUNCH
+                            </span>
+                            <div style={{ display: 'flex', gap: '6px' }}>
                                 <button
                                     onClick={() => setIsManageMode(!isManageMode)}
                                     style={{
-                                        background: isManageMode ? 'rgba(212,160,23,0.1)' : 'transparent',
-                                        border: `1px solid ${isManageMode ? '#d4a017' : 'rgba(255,255,255,0.1)'}`,
-                                        borderRadius: '8px',
-                                        color: isManageMode ? '#d4a017' : 'rgba(255,255,255,0.4)',
-                                        fontSize: '9px',
-                                        fontWeight: 800,
-                                        padding: '4px 10px',
-                                        cursor: 'pointer',
-                                        transition: 'all 0.3s cubic-bezier(0.19, 1, 0.22, 1)',
-                                        letterSpacing: '0.05em'
+                                        background: isManageMode ? 'rgba(212,160,23,0.2)' : 'rgba(255,255,255,0.05)',
+                                        border: `1px solid ${isManageMode ? 'rgba(212,160,23,0.4)' : 'rgba(255,255,255,0.1)'}`,
+                                        borderRadius: '20px',
+                                        color: isManageMode ? '#d4a017' : 'rgba(255,255,255,0.5)',
+                                        fontSize: '10px',
+                                        fontWeight: 700,
+                                        padding: '3px 10px',
+                                        cursor: 'pointer'
                                     }}>
                                     {isManageMode ? 'DONE' : 'MANAGE'}
                                 </button>
@@ -825,15 +818,17 @@ export default function MissionChecklist({
                                         setAddingPreset(true);
                                     }}
                                     style={{
-                                        background: 'rgba(255,255,255,0.04)',
-                                        border: '1px solid rgba(255,255,255,0.1)',
-                                        borderRadius: '8px',
-                                        color: 'rgba(255,255,255,0.8)',
-                                        fontSize: '9px',
-                                        fontWeight: 800,
-                                        padding: '4px 10px',
+                                        background: 'rgba(212,160,23,0.1)',
+                                        border: '1px solid rgba(212,160,23,0.25)',
+                                        borderRadius: '20px',
+                                        color: '#d4a017',
+                                        fontSize: '10px',
+                                        fontWeight: 700,
+                                        padding: '3px 10px',
                                         cursor: 'pointer',
-                                        transition: 'all 0.3s ease'
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px'
                                     }}>
                                     + ADD
                                 </button>
@@ -843,7 +838,7 @@ export default function MissionChecklist({
                         <div style={{
                             display: 'flex',
                             flexWrap: 'wrap',
-                            gap: '10px'
+                            gap: '6px'
                         }}>
                             {displayPresets.map(preset => (
                                 <PresetPill key={preset.id} preset={preset} />
@@ -853,113 +848,62 @@ export default function MissionChecklist({
 
                     {addingPreset && (
                         <div style={{
-                            marginTop: '16px',
-                            padding: '16px',
-                            background: 'rgba(15, 15, 15, 0.8)',
-                            backdropFilter: 'blur(20px)',
-                            border: '1px solid rgba(212,160,23,0.15)',
-                            borderRadius: '20px',
+                            marginTop: '10px',
+                            padding: '12px',
+                            background: 'rgba(255,255,255,0.03)',
+                            border: '1px solid rgba(212,160,23,0.2)',
+                            borderRadius: '12px',
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: '12px',
-                            boxShadow: '0 20px 40px rgba(0,0,0,0.4), inset 0 0 20px rgba(212,160,23,0.05)',
-                            animation: 'slideUp 0.3s cubic-bezier(0.19, 1, 0.22, 1)'
+                            gap: '8px'
                         }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <p style={{
-                                    color: '#d4a017', fontSize: '9px',
-                                    fontWeight: 900, letterSpacing: '0.2em',
-                                    textTransform: 'uppercase'
-                                }}>
-                                    {editingPresetId ? 'Edit Configuration' : 'New Configuration'}
-                                </p>
+                            <p style={{
+                                color: '#d4a017', fontSize: '10px',
+                                fontWeight: 700, letterSpacing: '0.1em'
+                            }}>
+                                {editingPresetId ? 'EDIT PRESET' : 'NEW PRESET'}
+                            </p>
+
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <input
+                                    value={newPresetEmoji}
+                                    onChange={e => setNewPresetEmoji(e.target.value)}
+                                    maxLength={2}
+                                    style={{
+                                        width: '44px',
+                                        textAlign: 'center',
+                                        fontSize: '18px',
+                                        background: 'rgba(255,255,255,0.06)',
+                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        borderRadius: '8px',
+                                        padding: '8px',
+                                        color: 'white',
+                                        flexShrink: 0
+                                    }}
+                                />
+
+                                <input
+                                    autoFocus
+                                    placeholder="Task name..."
+                                    value={newPresetName}
+                                    onChange={e => setNewPresetName(e.target.value)}
+                                    onKeyDown={e => {
+                                        if (e.key === 'Enter') savePreset();
+                                        if (e.key === 'Escape') setAddingPreset(false);
+                                    }}
+                                    style={{
+                                        flex: 1,
+                                        background: 'rgba(255,255,255,0.06)',
+                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        borderRadius: '8px',
+                                        padding: '8px 12px',
+                                        color: 'white',
+                                        fontSize: '13px'
+                                    }}
+                                />
                             </div>
 
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                <div style={{ display: 'flex', gap: '10px' }}>
-                                    <div style={{ position: 'relative' }}>
-                                        <input
-                                            value={newPresetEmoji}
-                                            onChange={e => setNewPresetEmoji(e.target.value)}
-                                            maxLength={2}
-                                            style={{
-                                                width: '52px',
-                                                height: '52px',
-                                                textAlign: 'center',
-                                                fontSize: '24px',
-                                                background: 'rgba(255,255,255,0.03)',
-                                                border: '1px solid rgba(255,255,255,0.08)',
-                                                borderRadius: '12px',
-                                                color: 'white',
-                                                flexShrink: 0,
-                                                outline: 'none',
-                                                transition: 'all 0.2s ease'
-                                            }}
-                                        />
-                                    </div>
-
-                                    <input
-                                        autoFocus
-                                        placeholder="Identification name..."
-                                        value={newPresetName}
-                                        onChange={e => setNewPresetName(e.target.value)}
-                                        onKeyDown={e => {
-                                            if (e.key === 'Enter') savePreset();
-                                            if (e.key === 'Escape') setAddingPreset(false);
-                                        }}
-                                        style={{
-                                            flex: 1,
-                                            background: 'rgba(255,255,255,0.03)',
-                                            border: '1px solid rgba(255,255,255,0.08)',
-                                            borderRadius: '12px',
-                                            padding: '0 16px',
-                                            color: 'white',
-                                            fontSize: '14px',
-                                            fontWeight: 500,
-                                            outline: 'none',
-                                            transition: 'all 0.2s ease'
-                                        }}
-                                    />
-                                </div>
-
-                                <div style={{ marginTop: '4px' }}>
-                                    <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '8px', fontWeight: 900, marginBottom: '8px', letterSpacing: '0.15em' }}>
-                                        VISUAL MARKER
-                                    </p>
-                                    <div style={{
-                                        display: 'grid',
-                                        gridTemplateColumns: 'repeat(6, 1fr)',
-                                        gap: '6px',
-                                        background: 'rgba(0,0,0,0.2)',
-                                        padding: '10px',
-                                        borderRadius: '14px',
-                                        border: '1px solid rgba(255,255,255,0.04)'
-                                    }}>
-                                        {['🏋️', '💻', '📚', '🧘', '🏃', '🔄', '⚡', '🎯', '💡', '🛠️', '🎨', '📝', '🥦', '💧', '💰', '🏠', '🛌', '🧹', '🛒', '🚶', '🍱', '🧼', '🔭', '🌱', '🔋', '🏆', '🔥', '💎', '🧠', '⏳'].map(e => (
-                                            <button
-                                                key={e}
-                                                onClick={() => setNewPresetEmoji(e)}
-                                                style={{
-                                                    background: newPresetEmoji === e ? 'rgba(212,160,23,0.2)' : 'transparent',
-                                                    border: 'none',
-                                                    borderRadius: '8px',
-                                                    fontSize: '20px',
-                                                    cursor: 'pointer',
-                                                    aspectRatio: '1',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    transition: 'all 0.2s cubic-bezier(0.19, 1, 0.22, 1)',
-                                                    transform: newPresetEmoji === e ? 'scale(1.1)' : 'scale(1)'
-                                                }}>
-                                                {e}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                            <div style={{ display: 'flex', gap: '6px' }}>
                                 <button
                                     onClick={() => {
                                         setAddingPreset(false);
@@ -967,32 +911,30 @@ export default function MissionChecklist({
                                         setNewPresetEmoji('⚡');
                                     }}
                                     style={{
-                                        flex: 1, padding: '12px',
-                                        background: 'rgba(255,255,255,0.03)',
-                                        border: '1px solid rgba(255,255,255,0.08)',
-                                        borderRadius: '12px', color: 'rgba(255,255,255,0.4)',
-                                        fontSize: '11px', fontWeight: 800, cursor: 'pointer',
-                                        transition: 'all 0.2s ease'
+                                        flex: 1, padding: '8px',
+                                        background: 'transparent',
+                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        borderRadius: '8px', color: 'rgba(255,255,255,0.4)',
+                                        fontSize: '12px', fontWeight: 700, cursor: 'pointer'
                                     }}>
-                                    DISCARD
+                                    CANCEL
                                 </button>
                                 <button
                                     onClick={savePreset}
                                     disabled={!newPresetName.trim()}
                                     style={{
-                                        flex: 2, padding: '12px',
+                                        flex: 2, padding: '8px',
                                         background: newPresetName.trim()
-                                            ? 'linear-gradient(135deg, #d4a017, #b8860b)' : 'rgba(212,160,23,0.1)',
+                                            ? '#d4a017' : 'rgba(212,160,23,0.2)',
                                         border: 'none',
-                                        borderRadius: '12px',
-                                        color: newPresetName.trim() ? '#000' : 'rgba(212,160,23,0.3)',
-                                        fontSize: '11px', fontWeight: 900,
+                                        borderRadius: '8px',
+                                        color: newPresetName.trim()
+                                            ? '#000' : 'rgba(212,160,23,0.4)',
+                                        fontSize: '12px', fontWeight: 900,
                                         cursor: newPresetName.trim() ? 'pointer' : 'default',
-                                        letterSpacing: '0.05em',
-                                        transition: 'all 0.3s ease',
-                                        boxShadow: newPresetName.trim() ? '0 8px 20px rgba(212,160,23,0.2)' : 'none'
+                                        letterSpacing: '0.08em'
                                     }}>
-                                    CONFIRM PRESET
+                                    SAVE PRESET
                                 </button>
                             </div>
                         </div>
@@ -1181,19 +1123,15 @@ export default function MissionChecklist({
                     .mission-checklist { display: none !important; }
                     .mc-backdrop { display: none !important; }
                 }
-                @keyframes slideUp {
-                    from { opacity: 0; transform: translateY(10px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
                 @keyframes wiggle {
                     0% { transform: rotate(0deg); }
-                    25% { transform: rotate(1deg); }
+                    25% { transform: rotate(1.5deg); }
                     50% { transform: rotate(0deg); }
-                    75% { transform: rotate(-1deg); }
+                    75% { transform: rotate(-1.5deg); }
                     100% { transform: rotate(0deg); }
                 }
                 .wiggle {
-                    animation: wiggle 0.4s infinite ease-in-out;
+                    animation: wiggle 0.25s infinite;
                 }
             `}</style>
         </>
