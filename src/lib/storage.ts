@@ -102,14 +102,27 @@ export interface DailyChat {
         color?: string;
         time?: string;
         isTimed?: boolean;
-        frequency?: { count: number; period: 'WEEK' | 'MONTH' };
-        recurringDays?: string[]; // ['Mon', 'Tue', etc]
         subtasks?: { id: string; text: string; completed: boolean }[]
         importance?: number;
         time_slot?: 'morning' | 'noon' | 'afternoon' | 'evening' | 'night' | 'anytime';
         time_slot_time?: string;
         notes?: string;
         tags?: string[];
+        recurrence?: {
+            type?: string;
+            days?: string[];
+            count?: number;
+            n?: number;
+            day?: number;
+        };
+        visibility?: {
+            type?: string;
+            days?: string[];
+            every_months?: number;
+            next_show?: string;
+            days_before?: number;
+            date?: string;
+        };
     }[];
     completedTasks?: CompletedTask[];
     aiSummary?: string;

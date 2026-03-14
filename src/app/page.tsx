@@ -84,7 +84,7 @@ function useRealtimeSync(
           if (incomingData.distractions) s.setDistractions(incomingData.distractions);
           if (incomingData.botMood) s.setBotMood(incomingData.botMood);
           if (incomingData.todos) s.setTodos(filterTasksForToday(incomingData.todos));
-          if (incomingData.dailies) s.setDailies(incomingData.dailies);
+          if (incomingData.dailies) s.setDailies(filterTasksForToday(incomingData.dailies));
           if (incomingData.completedTasks) s.setCompletedTasks(incomingData.completedTasks);
           if (incomingData.expenses) s.setExpenses(incomingData.expenses);
 
@@ -280,7 +280,7 @@ export default function ChatPage() {
         setActiveTasks(prevChat.activeTasks || []);
         setDistractions(prevChat.distractions || []);
         setTodos(filterTasksForToday(prevChat.todos || []));
-        setDailies(prevChat.dailies || []);
+        setDailies(filterTasksForToday(prevChat.dailies || []));
         setCompletedTasks(prevChat.completedTasks || []);
         setExpenses(prevChat.expenses || []);
       } else {
@@ -311,7 +311,7 @@ export default function ChatPage() {
         setActiveTasks(base.activeTasks || []);
         setDistractions(base.distractions || []);
         setTodos(filterTasksForToday(base.todos || []));
-        setDailies(base.dailies || []);
+        setDailies(filterTasksForToday(base.dailies || []));
         setCompletedTasks((base as typeof todayChat)?.completedTasks || []);
         setExpenses(base.expenses || []);
         if (!todayChat || usedCarryTodos || usedCarryDailies) {

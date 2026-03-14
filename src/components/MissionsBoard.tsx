@@ -92,9 +92,12 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
         };
 
         if (dailyScheduleType === 'DAYS') {
-            newItem.recurringDays = selectedDays;
+            newItem.visibility = { type: 'weekdays', days: selectedDays };
         } else if (dailyScheduleType === 'FREQUENCY') {
-            newItem.frequency = { count: freqCount, period: freqPeriod };
+            newItem.recurrence = { 
+                type: freqPeriod === 'WEEK' ? 'weekly_count' : 'monthly_count',
+                count: freqCount
+            };
         }
 
         onUpdate({ dailies: [...(chat.dailies || []), newItem] });
@@ -178,17 +181,22 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
     };
 
     return (
-        <div className="missions-overlay" style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.8)',
-            backdropFilter: 'blur(20px)',
-            zIndex: 100,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '2rem'
-        }}>
+        <div
+            className="missions-overlay"
+            onClick={(e) => {
+                if (e.target === e.currentTarget) onClose();
+            }}
+            style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(0,0,0,0.8)',
+                backdropFilter: 'blur(20px)',
+                zIndex: 100,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '2rem'
+            }}>
             <div className="missions-modal" style={{
                 width: '100%',
                 maxWidth: '1000px',
@@ -408,14 +416,14 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
                                         <div style={{ flex: 1 }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                                 <h4 style={{ fontSize: '1.1rem', fontWeight: '700', textDecoration: daily.completed ? 'line-through' : 'none', opacity: daily.completed ? 0.5 : 1 }}>{daily.text}</h4>
-                                                {daily.recurringDays && (
+                                                {(daily as any).visibility?.type === 'weekdays' && (
                                                     <span style={{ fontSize: '0.65rem', fontWeight: '900', color: 'var(--accent)', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '4px' }}>
-                                                        {daily.recurringDays.join(', ')}
+                                                        {(daily as any).visibility.days?.join(', ')}
                                                     </span>
                                                 )}
-                                                {daily.frequency && (
+                                                {(daily as any).recurrence?.type && (daily as any).recurrence.type !== 'once' && (
                                                     <span style={{ fontSize: '0.65rem', fontWeight: '900', color: 'var(--accent)', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '4px' }}>
-                                                        {daily.frequency.count}x / {daily.frequency.period}
+                                                        {(daily as any).recurrence.count}x / {(daily as any).recurrence.type.includes('weekly') ? 'WEEK' : 'MONTH'}
                                                     </span>
                                                 )}
                                             </div>

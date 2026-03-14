@@ -115,8 +115,8 @@ export default function TaskDetailDrawer({
         onUpdate({ ...currentTask, [key]: value } as Todo | Daily);
     };
 
-    const rec = (currentTask as Todo).recurrence || {};
-    const vis = (currentTask as Todo).visibility || {};
+    const rec = (currentTask as any).recurrence || {};
+    const vis = (currentTask as any).visibility || {};
 
     const nextPreview = () => {
         const step = rec.n || 1;
@@ -273,7 +273,7 @@ export default function TaskDetailDrawer({
                     </div>
                 )}
 
-                {type === 'todo' && (
+                {(type === 'todo' || type === 'daily') && (
                     <div>
                         <SectionLabel>RECURRENCE</SectionLabel>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
@@ -317,7 +317,7 @@ export default function TaskDetailDrawer({
                                             key={day}
                                             onClick={() => {
                                                 const nextDays = selected
-                                                    ? (rec.days || []).filter(d => d !== day)
+                                                    ? (rec.days || []).filter((d: string) => d !== day)
                                                     : [...(rec.days || []), day];
                                                 update('recurrence', { ...rec, days: nextDays });
                                             }}
@@ -396,7 +396,7 @@ export default function TaskDetailDrawer({
                     </div>
                 )}
 
-                {type === 'todo' && (
+                {(type === 'todo' || type === 'daily') && (
                     <div>
                         <SectionLabel>SMART VISIBILITY</SectionLabel>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
@@ -475,7 +475,7 @@ export default function TaskDetailDrawer({
                                             key={day}
                                             onClick={() => {
                                                 const nextDays = selected
-                                                    ? (vis.days || []).filter(d => d !== day)
+                                                    ? (vis.days || []).filter((d: string) => d !== day)
                                                     : [...(vis.days || []), day];
                                                 update('visibility', { ...vis, days: nextDays });
                                             }}

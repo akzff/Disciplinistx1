@@ -969,13 +969,21 @@ export default function MissionChecklist({
                 <div
                     className="mc-backdrop"
                     onClick={onClose}
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        backgroundColor: 'rgba(0,0,0,0.5)',
+                        backdropFilter: 'blur(4px)',
+                        zIndex: 3999,
+                        display: 'block'
+                    }}
                 />
             )}
 
             {/* Mobile drawer — slides in from left, hidden on desktop */}
             <aside
                 className={`mission-checklist md:hidden no-scrollbar${sidebarOpen ? ' sidebar-open' : ''}`}
-                style={{ zIndex: 41 }}
+                style={{ zIndex: 4000 }}
             >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 16px 8px 16px' }}>
                     <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: 'white', letterSpacing: '0.05em' }}>MISSIONS</h2>
