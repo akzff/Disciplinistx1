@@ -183,7 +183,18 @@ export default function MissionChecklist({
     const [drawerTask, setDrawerTask] = useState<Todo | Daily | null>(null);
     const [drawerType, setDrawerType] = useState<'todo' | 'daily'>('todo');
 
-    const displayPresets = (presets.length > 0 ? presets : DEFAULT_PRESETS).slice(0, 12);
+    const displayPresets = useMemo(() => {
+        const combined = [...presets];
+        const defaultNames = new Set(presets.map(p => p.name.toLowerCase()));
+        
+        // Add defaults that haven't been "overridden" by name
+        for (const def of DEFAULT_PRESETS) {
+            if (!defaultNames.has(def.name.toLowerCase()) && combined.length < 12) {
+                combined.push(def);
+            }
+        }
+        return combined;
+    }, [presets]);
 
     const completedDailies = dailies.filter(d => d.completed).length;
     const completedTodos = todos.filter(t => t.completed).length;
@@ -244,12 +255,20 @@ export default function MissionChecklist({
         setIsStartingLive(false);
         setLiveInput('');
         await bumpPresetUse();
+        if (sidebarOpen && onClose) onClose();
     };
 
     const savePreset = async () => {
-        if (!newPresetName.trim() || !userId) return;
+        if (!newPresetName.trim() || !userId) {
+            console.warn('Save preset blocked:', { name: newPresetName, userId });
+            return;
+        }
 
-        if (editingPresetId) {
+        const isDefault = editingPresetId?.startsWith('d');
+        console.log('Saving preset:', { id: editingPresetId, name: newPresetName, isDefault });
+
+        if (editingPresetId && !isDefault) {
+            // Update custom preset
             const { error } = await supabase
                 .from('task_presets')
                 .update({
@@ -258,7 +277,10 @@ export default function MissionChecklist({
                 })
                 .eq('id', editingPresetId);
 
-            if (!error) {
+            if (error) {
+                console.error('Update preset error:', error);
+                alert('Failed to update preset');
+            } else {
                 setPresets(prev => prev.map(p => 
                     p.id === editingPresetId 
                         ? { ...p, name: newPresetName.trim(), emoji: newPresetEmoji || '⚡' } 
@@ -266,6 +288,7 @@ export default function MissionChecklist({
                 ));
             }
         } else {
+            // New Insert (or cloning a default preset)
             const { data, error } = await supabase
                 .from('task_presets')
                 .insert({
@@ -277,7 +300,11 @@ export default function MissionChecklist({
                 .select()
                 .single();
 
-            if (!error && data) {
+            if (error) {
+                console.error('Insert preset error:', error);
+                alert('Failed to create preset');
+            } else if (data) {
+                console.log('Created preset:', data);
                 setPresets(prev => [data as Preset, ...prev]);
                 setSelectedPreset((data as Preset).id);
                 setLiveInput((data as Preset).name);
@@ -624,7 +651,7 @@ export default function MissionChecklist({
             }
         };
 
-        const activeActions = (hovering || showActions || isManageMode) && !isDefault;
+        const activeActions = (hovering || showActions || isManageMode);
 
         return (
             <div
@@ -719,6 +746,7 @@ export default function MissionChecklist({
                         <button
                             onClick={async (e) => {
                                 e.stopPropagation();
+                                if (isDefault) return;
                                 setShowActions(false);
                                 await deletePreset(preset);
                             }}
@@ -726,16 +754,17 @@ export default function MissionChecklist({
                                 width: '20px',
                                 height: '20px',
                                 borderRadius: '50%',
-                                background: '#f87171',
+                                background: isDefault ? 'rgba(255,255,255,0.05)' : '#f87171',
                                 border: 'none',
-                                color: 'white',
+                                color: isDefault ? 'rgba(255,255,255,0.1)' : 'white',
                                 fontSize: '10px',
                                 fontWeight: 900,
-                                cursor: 'pointer',
+                                cursor: isDefault ? 'default' : 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.4)'
+                                boxShadow: isDefault ? 'none' : '0 2px 8px rgba(0,0,0,0.4)',
+                                pointerEvents: isDefault ? 'none' : 'auto'
                             }}>
                             ✕
                         </button>
@@ -1064,7 +1093,7 @@ export default function MissionChecklist({
 
             {/* Mobile drawer — slides in from left, hidden on desktop */}
             <aside
-                className={`mission-checklist md:hidden no-scrollbar${sidebarOpen ? ' sidebar-open' : ''}`}
+                className={`mission-checklist no-scrollbar${sidebarOpen ? ' sidebar-open' : ''}`}
                 style={{ zIndex: 4000 }}
             >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 16px 8px 16px' }}>
@@ -1116,6 +1145,21 @@ export default function MissionChecklist({
             <style>{`
                 @media (max-width: 767px) {
                     .mc-desktop-only { display: none !important; }
+                    .mission-checklist {
+                        position: fixed;
+                        top: 0;
+                        left: -100%;
+                        width: 85%;
+                        height: 100%;
+                        background: #08080a;
+                        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                        box-shadow: 20px 0 50px rgba(0,0,0,0.5);
+                        display: flex;
+                        flex-direction: column;
+                    }
+                    .mission-checklist.sidebar-open {
+                        transform: translateX(100%);
+                    }
                 }
                 @media (min-width: 768px) {
                     .mission-checklist { display: none !important; }
