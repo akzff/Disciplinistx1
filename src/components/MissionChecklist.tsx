@@ -158,8 +158,8 @@ export default function MissionChecklist({
     todos, dailies, sidebarOpen, onClose,
     onToggleTodo, onToggleDaily, onReorderTodo, onReorderDaily,
     onStartLiveMission,
-    onAddDaily, onEditDaily, onDeleteDaily,
-    onAddTodo, onEditTodo, onDeleteTodo,
+    onAddDaily, onDeleteDaily,
+    onAddTodo, onDeleteTodo,
 }: MissionChecklistProps) {
 
     const [dragInfo, setDragInfo] = useState<{ index: number; type: 'DAILIES' | 'TODOS' } | null>(null);
@@ -904,7 +904,7 @@ export default function MissionChecklist({
                         </div>
                     )}
                     {Object.entries(groupedDailies)
-                        .filter(([_, tasks]) => tasks.length > 0)
+                        .filter((entry) => entry[1].length > 0)
                         .map(([slot, tasks]) => (
                             <div key={slot}>
                                 <p style={{

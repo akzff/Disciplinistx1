@@ -118,9 +118,10 @@ export default function TaskDetailDrawer({
     const vis = (currentTask as Todo).visibility || {};
 
     const nextPreview = () => {
-        if (rec.type === 'every_n_days') return format(addDays(new Date(), rec.n), 'MMM yyyy');
-        if (rec.type === 'every_n_weeks') return format(addWeeks(new Date(), rec.n), 'MMM yyyy');
-        if (rec.type === 'every_n_months') return format(addMonths(new Date(), rec.n), 'MMM yyyy');
+        const step = rec.n || 1;
+        if (rec.type === 'every_n_days') return format(addDays(new Date(), step), 'MMM yyyy');
+        if (rec.type === 'every_n_weeks') return format(addWeeks(new Date(), step), 'MMM yyyy');
+        if (rec.type === 'every_n_months') return format(addMonths(new Date(), step), 'MMM yyyy');
         return '';
     };
 
