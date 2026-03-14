@@ -20,7 +20,6 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
     const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
     const [isTimed, setIsTimed] = useState(false);
     const [dragIndex, setDragIndex] = useState<number | null>(null);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [editTarget, setEditTarget] = useState<{ item: DailyChat['todos'][number] | DailyChat['dailies'][number], type: 'DAILIES' | 'TODOS' } | null>(null);
 
     // Todo specific state

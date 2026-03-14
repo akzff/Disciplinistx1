@@ -726,7 +726,7 @@ OPERATIONAL TAGS:
 
   const toggleTask = (taskId: string) => {
     const timestamp = Date.now();
-    const nextActiveTasks = activeTasks.map(t => {
+    const nextActiveTasks: ActiveTask[] = activeTasks.map(t => {
       if (t.id === taskId) {
         if (t.status === 'RUNNING') {
           const activeNow = timestamp - (t.lastStartedAt || t.startTime || timestamp);

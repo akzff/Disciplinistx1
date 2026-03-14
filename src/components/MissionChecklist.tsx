@@ -162,6 +162,7 @@ export default function MissionChecklist({
     onAddTodo, onDeleteTodo,
 }: MissionChecklistProps) {
 
+    const mobileSidebarRef = useRef<HTMLElement>(null);
     const [dragInfo, setDragInfo] = useState<{ index: number; type: 'DAILIES' | 'TODOS' } | null>(null);
     const [isStartingLive, setIsStartingLive] = useState(false);
     const [liveInput, setLiveInput] = useState('');
@@ -182,6 +183,23 @@ export default function MissionChecklist({
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [drawerTask, setDrawerTask] = useState<Todo | Daily | null>(null);
     const [drawerType, setDrawerType] = useState<'todo' | 'daily'>('todo');
+
+    useEffect(() => {
+        if (!sidebarOpen || !onClose) return;
+        if (typeof window !== 'undefined' && window.innerWidth >= 768) return;
+
+        const handlePointerDown = (event: PointerEvent) => {
+            const target = event.target as Node | null;
+            if (!target) return;
+            if (mobileSidebarRef.current && mobileSidebarRef.current.contains(target)) return;
+            onClose();
+        };
+
+        document.addEventListener('pointerdown', handlePointerDown, { capture: true });
+        return () => {
+            document.removeEventListener('pointerdown', handlePointerDown, { capture: true });
+        };
+    }, [sidebarOpen, onClose]);
 
     const displayPresets = useMemo(() => {
         const combined = [...presets];
@@ -330,6 +348,11 @@ export default function MissionChecklist({
             .from('task_presets')
             .delete()
             .eq('id', preset.id);
+        if (error) {
+            console.error('Delete preset error:', error);
+            alert('Failed to delete preset');
+            return;
+        }
         setPresets(prev => prev.filter(p => p.id !== preset.id));
         if (selectedPreset === preset.id) {
             setSelectedPreset(null);
@@ -1094,6 +1117,7 @@ export default function MissionChecklist({
             {/* Mobile drawer — slides in from left, hidden on desktop */}
             <aside
                 className={`mission-checklist no-scrollbar${sidebarOpen ? ' sidebar-open' : ''}`}
+                ref={mobileSidebarRef}
                 style={{ zIndex: 4000 }}
             >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 16px 8px 16px' }}>
