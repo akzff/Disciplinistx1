@@ -340,6 +340,12 @@ main {
   overflow: hidden;
 }
 
+.lux-start-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
 .lux-start-btn::before {
   content: "";
   position: absolute;
@@ -395,6 +401,162 @@ main {
   white-space: nowrap;
   position: relative;
   z-index: 1;
+}
+
+.live-mission-popover {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 340px;
+  background: rgba(10, 10, 14, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 6000;
+}
+
+.live-mission-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.25em;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+}
+
+.live-mission-header button {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 2px 6px;
+}
+
+.live-mission-input {
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0 10px;
+  color: white;
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.live-mission-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.live-mission-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.live-mission-actions button {
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.55rem;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.live-mission-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.live-mission-editor {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.live-mission-editor p {
+  margin: 0;
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.45);
+  text-transform: uppercase;
+}
+
+.live-mission-editor-row {
+  display: flex;
+  gap: 8px;
+}
+
+.live-mission-editor-row input {
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0 8px;
+  color: white;
+  font-size: 0.8rem;
+}
+
+.live-mission-editor-row input:first-child {
+  width: 44px;
+  text-align: center;
+}
+
+.live-mission-editor-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.live-mission-editor-actions button {
+  flex: 1;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.live-mission-editor-actions button:last-child {
+  background: rgba(212, 160, 23, 0.12);
+  border-color: rgba(212, 160, 23, 0.35);
+  color: #d4a017;
+  font-weight: 700;
+}
+
+.live-mission-launch {
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.2));
+  color: #bff7e6;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  font-size: 0.6rem;
+  cursor: pointer;
 }
 
 
@@ -898,6 +1060,14 @@ textarea::placeholder {
 
   .lux-start-label {
     display: none;
+  }
+
+  .live-mission-popover {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    top: 64px;
+    width: auto;
   }
 
   /* ── Bottom navigation bar ── */

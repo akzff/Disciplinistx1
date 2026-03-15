@@ -5,6 +5,7 @@ import { storage, Message, DailyChat, ActiveTask, formatTime, TaskNote, PersonaI
 import Image from 'next/image';
 import MissionsBoard from '@/components/MissionsBoard';
 import MissionChecklist from '@/components/MissionChecklist';
+import LiveMissionLauncher from '@/components/LiveMissionLauncher';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { NavigationBar } from '@/components/NavigationBar';
@@ -187,11 +188,12 @@ export default function ChatPage() {
   const [completedTasks, setCompletedTasks] = useState<DailyChat['completedTasks']>([]);
   const [now, setNow] = useState(Date.now());
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [startLiveSignal, setStartLiveSignal] = useState(0);
+  const [liveMissionOpen, setLiveMissionOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [autoGenerating, setAutoGenerating] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  const liveMissionAnchorRef = useRef<HTMLDivElement>(null);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -909,8 +911,7 @@ OPERATIONAL TAGS:
   };
 
   const triggerStartMission = () => {
-    setSidebarOpen(true);
-    setStartLiveSignal(prev => prev + 1);
+    setLiveMissionOpen(prev => !prev);
   };
 
   // Global verification function for testing (accessible from browser console)
@@ -961,18 +962,26 @@ OPERATIONAL TAGS:
 
           <div className="header-controls" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <button
-                onClick={triggerStartMission}
-                className="lux-start-btn"
-                aria-label="Start a new mission"
-              >
-                <span className="lux-start-icon" aria-hidden="true">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polygon points="6 4 20 12 6 20 6 4" />
-                  </svg>
-                </span>
-                <span className="lux-start-label">START MISSION</span>
-              </button>
+              <div className="lux-start-wrap" ref={liveMissionAnchorRef}>
+                <button
+                  onClick={triggerStartMission}
+                  className="lux-start-btn"
+                  aria-label="Start a new mission"
+                >
+                  <span className="lux-start-icon" aria-hidden="true">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="6 4 20 12 6 20 6 4" />
+                    </svg>
+                  </span>
+                  <span className="lux-start-label">START MISSION</span>
+                </button>
+                <LiveMissionLauncher
+                  open={liveMissionOpen}
+                  onClose={() => setLiveMissionOpen(false)}
+                  onLaunch={startManualTask}
+                  anchorRef={liveMissionAnchorRef}
+                />
+              </div>
               {/* Profile dropdown */}
               <div className="profile-dropdown-wrapper" ref={profileRef}>
                 <button
@@ -1047,12 +1056,10 @@ OPERATIONAL TAGS:
               dailies={dailies}
               sidebarOpen={sidebarOpen}
               onClose={() => setSidebarOpen(false)}
-              startLiveSignal={startLiveSignal}
               onToggleTodo={(id: string) => toggleTodoWithRecurrence(id)}
               onToggleDaily={(id: string) => setDailies(prev => prev.map(d => d.id === id ? { ...d, completed: !d.completed } : d))}
               onReorderTodo={(newTodos: DailyChat['todos']) => setTodos(newTodos)}
               onReorderDaily={(newDailies: DailyChat['dailies']) => setDailies(newDailies)}
-              onStartLiveMission={startManualTask}
               onAddDaily={(text) => setDailies(prev => [...prev, {
                 id: Date.now().toString(),
                 text,

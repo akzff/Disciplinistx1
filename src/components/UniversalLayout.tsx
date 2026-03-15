@@ -18,7 +18,6 @@ interface UniversalLayoutProps {
         onToggleDaily: (id: string) => void;
         onReorderTodo: (newTodos: DailyChat['todos']) => void;
         onReorderDaily: (newDailies: DailyChat['dailies']) => void;
-        onStartLiveMission: (name: string) => void;
     };
 }
 
@@ -165,7 +164,6 @@ export default function UniversalLayout({
                                 onToggleDaily={taskSidebarProps.onToggleDaily}
                                 onReorderTodo={taskSidebarProps.onReorderTodo}
                                 onReorderDaily={taskSidebarProps.onReorderDaily}
-                                onStartLiveMission={taskSidebarProps.onStartLiveMission}
                             />
                         </div>
 
