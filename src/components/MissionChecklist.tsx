@@ -16,6 +16,7 @@ interface MissionChecklistProps {
     expenses?: DailyChat['expenses'];
     sidebarOpen?: boolean;
     onClose?: () => void;
+    startLiveSignal?: number;
     onToggleTodo: (id: string) => void;
     onToggleDaily: (id: string) => void;
     onReorderTodo: (newTodos: DailyChat['todos']) => void;
@@ -157,7 +158,7 @@ function InlineInput({
 export default function MissionChecklist({
     todos, dailies, sidebarOpen, onClose,
     onToggleTodo, onToggleDaily, onReorderTodo, onReorderDaily,
-    onStartLiveMission,
+    onStartLiveMission, startLiveSignal,
     onAddDaily, onDeleteDaily,
     onAddTodo, onDeleteTodo,
 }: MissionChecklistProps) {
@@ -200,6 +201,11 @@ export default function MissionChecklist({
             document.removeEventListener('pointerdown', handlePointerDown, { capture: true });
         };
     }, [sidebarOpen, onClose]);
+
+    useEffect(() => {
+        if (!startLiveSignal) return;
+        setIsStartingLive(true);
+    }, [startLiveSignal]);
 
     const displayPresets = useMemo(() => {
         const combined = [...presets];
@@ -812,7 +818,7 @@ export default function MissionChecklist({
             {/* ZONE A (Integrated into sections headers) */}
 
             {/* ZONE B — START TASK */}
-            {isStartingLive ? (
+            {isStartingLive && (
                 <div style={{
                     flexShrink: 0, background: 'rgba(16,185,129,0.1)',
                     border: '1px solid rgba(16,185,129,0.25)', borderRadius: '10px',
@@ -1008,23 +1014,6 @@ export default function MissionChecklist({
                             fontWeight: 900, letterSpacing: '0.12em', cursor: 'pointer', height: '44px',
                         }}>🔥 LAUNCH MISSION</button>
                 </div>
-            ) : (
-                <button onClick={() => setIsStartingLive(true)} style={{
-                    flexShrink: 0, width: '100%', padding: '14px',
-                    background: 'linear-gradient(90deg, #d4a017, #c49010)',
-                    border: 'none', borderRadius: '12px', color: '#000',
-                    fontWeight: 900, fontSize: '13px', letterSpacing: '0.1em',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', gap: '8px', boxSizing: 'border-box',
-                    transition: 'box-shadow 0.2s, transform 0.1s',
-                }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 28px rgba(212,160,23,0.5)'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none'; }}
-                    onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.97)'; }}
-                    onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
-                >
-                    <span>▶</span> START TASK
-                </button>
             )}
 
             {/* ZONE C — DAILIES */}

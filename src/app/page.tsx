@@ -187,6 +187,7 @@ export default function ChatPage() {
   const [completedTasks, setCompletedTasks] = useState<DailyChat['completedTasks']>([]);
   const [now, setNow] = useState(Date.now());
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [startLiveSignal, setStartLiveSignal] = useState(0);
   const [isInitialized, setIsInitialized] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [autoGenerating, setAutoGenerating] = useState(false);
@@ -582,7 +583,6 @@ RESPONSE RULES:
 - Speak only in the persona voice above.
 - End the visible reply with a lingering line (question, challenge, or echo).
 - Use AMBITION/INSPIRATION sparingly; let it flavor tone, not dominate content.
-- After the reply, append a final line: MOOD: 'HOPEFUL|DISAPPOINTED|DOMINATOR|NEUTRAL' (this line is removed from UI).
 
 CONTEXT:
 USER: ${displayName}
@@ -619,7 +619,7 @@ OPERATIONAL TAGS:
         taskReqData = { name: taskMatch[1], status: 'PENDING' as const };
       }
 
-      const moodMatch = aiContent.match(/MOOD: ['"](DISAPPOINTED|HOPEFUL|DOMINATOR|NEUTRAL)['"]/i);
+      const moodMatch = aiContent.match(/MOOD:\s*['"]?(DISAPPOINTED|HOPEFUL|DOMINATOR|NEUTRAL)['"]?/i);
       if (moodMatch) {
         setBotMood(moodMatch[1].toUpperCase() as 'NEUTRAL' | 'DISAPPOINTED' | 'HOPEFUL' | 'DOMINATOR');
       }
@@ -628,7 +628,7 @@ OPERATIONAL TAGS:
         role: 'assistant',
         content: aiContent
           .replace(/TASK_REQUEST: ['"].+?['"]/gi, '')
-          .replace(/MOOD: ['"].+?['"]/gi, '')
+          .replace(/MOOD:\s*['"]?(DISAPPOINTED|HOPEFUL|DOMINATOR|NEUTRAL)['"]?/gi, '')
           .replace(/LOG_HABIT: ['"].+?['"]/gi, '')
           .replace(/TRACK_EXPENSE: .+? \| .+?/gi, '')
           .trim(),
@@ -908,6 +908,11 @@ OPERATIONAL TAGS:
     }
   };
 
+  const triggerStartMission = () => {
+    setSidebarOpen(true);
+    setStartLiveSignal(prev => prev + 1);
+  };
+
   // Global verification function for testing (accessible from browser console)
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -956,6 +961,18 @@ OPERATIONAL TAGS:
 
           <div className="header-controls" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <button
+                onClick={triggerStartMission}
+                className="lux-start-btn"
+                aria-label="Start a new mission"
+              >
+                <span className="lux-start-icon" aria-hidden="true">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="6 4 20 12 6 20 6 4" />
+                  </svg>
+                </span>
+                <span className="lux-start-label">START MISSION</span>
+              </button>
               {/* Profile dropdown */}
               <div className="profile-dropdown-wrapper" ref={profileRef}>
                 <button
@@ -1030,6 +1047,7 @@ OPERATIONAL TAGS:
               dailies={dailies}
               sidebarOpen={sidebarOpen}
               onClose={() => setSidebarOpen(false)}
+              startLiveSignal={startLiveSignal}
               onToggleTodo={(id: string) => toggleTodoWithRecurrence(id)}
               onToggleDaily={(id: string) => setDailies(prev => prev.map(d => d.id === id ? { ...d, completed: !d.completed } : d))}
               onReorderTodo={(newTodos: DailyChat['todos']) => setTodos(newTodos)}
