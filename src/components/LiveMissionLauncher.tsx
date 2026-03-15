@@ -2,6 +2,15 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 
+const SUGGESTED_TASKS = [
+    'Deep work session',
+    'Gym session',
+    'Study block',
+    'Meditation',
+    'Review day',
+    'Planning sprint'
+];
+
 interface LiveMissionLauncherProps {
     open: boolean;
     onClose: () => void;
@@ -66,6 +75,25 @@ export default function LiveMissionLauncher({ open, onClose, onLaunch, anchorRef
                 }}
                 className="live-mission-input"
             />
+
+            <div className="live-mission-suggestions">
+                <span>RECOMMENDATIONS</span>
+                <div className="live-mission-tags">
+                    {SUGGESTED_TASKS.map((label) => {
+                        const active = liveInput.trim().toLowerCase() === label.toLowerCase();
+                        return (
+                            <button
+                                key={label}
+                                className={`live-mission-tag${active ? ' live-mission-tag--active' : ''}`}
+                                onClick={() => setLiveInput(label)}
+                                type="button"
+                            >
+                                {label}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
 
             <button className="live-mission-launch" onClick={handleLaunch}>
                 LAUNCH
