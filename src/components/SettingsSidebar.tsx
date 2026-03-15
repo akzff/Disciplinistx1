@@ -14,11 +14,20 @@ type SyncStep = 'idle' | 'confirming' | 'wiping' | 'fetching' | 'done' | 'error'
 // ─── Step pill component ──────────────────────────
 function StepPill({ label, state }: { label: string; state: 'done' | 'active' | 'pending' }) {
     const styles: Record<typeof state, React.CSSProperties> = {
-        done: { background: '#d4a017', color: 'black', fontWeight: 900, padding: '4px 12px', borderRadius: '100px', fontSize: '0.65rem', letterSpacing: '0.06em' },
+        done: { background: '#d4a017', color: 'black', fontWeight: 900, padding: '4px 12px', borderRadius: '100px', fontSize: '0.65rem', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: '4px' },
         active: { border: '1px solid #d4a017', color: '#d4a017', fontWeight: 800, padding: '4px 12px', borderRadius: '100px', fontSize: '0.65rem', letterSpacing: '0.06em', animation: 'pulse 1.5s infinite' },
         pending: { border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.2)', fontWeight: 700, padding: '4px 12px', borderRadius: '100px', fontSize: '0.65rem', letterSpacing: '0.06em' },
     };
-    return <span style={styles[state]}>{state === 'done' ? '✅ ' : ''}{label}</span>;
+    return (
+        <span style={styles[state]}>
+            {state === 'done' && (
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                </svg>
+            )}
+            {label}
+        </span>
+    );
 }
 
 export default function SettingsSidebar() {

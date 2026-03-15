@@ -452,101 +452,6 @@ main {
   outline: none;
 }
 
-.live-mission-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 0.55rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.35);
-}
-
-.live-mission-actions {
-  display: flex;
-  gap: 6px;
-}
-
-.live-mission-actions button {
-  height: 20px;
-  padding: 0 8px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.55rem;
-  letter-spacing: 0.08em;
-  cursor: pointer;
-}
-
-.live-mission-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-}
-
-.live-mission-editor {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  padding: 10px;
-  background: rgba(255, 255, 255, 0.02);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.live-mission-editor p {
-  margin: 0;
-  font-size: 0.55rem;
-  letter-spacing: 0.2em;
-  color: rgba(255, 255, 255, 0.45);
-  text-transform: uppercase;
-}
-
-.live-mission-editor-row {
-  display: flex;
-  gap: 8px;
-}
-
-.live-mission-editor-row input {
-  height: 32px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.04);
-  padding: 0 8px;
-  color: white;
-  font-size: 0.8rem;
-}
-
-.live-mission-editor-row input:first-child {
-  width: 44px;
-  text-align: center;
-}
-
-.live-mission-editor-actions {
-  display: flex;
-  gap: 6px;
-}
-
-.live-mission-editor-actions button {
-  flex: 1;
-  height: 30px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: transparent;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 0.6rem;
-  letter-spacing: 0.08em;
-  cursor: pointer;
-}
-
-.live-mission-editor-actions button:last-child {
-  background: rgba(212, 160, 23, 0.12);
-  border-color: rgba(212, 160, 23, 0.35);
-  color: #d4a017;
-  font-weight: 700;
-}
-
 .live-mission-launch {
   height: 36px;
   border-radius: 10px;
@@ -731,23 +636,26 @@ main {
 
 .edit-btn {
   opacity: 0;
-  background: none;
-  border: none;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: var(--accent);
-  font-size: 0.7rem;
-  font-weight: 700;
+  padding: 6px;
+  border-radius: 8px;
   cursor: pointer;
-  padding: 2px 8px;
-  transition: opacity 0.2s;
-  text-transform: uppercase;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .message-wrapper:hover .edit-btn {
-  opacity: 0.6;
+  opacity: 0.8;
 }
 
 .edit-btn:hover {
   opacity: 1 !important;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--accent);
 }
 
 .edit-textarea {
@@ -1373,8 +1281,15 @@ textarea::placeholder {
 }
 
 .active-task-icon {
-  font-size: 1.6rem;
-  filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.6));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--task-accent);
+  box-shadow: 0 0 12px var(--task-glow);
   transform: translateY(2px);
 }
 

@@ -18,6 +18,7 @@ import '@/lib/manualMigration';
 import { supabase } from '@/lib/supabase';
 import GroupChat from '@/components/GroupChat';
 import SettingsSidebar from '@/components/SettingsSidebar';
+import PresetTaskSelector from '@/components/PresetTaskSelector';
 import { filterTasksForToday, getNextSeasonalDate } from '@/utils/taskVisibility';
 import { format } from 'date-fns';
 
@@ -191,6 +192,7 @@ export default function ChatPage() {
   const [liveMissionOpen, setLiveMissionOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [showPresetTasks, setShowPresetTasks] = useState(false);
   const [autoGenerating, setAutoGenerating] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
   const liveMissionAnchorRef = useRef<HTMLDivElement>(null);
@@ -1298,9 +1300,13 @@ OPERATIONAL TAGS:
                           )}
                         </div>
                         {msg.role === 'user' && (
-                          <button className="edit-btn" onClick={() => startEdit(i, msg.content)}>Edit</button>
-                        )}
-                      </>
+                          <button className="edit-btn" onClick={() => startEdit(i, msg.content)} aria-label="Edit message">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                            </svg>
+                          </button>
+                        )}                      </>
                     )}
                   </div>
                 ))}
@@ -1327,9 +1333,18 @@ OPERATIONAL TAGS:
                     ? new Date(task.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                     : '—';
                   const statusLabel = task.status === 'RUNNING' ? 'LIVE' : 'PAUSED';
-                  const statusIcon = task.status === 'RUNNING' ? '🔥' : '⏸';
                   const progressStyle = { '--active-pct': `${activePct}%` } as CSSProperties;
 
+                  const statusIcon = task.status === 'RUNNING' ? (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="5 3 19 12 5 21 5 3" fill="currentColor" />
+                    </svg>
+                  ) : (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="6" y="4" width="4" height="16" fill="currentColor" />
+                      <rect x="14" y="4" width="4" height="16" fill="currentColor" />
+                    </svg>
+                  );
                   return (
                     <div
                       key={task.id}
@@ -1417,6 +1432,66 @@ OPERATIONAL TAGS:
                     </div>
                   );
                 })}
+
+                {/* Quick Preset Task Button */}
+                {activeTasks.length > 0 && (
+                  <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                    <button
+                      onClick={() => setShowPresetTasks(true)}
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        border: '1px solid var(--border)',
+                        color: 'var(--text-secondary)',
+                        padding: '0.5rem 1rem',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontSize: '0.8rem',
+                        fontWeight: '600',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                        e.currentTarget.style.borderColor = 'var(--accent)';
+                        e.currentTarget.style.color = 'white';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                        e.currentTarget.style.borderColor = 'var(--border)';
+                        e.currentTarget.style.color = 'var(--text-secondary)';
+                      }}
+                    >
+                      📋 Quick Add Preset Task
+                    </button>
+                  </div>
+                )}
+
+                {/* Preset Task Selector */}
+                {activeTasks.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '2rem', opacity: 0.6 }}>
+                    <button
+                      onClick={() => setShowPresetTasks(true)}
+                      style={{
+                        background: 'var(--accent)',
+                        color: 'white',
+                        border: 'none',
+                        padding: '1rem 2rem',
+                        borderRadius: '12px',
+                        cursor: 'pointer',
+                        fontWeight: '700',
+                        fontSize: '0.9rem',
+                        marginBottom: '1rem',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}
+                    >
+                      📋 Choose from Preset Tasks
+                    </button>
+                    <p style={{ fontSize: '0.85rem', opacity: 0.7, margin: 0 }}>
+                      Or type a custom task in the chat
+                    </p>
+                  </div>
+                )}
 
                 {/* Invisible anchor at the very bottom */}
                 <div ref={bottomRef} style={{ height: '40px', flexShrink: 0 }} />
@@ -1743,6 +1818,17 @@ OPERATIONAL TAGS:
         />
         <SettingsSidebar />
       </div>
+      
+      {/* Preset Task Selector Modal */}
+      {showPresetTasks && (
+        <PresetTaskSelector
+          onTaskSelect={(taskName) => {
+            startManualTask(taskName);
+            setShowPresetTasks(false);
+          }}
+          onClose={() => setShowPresetTasks(false)}
+        />
+      )}
     </div>
   );
 }
