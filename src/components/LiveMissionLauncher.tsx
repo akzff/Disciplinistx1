@@ -24,7 +24,7 @@ interface LiveMissionLauncherProps {
     open: boolean;
     onClose: () => void;
     onLaunch: (name: string) => void;
-    anchorRef?: React.RefObject<HTMLElement>;
+    anchorRef?: React.RefObject<HTMLElement | null>;
 }
 
 export default function LiveMissionLauncher({ open, onClose, onLaunch, anchorRef }: LiveMissionLauncherProps) {
@@ -74,7 +74,7 @@ export default function LiveMissionLauncher({ open, onClose, onLaunch, anchorRef
         return () => {
             document.removeEventListener('pointerdown', handlePointerDown, { capture: true });
         };
-    }, [open, onClose]);
+    }, [open, onClose, anchorRef]);
 
     const displayPresets = useMemo(() => {
         const combined = [...presets];

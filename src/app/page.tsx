@@ -796,8 +796,9 @@ OPERATIONAL TAGS:
     setCompletedTasks(updatedCompleted);
     setActiveTasks(remaining);
     setNoteDrafts(prev => {
-      const { [taskId]: _removed, ...rest } = prev;
-      return rest;
+      const next = { ...prev };
+      delete next[taskId];
+      return next;
     });
     persistChatSnapshot({ messages: updatedMessages, completedTasks: updatedCompleted, activeTasks: remaining });
   };
