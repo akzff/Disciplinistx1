@@ -678,7 +678,7 @@ export default function MissionChecklist({
 
         return (
             <div
-                style={{ position: 'relative', display: 'inline-flex' }}
+                style={{ position: 'relative', display: 'block', width: '100%' }}
                 onMouseEnter={() => setHovering(true)}
                 onMouseLeave={() => {
                     setHovering(false);
@@ -705,9 +705,9 @@ export default function MissionChecklist({
                     style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '5px',
-                        padding: '6px 12px',
-                        borderRadius: '20px',
+                        gap: '4px',
+                        padding: '4px 8px',
+                        borderRadius: '10px',
                         border: isSelected
                             ? '1px solid rgba(212,160,23,0.7)'
                             : '1px solid rgba(255,255,255,0.1)',
@@ -717,14 +717,20 @@ export default function MissionChecklist({
                         color: isSelected
                             ? '#d4a017'
                             : 'rgba(255,255,255,0.6)',
-                        fontSize: '12px',
+                        fontSize: '11px',
                         fontWeight: isSelected ? 700 : 400,
                         cursor: 'pointer',
                         transition: 'all 0.15s',
-                        whiteSpace: 'nowrap'
+                        whiteSpace: 'nowrap',
+                        width: '100%',
+                        minHeight: '28px',
+                        justifyContent: 'flex-start',
+                        overflow: 'hidden'
                     }}>
-                    <span style={{ fontSize: '13px' }}>{preset.emoji}</span>
-                    {preset.name}
+                    <span style={{ fontSize: '12px' }}>{preset.emoji}</span>
+                    <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {preset.name}
+                    </span>
                     {preset.use_count > 0 && (
                         <span style={{
                             fontSize: '9px',
@@ -739,8 +745,8 @@ export default function MissionChecklist({
                 {activeActions && (
                     <div style={{
                         position: 'absolute',
-                        top: '-8px',
-                        right: '-8px',
+                        top: '-6px',
+                        right: '-6px',
                         display: 'flex',
                         gap: '4px',
                         zIndex: 10
@@ -751,13 +757,13 @@ export default function MissionChecklist({
                                 handleEditPreset(preset);
                             }}
                             style={{
-                                width: '20px',
-                                height: '20px',
+                                width: '18px',
+                                height: '18px',
                                 borderRadius: '50%',
                                 background: '#d4a017',
                                 border: 'none',
                                 color: 'black',
-                                fontSize: '10px',
+                                fontSize: '9px',
                                 cursor: 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -774,13 +780,13 @@ export default function MissionChecklist({
                                 await deletePreset(preset);
                             }}
                             style={{
-                                width: '20px',
-                                height: '20px',
+                                width: '18px',
+                                height: '18px',
                                 borderRadius: '50%',
                                 background: isDefault ? 'rgba(255,255,255,0.05)' : '#f87171',
                                 border: 'none',
                                 color: isDefault ? 'rgba(255,255,255,0.1)' : 'white',
-                                fontSize: '10px',
+                                fontSize: '9px',
                                 fontWeight: 900,
                                 cursor: isDefault ? 'default' : 'pointer',
                                 display: 'flex',
@@ -809,12 +815,12 @@ export default function MissionChecklist({
             {isStartingLive ? (
                 <div style={{
                     flexShrink: 0, background: 'rgba(16,185,129,0.1)',
-                    border: '1px solid rgba(16,185,129,0.25)', borderRadius: '12px',
-                    padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px', overflow: 'hidden',
+                    border: '1px solid rgba(16,185,129,0.25)', borderRadius: '10px',
+                    padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px', overflow: 'hidden',
                 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ color: '#10b981', fontWeight: 900, fontSize: '10px', letterSpacing: '0.12em' }}>⚡ NAME YOUR MISSION</span>
-                        <button onClick={() => setIsStartingLive(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '12px' }}>✕</button>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '40px' }}>
+                        <span style={{ color: '#10b981', fontWeight: 900, fontSize: '11px', letterSpacing: '0.12em' }}>⚡ NAME YOUR MISSION</span>
+                        <button onClick={() => setIsStartingLive(false)} style={{ width: '28px', height: '28px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
                     </div>
                     <input autoFocus placeholder="e.g. Deep work session..." value={liveInput}
                         onChange={(e) => handleLiveInputChange(e.target.value)}
@@ -824,22 +830,23 @@ export default function MissionChecklist({
                         }}
                         style={{
                             background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                            borderRadius: '8px', color: 'white', padding: '8px', fontSize: '13px',
-                            outline: 'none', width: '100%', boxSizing: 'border-box',
+                            borderRadius: '8px', color: 'white', padding: '0 12px', fontSize: '12px',
+                            outline: 'none', width: '100%', boxSizing: 'border-box', height: '40px',
                         }}
                     />
 
                     {/* QUICK LAUNCH SECTION */}
-                    <div style={{ marginTop: '12px' }}>
+                    <div style={{ marginTop: '6px' }}>
                         <div style={{
                             display: 'flex',
                             justifyContent: 'space-between',
                             alignItems: 'center',
-                            marginBottom: '10px'
+                            marginBottom: '6px',
+                            minHeight: '28px'
                         }}>
                             <span style={{
                                 color: 'rgba(255,255,255,0.3)',
-                                fontSize: '11px',
+                                fontSize: '10px',
                                 fontWeight: 700,
                                 letterSpacing: '0.12em'
                             }}>
@@ -851,12 +858,14 @@ export default function MissionChecklist({
                                     style={{
                                         background: isManageMode ? 'rgba(212,160,23,0.2)' : 'rgba(255,255,255,0.05)',
                                         border: `1px solid ${isManageMode ? 'rgba(212,160,23,0.4)' : 'rgba(255,255,255,0.1)'}`,
-                                        borderRadius: '20px',
+                                        borderRadius: '8px',
                                         color: isManageMode ? '#d4a017' : 'rgba(255,255,255,0.5)',
-                                        fontSize: '10px',
+                                        fontSize: '9px',
                                         fontWeight: 700,
-                                        padding: '3px 10px',
-                                        cursor: 'pointer'
+                                        padding: '0 8px',
+                                        height: '22px',
+                                        cursor: 'pointer',
+                                        letterSpacing: '0.08em'
                                     }}>
                                     {isManageMode ? 'DONE' : 'MANAGE'}
                                 </button>
@@ -870,15 +879,17 @@ export default function MissionChecklist({
                                     style={{
                                         background: 'rgba(212,160,23,0.1)',
                                         border: '1px solid rgba(212,160,23,0.25)',
-                                        borderRadius: '20px',
+                                        borderRadius: '8px',
                                         color: '#d4a017',
-                                        fontSize: '10px',
+                                        fontSize: '9px',
                                         fontWeight: 700,
-                                        padding: '3px 10px',
+                                        padding: '0 8px',
+                                        height: '22px',
                                         cursor: 'pointer',
                                         display: 'flex',
                                         alignItems: 'center',
-                                        gap: '4px'
+                                        gap: '4px',
+                                        letterSpacing: '0.08em'
                                     }}>
                                     + ADD
                                 </button>
@@ -886,8 +897,8 @@ export default function MissionChecklist({
                         </div>
 
                         <div style={{
-                            display: 'flex',
-                            flexWrap: 'wrap',
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
                             gap: '6px'
                         }}>
                             {displayPresets.map(preset => (
@@ -993,8 +1004,8 @@ export default function MissionChecklist({
                     <button onClick={handleLaunchMission}
                         style={{
                             background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none',
-                            borderRadius: '8px', color: 'white', padding: '8px', fontSize: '10px',
-                            fontWeight: 900, letterSpacing: '0.1em', cursor: 'pointer',
+                            borderRadius: '10px', color: 'white', padding: '0 12px', fontSize: '11px',
+                            fontWeight: 900, letterSpacing: '0.12em', cursor: 'pointer', height: '44px',
                         }}>🔥 LAUNCH MISSION</button>
                 </div>
             ) : (
