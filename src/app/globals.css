@@ -1177,6 +1177,7 @@ textarea::placeholder {
   overflow: hidden;
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
   animation: task-rise 0.4s ease;
+  backdrop-filter: blur(6px);
 }
 
 .active-task-card::before {
@@ -1236,12 +1237,16 @@ textarea::placeholder {
   letter-spacing: 0.18em;
   text-transform: uppercase;
   font-weight: 800;
-  color: rgba(255, 255, 255, 0.65);
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  padding: 0.3rem 0.6rem;
 }
 
 .active-task-dot {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: var(--task-accent);
   box-shadow: 0 0 12px var(--task-glow);
@@ -1389,18 +1394,39 @@ textarea::placeholder {
 
 .active-task-bar {
   position: relative;
-  height: 6px;
-  background: rgba(255, 255, 255, 0.08);
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 999px;
   overflow: hidden;
 }
 
 .active-task-bar-fill {
+  position: relative;
   height: 100%;
   width: var(--active-pct, 0%);
   background: linear-gradient(90deg, var(--task-accent), rgba(255, 255, 255, 0.25));
   transition: width 0.5s ease;
   box-shadow: 0 0 12px var(--task-glow);
+}
+
+.active-task-bar-fill::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  transform: translate(50%, -50%);
+  background: var(--task-accent);
+  box-shadow: 0 0 12px var(--task-glow);
+}
+
+.active-task-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 1rem 0 1.5rem;
 }
 
 .active-task-notes {

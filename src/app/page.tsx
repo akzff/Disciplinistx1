@@ -1318,39 +1318,41 @@ OPERATIONAL TAGS:
                   </div>
                 )}
 
-                {activeTasks.map(task => {
-                  const activeTime = task.status === 'RUNNING'
-                    ? (task.totalActiveTime || 0) + Math.max(0, now - (task.lastStartedAt || task.startTime || now))
-                    : (task.totalActiveTime || 0);
-                  const pausedTime = task.status === 'PAUSED'
-                    ? (task.totalPausedTime || 0) + Math.max(0, now - (task.lastPausedAt || task.startTime || now))
-                    : (task.totalPausedTime || 0);
-                  const totalTime = activeTime + pausedTime;
-                  const activePct = totalTime > 0
-                    ? Math.round((activeTime / totalTime) * 100)
-                    : (task.status === 'RUNNING' ? 100 : 0);
-                  const startedAt = task.startTime
-                    ? new Date(task.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                    : '—';
-                  const statusLabel = task.status === 'RUNNING' ? 'LIVE' : 'PAUSED';
-                  const progressStyle = { '--active-pct': `${activePct}%` } as CSSProperties;
+                {activeTasks.length > 0 && (
+                  <div className="active-task-stack">
+                    {activeTasks.map(task => {
+                      const activeTime = task.status === 'RUNNING'
+                        ? (task.totalActiveTime || 0) + Math.max(0, now - (task.lastStartedAt || task.startTime || now))
+                        : (task.totalActiveTime || 0);
+                      const pausedTime = task.status === 'PAUSED'
+                        ? (task.totalPausedTime || 0) + Math.max(0, now - (task.lastPausedAt || task.startTime || now))
+                        : (task.totalPausedTime || 0);
+                      const totalTime = activeTime + pausedTime;
+                      const activePct = totalTime > 0
+                        ? Math.round((activeTime / totalTime) * 100)
+                        : (task.status === 'RUNNING' ? 100 : 0);
+                      const startedAt = task.startTime
+                        ? new Date(task.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                        : '—';
+                      const statusLabel = task.status === 'RUNNING' ? 'LIVE' : 'PAUSED';
+                      const progressStyle = { '--active-pct': `${activePct}%` } as CSSProperties;
 
-                  const statusIcon = task.status === 'RUNNING' ? (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                      <polygon points="5 3 19 12 5 21 5 3" fill="currentColor" />
-                    </svg>
-                  ) : (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="6" y="4" width="4" height="16" fill="currentColor" />
-                      <rect x="14" y="4" width="4" height="16" fill="currentColor" />
-                    </svg>
-                  );
-                  return (
-                    <div
-                      key={task.id}
-                      className={`active-task-card ${task.status === 'RUNNING' ? 'is-running' : 'is-paused'}`}
-                      style={progressStyle}
-                    >
+                      const statusIcon = task.status === 'RUNNING' ? (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polygon points="5 3 19 12 5 21 5 3" fill="currentColor" />
+                        </svg>
+                      ) : (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="6" y="4" width="4" height="16" fill="currentColor" />
+                          <rect x="14" y="4" width="4" height="16" fill="currentColor" />
+                        </svg>
+                      );
+                      return (
+                        <div
+                          key={task.id}
+                          className={`active-task-card ${task.status === 'RUNNING' ? 'is-running' : 'is-paused'}`}
+                          style={progressStyle}
+                        >
                       <div className="active-task-top">
                         <div className="active-task-status">
                           <span className="active-task-dot" />
@@ -1429,9 +1431,11 @@ OPERATIONAL TAGS:
                           Add
                         </button>
                       </div>
-                    </div>
-                  );
-                })}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
 
                 {/* Quick Preset Task Button */}
                 {activeTasks.length > 0 && (
