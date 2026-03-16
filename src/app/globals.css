@@ -1481,7 +1481,6 @@ textarea::placeholder {
   overflow-y: auto;
   padding-bottom: 0.8rem;
 }
-}
 
 .active-task-notes {
   display: flex;
