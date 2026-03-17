@@ -1247,9 +1247,9 @@ textarea::placeholder {
 
 .active-task-card.is-running {
   --task-accent: #34d399;
-  --task-glow: rgba(52, 211, 153, 0.45);
+  --task-glow: rgba(52, 211, 153, 0.28);
   border-color: rgba(52, 211, 153, 0.35);
-  box-shadow: 0 14px 40px rgba(16, 185, 129, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .active-task-card.is-paused {

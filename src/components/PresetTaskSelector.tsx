@@ -263,7 +263,7 @@ export default function PresetTaskSelector({ onTaskSelect, onClose }: PresetTask
         }
 
         .preset-task-modal {
-          background: var(--bg-primary);
+          background: #0b0d12;
           border: 1px solid var(--border);
           border-radius: 16px;
           width: 90%;
