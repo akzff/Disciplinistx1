@@ -1453,6 +1453,13 @@ textarea::placeholder {
   margin: 0;
 }
 
+.active-task-dock .active-task-card {
+  flex: 0 0 auto;
+  min-height: 180px;
+  height: auto;
+  max-height: none;
+}
+
 .active-task-dock {
   flex-shrink: 0;
   height: auto;
@@ -1488,6 +1495,7 @@ textarea::placeholder {
 
 .active-task-dock-body {
   max-height: 60vh;
+  min-height: 180px;
   overflow-y: auto;
   padding-bottom: 1rem;
   -webkit-overflow-scrolling: touch;
