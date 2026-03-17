@@ -44,7 +44,9 @@ export interface TodoHistoryEntry {
     importance?: number;
     tags?: string[];
     notes?: string;
-    type: 'todo' | 'daily';
+    type: 'todo' | 'daily' | 'active';
+    activeTime?: number;
+    pausedTime?: number;
 }
 
 export interface HabitIssue {

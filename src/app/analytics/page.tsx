@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { DailyChat } from '@/lib/storage';
+import { DailyChat, TodoHistoryEntry } from '@/lib/storage';
 import { NavigationBar } from '@/components/NavigationBar';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { useData } from '@/lib/DataContext';
@@ -82,11 +82,11 @@ export default function AnalyticsPage() {
     }, [allChats, selectedStrategy, strategyType]);
 
     const fullTodoHistory = useMemo(() => {
-        const history: any[] = [];
+        const history: (TodoHistoryEntry & { chatDate: string })[] = [];
         Object.keys(allChats).sort().reverse().forEach(date => {
-            const chat = (allChats as any)[date];
+            const chat = allChats[date];
             if (chat.todoHistory && Array.isArray(chat.todoHistory)) {
-                chat.todoHistory.forEach((entry: any) => {
+                chat.todoHistory.forEach((entry: TodoHistoryEntry) => {
                     history.push({ ...entry, chatDate: date });
                 });
             }
@@ -355,9 +355,9 @@ export default function AnalyticsPage() {
                                                 <div>
                                                     <p style={{ fontSize: '0.55rem', fontWeight: '900', opacity: 0.3, letterSpacing: '0.05em', marginBottom: '4px' }}>PRIORITY LEVEL</p>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                        <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: entry.importance >= 4 ? '#ef4444' : entry.importance >= 2 ? '#f59e0b' : '#3b82f6', boxShadow: `0 0 10px ${entry.importance >= 4 ? '#ef444480' : entry.importance >= 2 ? '#f59e0b80' : '#3b82f680'}` }} />
+                                                        <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: (entry.importance || 0) >= 4 ? '#ef4444' : (entry.importance || 0) >= 2 ? '#f59e0b' : '#3b82f6', boxShadow: `0 0 10px ${(entry.importance || 0) >= 4 ? '#ef444480' : (entry.importance || 0) >= 2 ? '#f59e0b80' : '#3b82f680'}` }} />
                                                         <p style={{ fontSize: '0.75rem', opacity: 0.7, margin: 0 }}>
-                                                            {entry.importance >= 4 ? 'Status: Critical' : entry.importance >= 2 ? 'Status: High' : 'Status: Normal'}
+                                                            {(entry.importance || 0) >= 4 ? 'Status: Critical' : (entry.importance || 0) >= 2 ? 'Status: High' : 'Status: Normal'}
                                                         </p>
                                                     </div>
                                                 </div>

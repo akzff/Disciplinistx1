@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, type CSSProperties } from 'react';
-import { storage, Message, DailyChat, ActiveTask, formatTime, TaskNote, PersonaId } from '@/lib/storage';
+import { storage, Message, DailyChat, ActiveTask, formatTime, TaskNote, PersonaId, TodoHistoryEntry } from '@/lib/storage';
 import Image from 'next/image';
 import MissionsBoard from '@/components/MissionsBoard';
 import MissionChecklist from '@/components/MissionChecklist';
@@ -813,7 +813,7 @@ OPERATIONAL TAGS:
     setActiveTasks(remaining);
     
     // Log active task to history
-    const historyEntry: any = {
+    const historyEntry: TodoHistoryEntry = {
       id: Math.random().toString(36).substring(7),
       todoId: task.id,
       text: task.name,
@@ -874,22 +874,34 @@ OPERATIONAL TAGS:
   };
 
   const toggleTodoWithRecurrence = (id: string) => {
-    setTodos(prev => {
+    setTodos((prev: DailyChat['todos']) => {
       const timestamp = Date.now();
       const todayStr = format(new Date(), 'yyyy-MM-dd');
-      let todoToLog: any = null;
+      const target = prev.find(t => t.id === id);
 
-      const next = prev.map(t => {
-        if (t.id !== id) return t;
-        
-        // If we are marking it as completed (or it's recurring and being ticked)
-        const becomingCompleted = !t.completed;
-        const recType = t.recurrence?.type;
+      if (target) {
+        const becomingCompleted = !target.completed;
+        const recType = target.recurrence?.type;
         
         if (becomingCompleted || (recType && recType !== 'once')) {
-          todoToLog = t;
+          const historyEntry: TodoHistoryEntry = {
+            id: Math.random().toString(36).substring(7),
+            todoId: target.id,
+            text: target.text,
+            tickedAt: timestamp,
+            createdAt: target.created_at || timestamp,
+            importance: target.importance,
+            tags: target.tags,
+            notes: target.notes,
+            type: 'todo'
+          };
+          setTodoHistory(prevH => [...(prevH || []), historyEntry]);
         }
+      }
 
+      return prev.map(t => {
+        if (t.id !== id) return t;
+        const recType = t.recurrence?.type;
         if (recType && recType !== 'once') {
           let newVisibility = t.visibility;
           if (t.visibility?.type === 'seasonal' && t.visibility.every_months) {
@@ -907,50 +919,31 @@ OPERATIONAL TAGS:
         }
         return { ...t, completed: !t.completed };
       });
-
-      if (todoToLog) {
-        const historyEntry: any = {
-          id: Math.random().toString(36).substring(7),
-          todoId: todoToLog.id,
-          text: todoToLog.text,
-          tickedAt: timestamp,
-          createdAt: todoToLog.created_at || todoToLog.startTime || timestamp,
-          importance: todoToLog.importance,
-          tags: todoToLog.tags,
-          notes: todoToLog.notes,
-          type: 'todo'
-        };
-        setTodoHistory(prevH => [...(prevH || []), historyEntry]);
-      }
-
-      return next;
     });
   };
 
   const toggleDaily = (id: string) => {
-    setDailies(prev => {
+    setDailies((prev: DailyChat['dailies']) => {
       const timestamp = Date.now();
-      let dailyToLog: any = null;
+      const target = prev.find(d => d.id === id);
 
-      const next = prev.map(d => {
-        if (d.id !== id) return d;
-        if (!d.completed) dailyToLog = d;
-        return { ...d, completed: !d.completed };
-      });
-
-      if (dailyToLog) {
-        const historyEntry: any = {
+      if (target && !target.completed) {
+        const historyEntry: TodoHistoryEntry = {
           id: Math.random().toString(36).substring(7),
-          todoId: dailyToLog.id,
-          text: dailyToLog.text,
+          todoId: target.id,
+          text: target.text,
           tickedAt: timestamp,
-          createdAt: dailyToLog.created_at || timestamp,
-          importance: dailyToLog.importance,
+          createdAt: target.created_at || timestamp,
+          importance: target.importance,
           type: 'daily'
         };
         setTodoHistory(prevH => [...(prevH || []), historyEntry]);
       }
-      return next;
+
+      return prev.map(d => {
+        if (d.id !== id) return d;
+        return { ...d, completed: !d.completed };
+      });
     });
   };
 
