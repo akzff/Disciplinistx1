@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { PresetTaskManager } from '@/lib/presetTasks';
 
-const SUGGESTED_TASKS = [
+const DEFAULT_SUGGESTED_TASKS = [
     'Deep work session',
     'Gym session',
     'Study block',
@@ -23,10 +24,17 @@ export default function LiveMissionLauncher({ open, onClose, onLaunch, onEditPre
     const popoverRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const [liveInput, setLiveInput] = useState('');
+    const [suggestedTasks, setSuggestedTasks] = useState<string[]>(DEFAULT_SUGGESTED_TASKS);
 
     useEffect(() => {
         if (!open) return;
         if (inputRef.current) inputRef.current.focus();
+    }, [open]);
+
+    useEffect(() => {
+        if (!open) return;
+        const presets = PresetTaskManager.getActiveTasks().map(task => task.name);
+        setSuggestedTasks(presets.length > 0 ? presets : DEFAULT_SUGGESTED_TASKS);
     }, [open]);
 
     useEffect(() => {
@@ -96,7 +104,7 @@ export default function LiveMissionLauncher({ open, onClose, onLaunch, onEditPre
                     )}
                 </div>
                 <div className="live-mission-tags">
-                    {SUGGESTED_TASKS.map((label) => {
+                    {suggestedTasks.map((label) => {
                         const active = liveInput.trim().toLowerCase() === label.toLowerCase();
                         return (
                             <button

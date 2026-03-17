@@ -1595,11 +1595,142 @@ OPERATIONAL TAGS:
                   </div>
                 )}
 
+                {activeTasks.length > 0 && (
+                  <div className="active-task-dock">
+                    <div className="active-task-dock-header">
+                      <span className="active-task-dock-title">ACTIVE MISSION</span>
+                      <span className="active-task-dock-count">{activeTasks.length}</span>
+                    </div>
+                    <div className="active-task-dock-body">
+                      <div className="active-task-stack">
+                        {activeTasks.map(task => {
+                          const activeTime = task.status === 'RUNNING'
+                            ? (task.totalActiveTime || 0) + Math.max(0, now - (task.lastStartedAt || task.startTime || now))
+                            : (task.totalActiveTime || 0);
+                          const pausedTime = task.status === 'PAUSED'
+                            ? (task.totalPausedTime || 0) + Math.max(0, now - (task.lastPausedAt || task.startTime || now))
+                            : (task.totalPausedTime || 0);
+                          const totalTime = activeTime + pausedTime;
+                          const activePct = totalTime > 0
+                            ? Math.round((activeTime / totalTime) * 100)
+                            : (task.status === 'RUNNING' ? 100 : 0);
+                          const runnerPct = task.status === 'RUNNING'
+                            ? Math.round((((activeTime / (30 * 60 * 1000)) % 1) * 100))
+                            : activePct;
+                          const startedAt = task.startTime
+                            ? new Date(task.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                            : 'â€”';
+                          const statusLabel = task.status === 'RUNNING' ? 'LIVE' : 'PAUSED';
+                          const progressStyle = { '--active-pct': `${activePct}%`, '--runner-pct': `${runnerPct}%` } as CSSProperties;
+
+                          const statusIcon = task.status === 'RUNNING' ? (
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                              <polygon points="5 3 19 12 5 21 5 3" fill="currentColor" />
+                            </svg>
+                          ) : (
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="6" y="4" width="4" height="16" fill="currentColor" />
+                              <rect x="14" y="4" width="4" height="16" fill="currentColor" />
+                            </svg>
+                          );
+                          return (
+                            <div
+                              key={task.id}
+                              className={`active-task-card ${task.status === 'RUNNING' ? 'is-running' : 'is-paused'}`}
+                              style={progressStyle}
+                            >
+                              <div className="active-task-top">
+                                <div className="active-task-status">
+                                  <span className="active-task-dot" />
+                                  <span className="active-task-state">{statusLabel}</span>
+                                  <span className="active-task-started">Started {startedAt}</span>
+                                </div>
+                                <div className="active-task-actions">
+                                  <button onClick={() => toggleTask(task.id)} className="active-task-btn ghost">
+                                    {task.status === 'RUNNING' ? 'Pause' : 'Resume'}
+                                  </button>
+                                  <button onClick={() => closeTask(task.id)} className="active-task-btn solid">
+                                    Finish
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div className="active-task-main">
+                                <div className="active-task-icon">{statusIcon}</div>
+                                <div className="active-task-body">
+                                  <div className="active-task-title-row">
+                                    <p className="active-task-title">{task.name}</p>
+                                    <span className="active-task-total">{formatTime(totalTime, false)}</span>
+                                  </div>
+                                  <div className="active-task-metrics">
+                                    <div className="active-task-metric">
+                                      <span>Active</span>
+                                      <strong>{formatTime(activeTime, false)}</strong>
+                                    </div>
+                                    <div className="active-task-metric">
+                                      <span>Paused</span>
+                                      <strong>{formatTime(pausedTime, false)}</strong>
+                                    </div>
+                                    <div className="active-task-metric">
+                                      <span>Notes</span>
+                                      <strong>{(task.notes || []).length}</strong>
+                                    </div>
+                                  </div>
+                                  <div className="active-task-bar">
+                                    <div className="active-task-bar-fill" />
+                                    {task.status === 'RUNNING' && <span className="active-task-runner" />}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {(task.notes || []).length > 0 && (
+                                <div className="active-task-notes">
+                                  {(task.notes || []).map((note, idx) => (
+                                    <div key={idx} className="active-task-note">
+                                      <p className="active-task-note-text">{note.text}</p>
+                                      <p className="active-task-note-time">
+                                        {new Date(note.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              <div className="active-task-input-row">
+                                <input
+                                  type="text"
+                                  className="active-task-input"
+                                  placeholder="Add a note... (Enter to save)"
+                                  value={noteDrafts[task.id] || ''}
+                                  onChange={(e) => updateNoteDraft(task.id, e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      submitTaskNote(task.id);
+                                    }
+                                  }}
+                                />
+                                <button
+                                  onClick={() => submitTaskNote(task.id)}
+                                  className="active-task-btn icon"
+                                  disabled={!noteDrafts[task.id]?.trim()}
+                                >
+                                  Add
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Invisible anchor at the very bottom */}
                 <div ref={bottomRef} style={{ height: '40px', flexShrink: 0 }} />
               </div>
 
-              {activeTasks.length > 0 && (
+              {false && activeTasks.length > 0 && (
                 <div className="active-task-dock">
                   <div className="active-task-dock-header">
                     <span className="active-task-dock-title">ACTIVE MISSION</span>
