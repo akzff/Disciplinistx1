@@ -13,6 +13,7 @@ export default function AnalyticsPage() {
     const { signOut } = useAuthContext();
     const [selectedStrategy, setSelectedStrategy] = useState<string>('');
     const [strategyType, setStrategyType] = useState<'todo' | 'daily'>('daily');
+    const [activeTab, setActiveTab] = useState<'strategy' | 'history'>('strategy');
     const displayName = preferences?.name || 'User';
     const currentPfp = preferences?.pfp;
 
@@ -80,6 +81,20 @@ export default function AnalyticsPage() {
         };
     }, [allChats, selectedStrategy, strategyType]);
 
+    const fullTodoHistory = useMemo(() => {
+        const history: any[] = [];
+        Object.keys(allChats).sort().reverse().forEach(date => {
+            const chat = (allChats as any)[date];
+            if (chat.todoHistory && Array.isArray(chat.todoHistory)) {
+                chat.todoHistory.forEach((entry: any) => {
+                    history.push({ ...entry, chatDate: date });
+                });
+            }
+        });
+        // Sort by tickedAt descending
+        return history.sort((a, b) => b.tickedAt - a.tickedAt);
+    }, [allChats]);
+
     return (
         <main>
             <div className="bg-mesh"></div>
@@ -139,6 +154,24 @@ export default function AnalyticsPage() {
                 <div style={{ flex: 1, padding: '2.5rem', overflowY: 'auto' }}>
                     <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
 
+                        {/* TABS */}
+                        <div style={{ display: 'flex', gap: '2rem', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '3rem', flexWrap: 'wrap' }}>
+                            <button 
+                                onClick={() => setActiveTab('strategy')}
+                                style={{ padding: '0.75rem 0', background: 'none', border: 'none', color: activeTab === 'strategy' ? '#d4a017' : 'rgba(255,255,255,0.3)', fontWeight: '900', fontSize: '0.8rem', letterSpacing: '0.2em', cursor: 'pointer', borderBottom: activeTab === 'strategy' ? '2px solid #d4a017' : '2px solid transparent', transition: 'all 0.3s' }}
+                            >
+                                STRATEGY ANALYSIS
+                            </button>
+                            <button 
+                                onClick={() => setActiveTab('history')}
+                                style={{ padding: '0.75rem 0', background: 'none', border: 'none', color: activeTab === 'history' ? '#d4a017' : 'rgba(255,255,255,0.3)', fontWeight: '900', fontSize: '0.8rem', letterSpacing: '0.2em', cursor: 'pointer', borderBottom: activeTab === 'history' ? '2px solid #d4a017' : '2px solid transparent', transition: 'all 0.3s' }}
+                            >
+                                MISSION LOG
+                            </button>
+                        </div>
+
+                        {activeTab === 'strategy' && (
+                            <>
                         {/* Selector Section */}
                         <div className="block-card" style={{
                             padding: '2.5rem',
@@ -163,7 +196,7 @@ export default function AnalyticsPage() {
                                                 setSelectedStrategy(''); // Reset to let useEffect pick first of new type
                                             }}
                                             style={{
-                                                flex: 1, padding: '12px', borderRadius: '14px', border: '1px solid rgba(255,b255,255,0.1)', cursor: 'pointer',
+                                                flex: 1, padding: '12px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer',
                                                 background: strategyType === t.id ? t.color : 'rgba(255,255,255,0.05)',
                                                 color: strategyType === t.id ? 'black' : 'rgba(255,255,255,0.6)',
                                                 fontWeight: '900', fontSize: '0.7rem', transition: '0.3s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -250,7 +283,7 @@ export default function AnalyticsPage() {
                                         { label: 'SUCCESSFUL SYNCED CORES', value: stats.totalCompleted, color: 'white' },
                                         { label: 'SYSTEM RELIABILITY', value: stats.successRate > 70 ? 'OPTIMIZED' : 'NEEDS CALIBRATION', color: stats.successRate > 70 ? '#10b981' : '#ef4444' }
                                     ].map((item, i) => (
-                                        <div key={i} style={{ padding: '1.75rem', background: 'rgba(255,255,255,0.01)', borderRadius: '18px', border: '1px solid rgba(255,b255,255,0.05)' }}>
+                                        <div key={i} style={{ padding: '1.75rem', background: 'rgba(255,255,255,0.01)', borderRadius: '18px', border: '1px solid rgba(255,255,255,0.05)' }}>
                                             <p style={{ fontSize: '0.65rem', fontWeight: '900', opacity: 0.3, marginBottom: '0.75rem', letterSpacing: '0.05em' }}>{item.label}</p>
                                             <p style={{ fontSize: '1.75rem', fontWeight: '900', color: item.color }}>{item.value}</p>
                                         </div>
@@ -258,13 +291,94 @@ export default function AnalyticsPage() {
                                 </div>
                             </div>
                         )}
+                            </>
+                        )}
 
-                        {!stats && (
-                            <div className="block-card" style={{ textAlign: 'center', padding: '12rem 0', background: 'transparent', opacity: 0.15 }}>
-                                <p style={{ fontSize: '5rem', marginBottom: '1.5rem' }}>📊</p>
-                                <p style={{ fontWeight: '900', fontSize: '1.2rem', letterSpacing: '0.4em' }}>DATA SYNC REQUIRED</p>
-                                <p style={{ fontSize: '0.9rem', marginTop: '1rem', opacity: 0.6 }}>SELECT A VALID STRATEGY CORE TO PROCEED</p>
+                        {activeTab === 'history' && (
+                            <>
+                        {/* TODO HISTORY SECTION */}
+                        <div className="block-card" style={{ padding: '3rem', marginTop: '2rem' }}>
+                            <div style={{ marginBottom: '2rem' }}>
+                                <h3 style={{ fontSize: '1rem', fontWeight: '900', letterSpacing: '0.1em' }}>MISSION LOG (HISTORY)</h3>
+                                <p style={{ fontSize: '0.75rem', opacity: 0.4 }}>Detailed execution history of all strategy cores</p>
                             </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                {fullTodoHistory.length === 0 ? (
+                                    <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.3, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '16px' }}>
+                                        No historical logs available yet. Complete some missions to begin data logging.
+                                    </div>
+                                ) : (
+                                    fullTodoHistory.map((entry, idx) => (
+                                        <div key={entry.id || idx} className="history-entry" style={{
+                                            padding: '1.25rem',
+                                            background: 'rgba(255,255,255,0.02)',
+                                            borderRadius: '16px',
+                                            border: '1px solid rgba(255,255,255,0.05)',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: '0.75rem',
+                                            transition: 'transform 0.2s',
+                                        }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                                    <span style={{
+                                                        padding: '4px 8px',
+                                                        borderRadius: '6px',
+                                                        fontSize: '0.55rem',
+                                                        fontWeight: '900',
+                                                        background: 
+                                                            entry.type === 'active' ? '#d4a01720' : 
+                                                            entry.type === 'daily' ? '#10b98120' : '#8b5cf620',
+                                                        color: 
+                                                            entry.type === 'active' ? '#d4a017' : 
+                                                            entry.type === 'daily' ? '#10b981' : '#8b5cf6',
+                                                        letterSpacing: '0.1em'
+                                                    }}>
+                                                        {entry.type === 'active' ? 'ACTIVE MISSION' : entry.type === 'daily' ? 'DAILY RITE' : 'ONE-OFF'}
+                                                    </span>
+                                                    <p style={{ margin: 0, fontWeight: '800', fontSize: '1rem', color: 'white' }}>{entry.text}</p>
+                                                </div>
+                                                <div style={{ textAlign: 'right' }}>
+                                                    <p style={{ margin: 0, fontSize: '0.65rem', fontWeight: '800', color: '#10b981' }}>COMPLETED</p>
+                                                    <p style={{ margin: 0, fontSize: '0.75rem', opacity: 0.5 }}>{new Date(entry.tickedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                                                </div>
+                                            </div>
+
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+                                                <div>
+                                                    <p style={{ fontSize: '0.55rem', fontWeight: '900', opacity: 0.3, letterSpacing: '0.05em', marginBottom: '4px' }}>ORIGIN DATE</p>
+                                                    <p style={{ fontSize: '0.75rem', opacity: 0.7, margin: 0 }}>
+                                                        {entry.createdAt ? new Date(entry.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : 'Unknown'}
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <p style={{ fontSize: '0.55rem', fontWeight: '900', opacity: 0.3, letterSpacing: '0.05em', marginBottom: '4px' }}>PRIORITY LEVEL</p>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                        <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: entry.importance >= 4 ? '#ef4444' : entry.importance >= 2 ? '#f59e0b' : '#3b82f6', boxShadow: `0 0 10px ${entry.importance >= 4 ? '#ef444480' : entry.importance >= 2 ? '#f59e0b80' : '#3b82f680'}` }} />
+                                                        <p style={{ fontSize: '0.75rem', opacity: 0.7, margin: 0 }}>
+                                                            {entry.importance >= 4 ? 'Status: Critical' : entry.importance >= 2 ? 'Status: High' : 'Status: Normal'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <p style={{ fontSize: '0.55rem', fontWeight: '900', opacity: 0.3, letterSpacing: '0.05em', marginBottom: '4px' }}>METRIC ANALYSIS</p>
+                                                    <p style={{ fontSize: '0.75rem', opacity: 0.7, margin: 0 }}>
+                                                        {entry.type === 'active' && entry.activeTime 
+                                                            ? `${Math.floor(entry.activeTime / 60000)}m focused` 
+                                                            : entry.createdAt 
+                                                                ? `${Math.floor((entry.tickedAt - entry.createdAt) / (1000 * 60 * 60 * 24))} day cycles delay` 
+                                                                : 'N/A'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+
+                            </>
                         )}
                     </div>
                 </div>
@@ -280,6 +394,10 @@ export default function AnalyticsPage() {
                     display: flex;
                     flex-direction: column;
                     justify-content: center;
+                }
+                .history-entry:hover {
+                    background: rgba(255,255,255,0.04) !important;
+                    transform: translateX(4px);
                 }
             `}</style>
         </main>

@@ -38,6 +38,7 @@ function useRealtimeSync(
     setTodos: React.Dispatch<React.SetStateAction<DailyChat['todos']>>;
     setDailies: React.Dispatch<React.SetStateAction<DailyChat['dailies']>>;
     setCompletedTasks: React.Dispatch<React.SetStateAction<DailyChat['completedTasks']>>;
+    setTodoHistory: React.Dispatch<React.SetStateAction<DailyChat['todoHistory']>>;
     setExpenses: React.Dispatch<React.SetStateAction<DailyChat['expenses']>>;
     setLocalChat: (date: string, chatData: Partial<DailyChat>) => void;
   },
@@ -88,6 +89,7 @@ function useRealtimeSync(
           if (incomingData.todos) s.setTodos(filterTasksForToday(incomingData.todos));
           if (incomingData.dailies) s.setDailies(filterTasksForToday(incomingData.dailies));
           if (incomingData.completedTasks) s.setCompletedTasks(incomingData.completedTasks);
+          if (incomingData.todoHistory) s.setTodoHistory(incomingData.todoHistory);
           if (incomingData.expenses) s.setExpenses(incomingData.expenses);
 
           // Update local cache
@@ -187,6 +189,7 @@ export default function ChatPage() {
   const [editValue, setEditValue] = useState('');
   const [botMood, setBotMood] = useState<'NEUTRAL' | 'DISAPPOINTED' | 'HOPEFUL' | 'DOMINATOR'>('NEUTRAL');
   const [completedTasks, setCompletedTasks] = useState<DailyChat['completedTasks']>([]);
+  const [todoHistory, setTodoHistory] = useState<DailyChat['todoHistory']>([]);
   const [now, setNow] = useState(Date.now());
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [liveMissionOpen, setLiveMissionOpen] = useState(false);
@@ -247,6 +250,7 @@ export default function ChatPage() {
     setTodos,
     setDailies,
     setCompletedTasks,
+    setTodoHistory,
     setExpenses,
     setLocalChat
   }, myClientId);
@@ -288,6 +292,7 @@ export default function ChatPage() {
         setTodos(filterTasksForToday(prevChat.todos || []));
         setDailies(filterTasksForToday(prevChat.dailies || []));
         setCompletedTasks(prevChat.completedTasks || []);
+        setTodoHistory(prevChat.todoHistory || []);
         setExpenses(prevChat.expenses || []);
       } else {
         setActiveDay(today);
@@ -319,6 +324,7 @@ export default function ChatPage() {
         setTodos(filterTasksForToday(base.todos || []));
         setDailies(filterTasksForToday(base.dailies || []));
         setCompletedTasks((base as typeof todayChat)?.completedTasks || []);
+        setTodoHistory((base as typeof todayChat)?.todoHistory || []);
         setExpenses(base.expenses || []);
         if (!todayChat || usedCarryTodos || usedCarryDailies) {
           // Save the carried-over data to cloud immediately so it is not lost on next load
@@ -337,13 +343,13 @@ export default function ChatPage() {
     if (!activeDay || !isInitialized) return;
     if (saveDebounce.current) clearTimeout(saveDebounce.current);
     saveDebounce.current = setTimeout(() => {
-      const chatD = { messages, status: chatStatus, activeTasks, distractions, botMood, todos, dailies, completedTasks, expenses, clientId: myClientId };
+      const chatD = { messages, status: chatStatus, activeTasks, distractions, botMood, todos, dailies, completedTasks, todoHistory, expenses, clientId: myClientId };
       cloudStorage.saveChat(activeDay, chatD, user?.id || undefined, true);
       setLocalChat(activeDay, chatD as DailyChat);
     }, 2000);
     return () => { if (saveDebounce.current) clearTimeout(saveDebounce.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages, chatStatus, activeDay, activeTasks, distractions, botMood, todos, dailies, completedTasks, expenses, isInitialized]);
+  }, [messages, chatStatus, activeDay, activeTasks, distractions, botMood, todos, dailies, completedTasks, todoHistory, expenses, isInitialized]);
 
   // Auto-generate yesterday's record when a new day starts (silent background job)
   useEffect(() => {
@@ -487,6 +493,7 @@ export default function ChatPage() {
       todos,
       dailies,
       completedTasks,
+      todoHistory,
       expenses,
       clientId: myClientId,
       ...overrides,
@@ -543,6 +550,9 @@ export default function ChatPage() {
     const newMessages = [...cleanedMessages, userMessage];
 
     setMessages(newMessages);
+    // Explicitly persist the user message immediately to prevent race conditions during AI generation
+    persistChatSnapshot({ messages: newMessages });
+    
     setInput('');
     setIsLoading(true);
     isUserScrolledUp.current = false;
@@ -618,7 +628,7 @@ OPERATIONAL TAGS:
 
       // Parse Actions from AI Content
       let taskReqData = undefined;
-      const taskMatch = aiContent.match(/TASK_REQUEST: ['"](.+?)['"]/i);
+      const taskMatch = aiContent.match(/TASK_REQUEST:\s*['"](.+?)['"]/i);
       if (taskMatch) {
         taskReqData = { name: taskMatch[1], status: 'PENDING' as const };
       }
@@ -631,19 +641,23 @@ OPERATIONAL TAGS:
       const aiMessage: Message = {
         role: 'assistant',
         content: aiContent
-          .replace(/TASK_REQUEST: ['"].+?['"]/gi, '')
+          .replace(/TASK_REQUEST:\s*['"](.+?)['"]/gi, '')
           .replace(/MOOD:\s*['"]?(DISAPPOINTED|HOPEFUL|DOMINATOR|NEUTRAL)['"]?/gi, '')
-          .replace(/LOG_HABIT: ['"].+?['"]/gi, '')
-          .replace(/TRACK_EXPENSE: .+? \| .+?/gi, '')
+          .replace(/LOG_HABIT:\s*['"](.+?)['"]/gi, '')
+          .replace(/TRACK_EXPENSE:\s*([\d.]+)\s*\|\s*(.+)/gi, '')
           .trim(),
         taskRequest: taskReqData,
         timestamp: Date.now()
       };
 
-      setMessages((prev) => [...prev, aiMessage]);
+      const finalMessages = [...newMessages, aiMessage];
+      setMessages(finalMessages);
+      
+      // Save immediately to cloud to prevent Realtime overwrites
+      persistChatSnapshot({ messages: finalMessages });
 
       if (aiContent.includes('LOG_HABIT:')) {
-        const match = aiContent.match(/LOG_HABIT: ['"](.+?)['"]/i);
+        const match = aiContent.match(/LOG_HABIT:\s*['"](.+?)['"]/i);
         if (match) {
           const issue = match[1];
           const newIssue = { id: Date.now().toString(), date: activeDay, context: textToSend, issue };
@@ -653,7 +667,7 @@ OPERATIONAL TAGS:
         }
       }
 
-      const expenseMatch = aiContent.match(/TRACK_EXPENSE: ([\d.]+) \| (.+)/i);
+      const expenseMatch = aiContent.match(/TRACK_EXPENSE:\s*([\d.]+)\s*\|\s*(.+)/i);
       if (expenseMatch) {
         const amount = parseFloat(expenseMatch[1]);
         const text = expenseMatch[2].trim();
@@ -797,12 +811,27 @@ OPERATIONAL TAGS:
     setMessages(updatedMessages);
     setCompletedTasks(updatedCompleted);
     setActiveTasks(remaining);
+    
+    // Log active task to history
+    const historyEntry: any = {
+      id: Math.random().toString(36).substring(7),
+      todoId: task.id,
+      text: task.name,
+      tickedAt: timestamp,
+      createdAt: task.startTime || timestamp,
+      importance: 5, // Active tasks are implicitly high importance
+      type: 'active',
+      activeTime: finalActiveTime,
+      pausedTime: finalPausedTime
+    };
+    setTodoHistory(prev => [...(prev || []), historyEntry]);
+
     setNoteDrafts(prev => {
       const next = { ...prev };
       delete next[taskId];
       return next;
     });
-    persistChatSnapshot({ messages: updatedMessages, completedTasks: updatedCompleted, activeTasks: remaining });
+    persistChatSnapshot({ messages: updatedMessages, completedTasks: updatedCompleted, activeTasks: remaining, todoHistory: [...(todoHistory || []), historyEntry] });
   };
 
   const addTaskNote = (taskId: string, text: string) => {
@@ -838,16 +867,29 @@ OPERATIONAL TAGS:
                 break;
             }
         }
+        // Force immediate save for rating persistence
+        persistChatSnapshot({ messages: newMessages, completedTasks: updated });
         return updated;
     });
   };
 
   const toggleTodoWithRecurrence = (id: string) => {
     setTodos(prev => {
+      const timestamp = Date.now();
       const todayStr = format(new Date(), 'yyyy-MM-dd');
-      return prev.map(t => {
+      let todoToLog: any = null;
+
+      const next = prev.map(t => {
         if (t.id !== id) return t;
+        
+        // If we are marking it as completed (or it's recurring and being ticked)
+        const becomingCompleted = !t.completed;
         const recType = t.recurrence?.type;
+        
+        if (becomingCompleted || (recType && recType !== 'once')) {
+          todoToLog = t;
+        }
+
         if (recType && recType !== 'once') {
           let newVisibility = t.visibility;
           if (t.visibility?.type === 'seasonal' && t.visibility.every_months) {
@@ -865,6 +907,50 @@ OPERATIONAL TAGS:
         }
         return { ...t, completed: !t.completed };
       });
+
+      if (todoToLog) {
+        const historyEntry: any = {
+          id: Math.random().toString(36).substring(7),
+          todoId: todoToLog.id,
+          text: todoToLog.text,
+          tickedAt: timestamp,
+          createdAt: todoToLog.created_at || todoToLog.startTime || timestamp,
+          importance: todoToLog.importance,
+          tags: todoToLog.tags,
+          notes: todoToLog.notes,
+          type: 'todo'
+        };
+        setTodoHistory(prevH => [...(prevH || []), historyEntry]);
+      }
+
+      return next;
+    });
+  };
+
+  const toggleDaily = (id: string) => {
+    setDailies(prev => {
+      const timestamp = Date.now();
+      let dailyToLog: any = null;
+
+      const next = prev.map(d => {
+        if (d.id !== id) return d;
+        if (!d.completed) dailyToLog = d;
+        return { ...d, completed: !d.completed };
+      });
+
+      if (dailyToLog) {
+        const historyEntry: any = {
+          id: Math.random().toString(36).substring(7),
+          todoId: dailyToLog.id,
+          text: dailyToLog.text,
+          tickedAt: timestamp,
+          createdAt: dailyToLog.created_at || timestamp,
+          importance: dailyToLog.importance,
+          type: 'daily'
+        };
+        setTodoHistory(prevH => [...(prevH || []), historyEntry]);
+      }
+      return next;
     });
   };
 
@@ -902,6 +988,7 @@ OPERATIONAL TAGS:
     setTodos(filterTasksForToday(base.todos || []));
     setDailies(base.dailies || []);
     setCompletedTasks((base as typeof todayChat)?.completedTasks || []);
+    setTodoHistory((base as typeof todayChat)?.todoHistory || []);
     setExpenses(base.expenses || []);
     if (!todayChat || usedCarryTodos || usedCarryDailies) await cloudStorage.saveChat(today, base, user?.id || undefined, true);
   };
@@ -1060,13 +1147,14 @@ OPERATIONAL TAGS:
               sidebarOpen={sidebarOpen}
               onClose={() => setSidebarOpen(false)}
               onToggleTodo={(id: string) => toggleTodoWithRecurrence(id)}
-              onToggleDaily={(id: string) => setDailies(prev => prev.map(d => d.id === id ? { ...d, completed: !d.completed } : d))}
+              onToggleDaily={(id: string) => toggleDaily(id)}
               onReorderTodo={(newTodos: DailyChat['todos']) => setTodos(newTodos)}
               onReorderDaily={(newDailies: DailyChat['dailies']) => setDailies(newDailies)}
               onAddDaily={(text) => setDailies(prev => [...prev, {
                 id: Date.now().toString(),
                 text,
                 completed: false,
+                created_at: Date.now(),
                 importance: 0,
                 time_slot: 'anytime',
                 time_slot_time: '',
@@ -1079,6 +1167,7 @@ OPERATIONAL TAGS:
                 id: Date.now().toString(),
                 text,
                 completed: false,
+                created_at: Date.now(),
                 importance: 0,
                 due_date: '',
                 emergency_date: '',
@@ -1715,9 +1804,13 @@ OPERATIONAL TAGS:
                     font-size: 13px;
                   }
                   .active-task-card { 
-                    padding: 1.1rem !important;
-                    margin: 0.75rem 0 1.4rem 0 !important;
-                    gap: 0.9rem !important;
+                    padding: 1.2rem !important;
+                    margin: 0.75rem 0 1.5rem 0 !important;
+                    gap: 1rem !important;
+                    height: auto !important;
+                    min-height: 180px !important;
+                    flex-shrink: 0 !important;
+                    overflow: visible !important;
                   }
                   .active-task-main { flex-direction: column !important; align-items: flex-start !important; }
                   .active-task-icon { margin-bottom: -0.2rem !important; }

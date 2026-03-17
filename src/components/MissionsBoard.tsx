@@ -69,7 +69,8 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
             date: formattedDate,
             time: isTimed ? newTime : undefined,
             isTimed,
-            subtasks: []
+            subtasks: [],
+            created_at: Date.now()
         };
         onUpdate({ todos: [...(chat.todos || []), newItem] });
         setNewText('');
@@ -87,7 +88,8 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
             text: newText,
             completed: false,
             color: randomColor,
-            subtasks: []
+            subtasks: [],
+            created_at: Date.now()
         };
 
         if (dailyScheduleType === 'DAYS') {
@@ -105,8 +107,6 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
         setSelectedDays([]);
     };
 
-    // toggleTodo removed as missions board doesn't consider todo completion
-    
     const toggleDaily = (id: string) => {
         const updated = chat.dailies.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
         onUpdate({ dailies: updated });

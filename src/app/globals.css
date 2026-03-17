@@ -1165,11 +1165,13 @@ textarea::placeholder {
   --task-glow: rgba(52, 211, 153, 0.4);
   position: relative;
   z-index: 2;
-  display: flex;
+  display: flex !important;
   flex-direction: column;
-  gap: 0.85rem;
-  padding: 1rem 1.1rem;
-  min-height: 210px;
+  gap: 1rem;
+  padding: 1.25rem;
+  min-height: 180px;
+  height: auto;
+  flex-shrink: 0;
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   outline: 1px solid rgba(255, 255, 255, 0.08);
@@ -1178,11 +1180,16 @@ textarea::placeholder {
   color: white;
   box-shadow: 0 12px 35px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   margin-bottom: 1.1rem;
-  overflow: hidden;
+  overflow: visible;
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
   animation: task-rise 0.4s ease;
   backdrop-filter: blur(6px);
 }
+
+.active-task-card > * {
+  flex-shrink: 0;
+}
+
 
 .active-task-card::before {
   content: '';
@@ -1448,10 +1455,11 @@ textarea::placeholder {
 
 .active-task-dock {
   flex-shrink: 0;
-  min-height: 240px;
-  padding: 1.2rem 5% 0.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  background: linear-gradient(180deg, rgba(8, 8, 12, 0.92), rgba(8, 8, 12, 0.4));
+  height: auto;
+  min-height: 200px;
+  padding: 1.25rem 1.5rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(8, 8, 12, 0.96), rgba(8, 8, 12, 0.6));
 }
 
 .active-task-dock-header {
@@ -1479,10 +1487,12 @@ textarea::placeholder {
 }
 
 .active-task-dock-body {
-  max-height: 50vh;
+  max-height: 60vh;
   overflow-y: auto;
-  padding-bottom: 0.8rem;
+  padding-bottom: 1rem;
+  -webkit-overflow-scrolling: touch;
 }
+
 
 .active-task-notes {
   display: flex;

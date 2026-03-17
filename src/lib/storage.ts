@@ -35,6 +35,18 @@ export interface ActiveTask {
     notes?: TaskNote[];
 }
 
+export interface TodoHistoryEntry {
+    id: string;
+    todoId: string;
+    text: string;
+    tickedAt: number;
+    createdAt?: number;
+    importance?: number;
+    tags?: string[];
+    notes?: string;
+    type: 'todo' | 'daily';
+}
+
 export interface HabitIssue {
     id: string;
     date: string;
@@ -66,6 +78,7 @@ export interface DailyChat {
         id: string;
         text: string;
         completed: boolean;
+        created_at?: number;
         color?: string;
         date?: string;
         time?: string;
@@ -99,6 +112,7 @@ export interface DailyChat {
         id: string;
         text: string;
         completed: boolean;
+        created_at?: number;
         color?: string;
         time?: string;
         isTimed?: boolean;
@@ -125,6 +139,7 @@ export interface DailyChat {
         };
     }[];
     completedTasks?: CompletedTask[];
+    todoHistory?: TodoHistoryEntry[];
     aiSummary?: string;
     artifactUrl?: string;
     expenses?: { id: string; amount: number; text: string }[];
