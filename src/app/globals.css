@@ -280,10 +280,11 @@ main {
 .chat-header {
   padding: 1.25rem 2rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   position: relative;
-  justify-content: space-between;
+  gap: 1.25rem;
   background: rgba(15, 15, 20, 0.4);
   backdrop-filter: blur(15px);
   -webkit-backdrop-filter: blur(15px);
@@ -310,6 +311,19 @@ main {
 
 .chat-header__left {
   min-width: 0;
+}
+
+.chat-header__left {
+  justify-self: start;
+}
+
+.chat-header .nav-center-wrapper {
+  justify-self: center;
+}
+
+.chat-header .header-controls {
+  justify-self: end;
+  justify-content: flex-end;
 }
 
 .header-controls {

@@ -603,9 +603,9 @@ export default function RecordsPage() {
     void formatTime;
 
     return (
-        <main>
+        <main className="chat-page">
             <div className="bg-mesh"></div>
-            <div className="chat-container" style={{ maxHeight: '95vh', overflow: 'hidden' }}>
+            <div className="chat-container" style={{ overflow: 'hidden' }}>
                 <header className="chat-header">
                     <div className="chat-header__left" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <div className="status-indicator" style={{ '--mood-color': '#6b7280' } as React.CSSProperties}></div>

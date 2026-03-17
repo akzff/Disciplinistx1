@@ -237,10 +237,10 @@ export default function ExpensesPage() {
     };
 
     return (
-        <main>
+        <main className="chat-page">
             <div className="bg-mesh"></div>
 
-            <div className="chat-container" style={{ maxHeight: '95vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <div className="chat-container" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                 <header className="chat-header">
                     <div className="chat-header__left" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <div

@@ -96,7 +96,7 @@ export default function AnalyticsPage() {
     }, [allChats]);
 
     return (
-        <main>
+        <main className="chat-page">
             <div className="bg-mesh"></div>
 
             <div className="chat-container">
