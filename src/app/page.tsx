@@ -1062,6 +1062,10 @@ OPERATIONAL TAGS:
                   open={liveMissionOpen}
                   onClose={() => setLiveMissionOpen(false)}
                   onLaunch={startManualTask}
+                  onEditPresets={() => {
+                    setShowPresetTasks(true);
+                    setLiveMissionOpen(false);
+                  }}
                   anchorRef={liveMissionAnchorRef}
                 />
               </div>
@@ -1532,7 +1536,7 @@ OPERATIONAL TAGS:
                 )}
 
                 {/* Quick Preset Task Button */}
-                {activeTasks.length > 0 && (
+                {false && activeTasks.length > 0 && (
                   <div style={{ textAlign: 'center', padding: '1rem 0' }}>
                     <button
                       onClick={() => setShowPresetTasks(true)}

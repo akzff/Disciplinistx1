@@ -15,10 +15,11 @@ interface LiveMissionLauncherProps {
     open: boolean;
     onClose: () => void;
     onLaunch: (name: string) => void;
+    onEditPresets?: () => void;
     anchorRef?: React.RefObject<HTMLElement | null>;
 }
 
-export default function LiveMissionLauncher({ open, onClose, onLaunch, anchorRef }: LiveMissionLauncherProps) {
+export default function LiveMissionLauncher({ open, onClose, onLaunch, onEditPresets, anchorRef }: LiveMissionLauncherProps) {
     const popoverRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const [liveInput, setLiveInput] = useState('');
@@ -77,7 +78,23 @@ export default function LiveMissionLauncher({ open, onClose, onLaunch, anchorRef
             />
 
             <div className="live-mission-suggestions">
-                <span>RECOMMENDATIONS</span>
+                <div className="live-mission-suggestions-head">
+                    <span>RECOMMENDATIONS</span>
+                    {onEditPresets && (
+                        <button
+                            type="button"
+                            className="live-mission-edit"
+                            onClick={onEditPresets}
+                            aria-label="Edit preset tasks"
+                        >
+                            <svg className="live-mission-edit-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <path d="M12 20h9" />
+                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                            </svg>
+                            Edit presets
+                        </button>
+                    )}
+                </div>
                 <div className="live-mission-tags">
                     {SUGGESTED_TASKS.map((label) => {
                         const active = liveInput.trim().toLowerCase() === label.toLowerCase();
