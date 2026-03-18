@@ -966,6 +966,9 @@ OPERATIONAL TAGS:
 
   const closePreviousDay = async () => {
     await cloudStorage.closeChat(activeDay, user?.id || undefined);
+    if (activeDay) {
+      setLocalChat(activeDay, { status: 'CLOSED' });
+    }
     setIsPreviousDayOpen(false);
     const today = storage.getCurrentDate();
     setActiveDay(today);

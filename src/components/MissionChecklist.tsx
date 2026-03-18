@@ -271,7 +271,7 @@ export default function MissionChecklist({
                 onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, idx, 'TODOS')}
                 style={{ opacity: dragInfo?.index === idx && dragInfo.type === 'TODOS' ? 0.4 : 1 }}
             >
-                <div style={{
+                <div onClick={() => handleToggleTodoClick(todo)} style={{ cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '10px',
@@ -370,7 +370,7 @@ export default function MissionChecklist({
                     </div>
 
                     <button
-                        onClick={() => openDrawer(todo, 'todo')}
+                        onClick={(e) => { e.stopPropagation(); openDrawer(todo, 'todo'); }}
                         style={{
                             color: 'rgba(255,255,255,0.2)',
                             fontSize: '12px',
@@ -398,7 +398,7 @@ export default function MissionChecklist({
                 onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, idx, 'DAILIES')}
                 style={{ opacity: dragInfo?.index === idx && dragInfo.type === 'DAILIES' ? 0.4 : 1 }}
             >
-                <div style={{
+                <div onClick={() => onToggleDaily(daily.id)} style={{ cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '10px',
@@ -444,7 +444,7 @@ export default function MissionChecklist({
                     </div>
 
                     <button
-                        onClick={() => openDrawer(daily, 'daily')}
+                        onClick={(e) => { e.stopPropagation(); openDrawer(daily, 'daily'); }}
                         style={{
                             color: 'rgba(255,255,255,0.2)',
                             fontSize: '12px',
