@@ -517,6 +517,16 @@ export default function ChatPage() {
     const textToSend = overrideInput || input;
     if (!textToSend.trim() || isLoading) return;
 
+    // --- Instantly start a task if the user types "start task - X" ---
+    const startTaskMatch = textToSend.match(/^start task\s*-\s*["']?([^"']+)["']?/i);
+    if (startTaskMatch) {
+      const taskName = startTaskMatch[1].trim();
+      startManualTask(taskName);
+      
+      setInput('');
+      return; 
+    }
+
     // Check if this is a response to a task completion prompt
     const lastAssistantMessage = messages[messages.length - 1];
     if (lastAssistantMessage?.role === 'assistant' && lastAssistantMessage?.completedMission) {
@@ -1567,33 +1577,7 @@ OPERATIONAL TAGS:
                   </div>
                 )}
 
-                {/* Preset Task Selector */}
-                {activeTasks.length === 0 && (
-                  <div style={{ textAlign: 'center', padding: '2rem', opacity: 0.6 }}>
-                    <button
-                      onClick={() => setShowPresetTasks(true)}
-                      style={{
-                        background: 'var(--accent)',
-                        color: 'white',
-                        border: 'none',
-                        padding: '1rem 2rem',
-                        borderRadius: '12px',
-                        cursor: 'pointer',
-                        fontWeight: '700',
-                        fontSize: '0.9rem',
-                        marginBottom: '1rem',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.5rem'
-                      }}
-                    >
-                      📋 Choose from Preset Tasks
-                    </button>
-                    <p style={{ fontSize: '0.85rem', opacity: 0.7, margin: 0 }}>
-                      Or type a custom task in the chat
-                    </p>
-                  </div>
-                )}
+
 
                 {activeTasks.length > 0 && (
                   <div className="active-task-dock">
