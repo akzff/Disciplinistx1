@@ -1173,7 +1173,7 @@ OPERATIONAL TAGS:
               }])}
               onEditDaily={(id, text) => setDailies(prev => prev.map(d => d.id === id ? { ...d, text } : d))}
               onDeleteDaily={(id) => setDailies(prev => prev.filter(d => d.id !== id))}
-              onAddTodo={(text) => setTodos(prev => [...prev, {
+              onAddTodo={(text) => setTodos(prev => [{
                 id: Date.now().toString(),
                 text,
                 completed: false,
@@ -1188,7 +1188,7 @@ OPERATIONAL TAGS:
                 notes: '',
                 snoozed_until: '',
                 last_completed: ''
-              }])}
+              }, ...prev])}
               onEditTodo={(id, text) => setTodos(prev => prev.map(t => t.id === id ? { ...t, text } : t))}
               onDeleteTodo={(id) => setTodos(prev => prev.filter(t => t.id !== id))}
             />

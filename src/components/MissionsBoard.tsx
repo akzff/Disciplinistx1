@@ -72,7 +72,7 @@ export default function MissionsBoard({ chat, onUpdate, onClose }: MissionsBoard
             subtasks: [],
             created_at: Date.now()
         };
-        onUpdate({ todos: [...(chat.todos || []), newItem] });
+        onUpdate({ todos: [newItem, ...(chat.todos || [])] });
         setNewText('');
         setNewTime('');
         setIsTimed(false);
