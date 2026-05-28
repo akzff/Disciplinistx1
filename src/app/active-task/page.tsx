@@ -466,9 +466,6 @@ export default function ActiveTaskPage() {
                                     {/* Looping Visual Card */}
                                     <div className="visual-loop-card" onClick={handleToggleTask}>
                                         <div className="visual-loop-canvas-placeholder">
-                                            {/* Rotating Glow Ring */}
-                                            <div className="visual-loop-glow-ring" style={{ zIndex: 1, pointerEvents: 'none' }}></div>
-
                                             {/* Looping Premium Video */}
                                             <video
                                                 ref={videoRef}
