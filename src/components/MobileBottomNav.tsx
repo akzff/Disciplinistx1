@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect } from 'react';
 
-const NAV_ROUTES = ['/', '/expenses', '/analytics', '/records'];
+const NAV_ROUTES = ['/', '/active-task', '/expenses', '/analytics', '/records'];
 
 interface MobileNavProps {
     onTasksPress?: () => void;
@@ -59,6 +59,22 @@ export function MobileBottomNav({ onTasksPress, tasksActive }: MobileNavProps) {
                     </svg>
                 </span>
                 <span className="mbn-label">CHAT</span>
+            </Link>
+
+            <Link
+                href="/active-task"
+                prefetch
+                onMouseEnter={() => prefetchRoute('/active-task')}
+                onFocus={() => prefetchRoute('/active-task')}
+                className={`mbn-item${pathname === '/active-task' ? ' mbn-item--current' : ''}`}
+            >
+                <span className="mbn-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                </span>
+                <span className="mbn-label">ACTIVE TASK</span>
             </Link>
 
             <Link

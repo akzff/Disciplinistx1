@@ -6,6 +6,7 @@ import { useCallback, useEffect } from 'react';
 
 const MENU_ITEMS = [
     { label: 'CHAT', href: '/' },
+    { label: 'ACTIVE TASK', href: '/active-task' },
     { label: 'RECORDS', href: '/records' },
     { label: 'ANALYTICS', href: '/analytics' },
     { label: 'EXPENSES', href: '/expenses' },
