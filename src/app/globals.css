@@ -3162,15 +3162,164 @@ input {
   100% { opacity: 0.7; transform: scale(1.1) rotate(5deg); }
 }
 
-/* Video/Visual Canvas responsiveness */
-@media (max-width: 900px) {
-  .active-running-quotes-row {
-    flex-direction: column;
-    gap: 2rem;
-  }
-  .quote-flank {
-    max-width: 100%;
-    text-align: center !important;
-  }
+.mbn-active-dot {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.8);
+  animation: nav-live-pulse 2s ease-in-out infinite;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   GOAL & TASK SUGGESTIONS
+   ══════════════════════════════════════════════════════════ */
+
+.suggestion-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  width: 100%;
+}
+
+.suggestion-container {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  overflow-x: auto;
+  padding: 4px 2px 10px;
+  width: 100%;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;  /* IE/Edge */
+  will-change: scroll-position;
+}
+
+.suggestion-container::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+.suggestion-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 100px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  overflow: visible;
+  user-select: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.suggestion-pill:hover {
+  background: rgba(212, 160, 23, 0.08);
+  border-color: rgba(212, 160, 23, 0.5);
+  color: white;
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 8px 20px rgba(212, 160, 23, 0.15), 0 0 10px rgba(212, 160, 23, 0.1);
+}
+
+.suggestion-pill:active {
+  transform: translateY(0) scale(0.96);
+  transition: all 0.1s ease;
+}
+
+.suggestion-pill--active {
+  background: rgba(212, 160, 23, 0.15) !important;
+  border-color: #d4a017 !important;
+  color: #d4a017 !important;
+  box-shadow: 0 4px 20px rgba(212, 160, 23, 0.25), 0 0 12px rgba(212, 160, 23, 0.15) !important;
+  transform: scale(1.02);
+}
+
+.suggestion-pill-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  padding-left: 6px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.suggestion-pill:hover .suggestion-pill-actions {
+  opacity: 1;
+}
+
+.suggestion-pill-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+  min-height: unset !important;
+}
+
+.suggestion-pill-btn:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+}
+
+.suggestion-pill-btn.delete:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.suggestion-inline-input {
+  background: transparent;
+  border: none;
+  color: white;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  outline: none;
+  padding: 0;
+  margin: 0;
+  width: 80px;
+  min-height: unset !important;
+  transition: width 0.2s ease;
+}
+
+.suggestion-inline-save-btn {
+  background: none;
+  border: none;
+  color: #10b981;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: unset !important;
+}
+
+.suggestion-inline-save-btn:hover {
+  transform: scale(1.15);
+}
+
+.suggestion-hint {
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.25);
+  text-transform: uppercase;
+}
+
 
