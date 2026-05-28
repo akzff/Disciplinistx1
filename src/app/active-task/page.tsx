@@ -478,7 +478,7 @@ export default function ActiveTaskPage() {
                                                     width: '100%',
                                                     height: '100%',
                                                     objectFit: 'cover',
-                                                    borderRadius: '27px',
+                                                    borderRadius: '35px',
                                                     zIndex: 0,
                                                     willChange: 'transform',
                                                     transform: 'translate3d(0, 0, 0)'
