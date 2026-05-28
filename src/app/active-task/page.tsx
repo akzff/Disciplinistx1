@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useData } from '@/lib/DataContext';
 import { useAuthContext } from '@/lib/AuthContext';
 import { useUser } from '@clerk/nextjs';
@@ -73,6 +73,9 @@ export default function ActiveTaskPage() {
     const [taskName, setTaskName] = useState('');
     const [durationMins, setDurationMins] = useState(25);
     const [now, setNow] = useState(Date.now());
+    
+    // Video Ref
+    const videoRef = useRef<HTMLVideoElement>(null);
 
     // Quotes state
     const [leftQuote, setLeftQuote] = useState(MOTIVATIONAL_QUOTES[0]);
@@ -96,6 +99,16 @@ export default function ActiveTaskPage() {
         const interval = setInterval(() => setNow(Date.now()), 1000);
         return () => clearInterval(interval);
     }, []);
+
+    // Sync video play/pause
+    useEffect(() => {
+        if (!videoRef.current) return;
+        if (currentActiveTask?.status === 'RUNNING') {
+            videoRef.current.play().catch(e => console.log('Video play interrupted:', e));
+        } else {
+            videoRef.current.pause();
+        }
+    }, [currentActiveTask?.status]);
 
     // Quote rotation effect
     useEffect(() => {
@@ -454,18 +467,26 @@ export default function ActiveTaskPage() {
                                     <div className="visual-loop-card">
                                         <div className="visual-loop-canvas-placeholder">
                                             {/* Rotating Glow Ring */}
-                                            <div className="visual-loop-glow-ring"></div>
+                                            <div className="visual-loop-glow-ring" style={{ zIndex: 1, pointerEvents: 'none' }}></div>
 
-                                            {/* Glowing Gears Visual */}
-                                            <svg className="visual-loop-gears" style={{ animationPlayState: currentActiveTask.status === 'RUNNING' ? 'running' : 'paused' }} viewBox="0 0 24 24" width="96" height="96" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                                                <circle cx="12" cy="12" r="3"></circle>
-                                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 1 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                                            </svg>
-
-                                            {/* Glowing organic plant growing through the gears */}
-                                            <svg className="visual-loop-plant-stem" style={{ animationPlayState: currentActiveTask.status === 'RUNNING' ? 'running' : 'paused' }} viewBox="0 0 24 24" width="80" height="80" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                                                <path d="M12 22C12 14.5 17 9.5 17 9.5M12 18.5C12 13 8 9 8 9M12 22V2M12 2L15 5M12 2L9 5"></path>
-                                            </svg>
+                                            {/* Looping Premium Video */}
+                                            <video
+                                                ref={videoRef}
+                                                src="/video/focus-loop.mp4.mp4"
+                                                loop
+                                                muted
+                                                playsInline
+                                                preload="auto"
+                                                style={{
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    objectFit: 'cover',
+                                                    borderRadius: '27px',
+                                                    zIndex: 0,
+                                                    willChange: 'transform',
+                                                    transform: 'translate3d(0, 0, 0)'
+                                                }}
+                                            />
 
                                             {/* Middle Play/Pause Indicator Button */}
                                             <div className="visual-loop-play-overlay" onClick={handleToggleTask}>
