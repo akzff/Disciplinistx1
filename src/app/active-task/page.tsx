@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo, CSSProperties } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useData } from '@/lib/DataContext';
 import { useAuthContext } from '@/lib/AuthContext';
 import { useUser } from '@clerk/nextjs';
@@ -104,7 +104,7 @@ export default function ActiveTaskPage() {
             setRightOpacity(0);
 
             setTimeout(() => {
-                let leftIdx = Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length);
+                const leftIdx = Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length);
                 let rightIdx = Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length);
                 while (leftIdx === rightIdx) {
                     rightIdx = Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length);
@@ -138,7 +138,6 @@ export default function ActiveTaskPage() {
             totalActiveTime: 0,
             totalPausedTime: 0,
             lastStartedAt: Date.now(),
-            // @ts-ignore
             duration: targetDurationMs
         };
 
@@ -318,7 +317,6 @@ export default function ActiveTaskPage() {
             ? (currentActiveTask.totalActiveTime || 0) + Math.max(0, now - (currentActiveTask.lastStartedAt || currentActiveTask.startTime || now))
             : (currentActiveTask.totalActiveTime || 0);
 
-        // @ts-ignore
         const targetDuration = currentActiveTask.duration || (25 * 60 * 1000);
         const progressPercent = Math.min(100, (activeTime / targetDuration) * 100);
 

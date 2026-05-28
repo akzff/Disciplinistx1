@@ -33,6 +33,7 @@ export interface ActiveTask {
     lastStartedAt: number;
     lastPausedAt?: number;
     notes?: TaskNote[];
+    duration?: number; // Target duration in milliseconds
 }
 
 export interface TodoHistoryEntry {
