@@ -2890,13 +2890,14 @@ input {
   align-items: center;
   justify-content: center;
   width: 100%;
-  max-width: 960px;
-  gap: 3rem;
+  max-width: 1140px;
+  gap: 4rem;
+  padding: 0 2rem;
 }
 
 .quote-flank {
   flex: 1;
-  max-width: 240px;
+  max-width: 340px;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -2950,6 +2951,7 @@ input {
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
 }
 
 .visual-loop-glow-ring {
@@ -2998,8 +3000,8 @@ input {
 
 .visual-loop-play-overlay {
   position: absolute;
-  width: 56px;
-  height: 56px;
+  width: 96px;
+  height: 96px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(12px);

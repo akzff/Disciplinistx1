@@ -464,7 +464,7 @@ export default function ActiveTaskPage() {
                                     </div>
 
                                     {/* Looping Visual Card */}
-                                    <div className="visual-loop-card">
+                                    <div className="visual-loop-card" onClick={handleToggleTask}>
                                         <div className="visual-loop-canvas-placeholder">
                                             {/* Rotating Glow Ring */}
                                             <div className="visual-loop-glow-ring" style={{ zIndex: 1, pointerEvents: 'none' }}></div>
@@ -488,19 +488,14 @@ export default function ActiveTaskPage() {
                                                 }}
                                             />
 
-                                            {/* Middle Play/Pause Indicator Button */}
-                                            <div className="visual-loop-play-overlay" onClick={handleToggleTask}>
-                                                {currentActiveTask.status === 'RUNNING' ? (
-                                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                                        <rect x="6" y="4" width="4" height="16" fill="currentColor"></rect>
-                                                        <rect x="14" y="4" width="4" height="16" fill="currentColor"></rect>
-                                                    </svg>
-                                                ) : (
-                                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            {/* Middle Play/Pause Indicator Button (Visible ONLY when paused, and very large) */}
+                                            {currentActiveTask.status !== 'RUNNING' && (
+                                                <div className="visual-loop-play-overlay" style={{ zIndex: 10 }}>
+                                                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: 'translateX(2px)' }}>
                                                         <polygon points="5 3 19 12 5 21 5 3" fill="currentColor"></polygon>
                                                     </svg>
-                                                )}
-                                            </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
@@ -527,27 +522,17 @@ export default function ActiveTaskPage() {
 
                                     {/* Premium Oval Controls */}
                                     <div className="timer-controls-row">
-                                        <button 
-                                            className="timer-btn-pause"
-                                            onClick={handleToggleTask}
-                                        >
-                                            {currentActiveTask.status === 'RUNNING' ? (
-                                                <>
-                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                                        <rect x="6" y="4" width="4" height="16" fill="currentColor"></rect>
-                                                        <rect x="14" y="4" width="4" height="16" fill="currentColor"></rect>
-                                                    </svg>
-                                                    PAUSE
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                                        <polygon points="5 3 19 12 5 21 5 3" fill="currentColor"></polygon>
-                                                    </svg>
-                                                    RESUME
-                                                </>
-                                            )}
-                                        </button>
+                                        {currentActiveTask.status !== 'RUNNING' && (
+                                            <button 
+                                                className="timer-btn-pause"
+                                                onClick={handleToggleTask}
+                                            >
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                                    <polygon points="5 3 19 12 5 21 5 3" fill="currentColor"></polygon>
+                                                </svg>
+                                                RESUME
+                                            </button>
+                                        )}
 
                                         <button 
                                             className="timer-btn-finish"
