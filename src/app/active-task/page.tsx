@@ -542,13 +542,6 @@ export default function ActiveTaskPage() {
                                         </button>
                                     </div>
                                 </div>
-
-                                {/* Sparkle/Diamond Star Ornament at the bottom-right */}
-                                <div className="timer-bottom-decoration">
-                                    <svg viewBox="0 0 24 24" width="36" height="36" fill="currentColor">
-                                        <path d="M12 2L14.7 9.3L22 12L14.7 14.7L12 22L9.3 14.7L2 12L9.3 9.3L12 2Z"></path>
-                                    </svg>
-                                </div>
                             </div>
                         )}
                     </div>
