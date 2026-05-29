@@ -88,6 +88,7 @@ export default function ActiveTaskPage() {
     const [goalName, setGoalName] = useState('Workout');
     const [taskName, setTaskName] = useState('');
     const [durationMins, setDurationMins] = useState(25);
+    const [timerMode, setTimerMode] = useState<'pomodoro' | 'stopwatch'>('pomodoro');
     const [now, setNow] = useState(Date.now());
     
     // Video Ref
@@ -226,6 +227,17 @@ export default function ActiveTaskPage() {
         return PERSONAS[pId] || PERSONAS.friend;
     }, [preferences?.persona]);
 
+    function formatDigitalTimer(ms: number): string {
+        const h = Math.floor(ms / 3600000);
+        const m = Math.floor((ms % 3600000) / 60000);
+        const s = Math.floor((ms % 60000) / 1000);
+        const pad = (n: number) => String(n).padStart(2, '0');
+        if (h > 0) {
+            return `${pad(h)}:${pad(m)}:${pad(s)}`;
+        }
+        return `${pad(m)}:${pad(s)}`;
+    }
+
     const handleStartTask = async () => {
         if (!goalName.trim() || !taskName.trim()) return;
         
@@ -241,7 +253,7 @@ export default function ActiveTaskPage() {
         }
 
         const name = `${goalName.trim()} - ${taskName.trim()}`;
-        const targetDurationMs = durationMins * 60 * 1000;
+        const targetDurationMs = timerMode === 'pomodoro' ? durationMins * 60 * 1000 : 0;
 
         const newTask: ActiveTask = {
             id: Date.now().toString(),
@@ -430,13 +442,32 @@ export default function ActiveTaskPage() {
             ? (currentActiveTask.totalActiveTime || 0) + Math.max(0, now - (currentActiveTask.lastStartedAt || currentActiveTask.startTime || now))
             : (currentActiveTask.totalActiveTime || 0);
 
-        const targetDuration = currentActiveTask.duration || (25 * 60 * 1000);
-        const progressPercent = Math.min(100, (activeTime / targetDuration) * 100);
+        const isStopwatch = !currentActiveTask.duration || currentActiveTask.duration === 0;
+        const targetDuration = currentActiveTask.duration || 0;
+        
+        const progressPercent = isStopwatch
+            ? (activeTime % 60000) / 600
+            : Math.min(100, (activeTime / targetDuration) * 100);
+
+        let mainTimerString = '';
+        let subtitleString = '';
+
+        if (isStopwatch) {
+            mainTimerString = formatDigitalTimer(activeTime);
+            subtitleString = 'STOPWATCH MODE';
+        } else {
+            const remaining = Math.max(0, targetDuration - activeTime);
+            mainTimerString = formatDigitalTimer(remaining);
+            subtitleString = `TARGET: ${formatTime(targetDuration, false)}`;
+        }
 
         return {
             activeTime,
             targetDuration,
-            progressPercent
+            progressPercent,
+            isStopwatch,
+            mainTimerString,
+            subtitleString
         };
     }, [currentActiveTask, now]);
 
@@ -666,17 +697,44 @@ export default function ActiveTaskPage() {
                                 </div>
 
                                 <div className="active-task-form-group">
-                                    <label className="active-task-form-label">Duration (Minutes)</label>
-                                    <input 
-                                        type="number" 
-                                        min="1"
-                                        max="480"
-                                        className="active-task-form-input" 
-                                        placeholder="25"
-                                        value={durationMins}
-                                        onChange={(e) => setDurationMins(parseInt(e.target.value) || 25)}
-                                    />
+                                    <label className="active-task-form-label">Mission Tracking Mode</label>
+                                    <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+                                        {[
+                                            { id: 'pomodoro', label: '⏳ POMODORO (TIMER)' },
+                                            { id: 'stopwatch', label: '⏱️ STOPWATCH (COUNT UP)' }
+                                        ].map((m) => (
+                                            <button
+                                                key={m.id}
+                                                type="button"
+                                                onClick={() => setTimerMode(m.id as 'pomodoro' | 'stopwatch')}
+                                                style={{
+                                                    flex: 1, padding: '12px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer',
+                                                    background: timerMode === m.id ? '#d4a017' : 'rgba(255,255,255,0.05)',
+                                                    color: timerMode === m.id ? 'black' : 'rgba(255,255,255,0.6)',
+                                                    fontWeight: '950', fontSize: '0.75rem', transition: '0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                    letterSpacing: '0.02em'
+                                                }}
+                                            >
+                                                {m.label}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
+
+                                {timerMode === 'pomodoro' && (
+                                    <div className="active-task-form-group">
+                                        <label className="active-task-form-label">Duration (Minutes)</label>
+                                        <input 
+                                            type="number" 
+                                            min="1"
+                                            max="480"
+                                            className="active-task-form-input" 
+                                            placeholder="25"
+                                            value={durationMins}
+                                            onChange={(e) => setDurationMins(parseInt(e.target.value) || 25)}
+                                        />
+                                    </div>
+                                )}
 
                                 <button 
                                     className="active-task-start-btn"
@@ -752,9 +810,13 @@ export default function ActiveTaskPage() {
                                         ></div>
                                     </div>
 
-                                    <div className="timer-numbers">
-                                        <span className="timer-elapsed">{formatTime(timerStats?.activeTime || 0)}</span>
-                                        <span className="timer-total">{formatTime(timerStats?.targetDuration || 0)}</span>
+                                    <div className="timer-numbers" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '0 4px', margin: '12px 0 6px 0' }}>
+                                        <span className="timer-elapsed" style={{ fontSize: '3rem', fontWeight: '950', fontFamily: 'monospace', letterSpacing: '-0.02em', color: 'white' }}>
+                                            {timerStats?.mainTimerString}
+                                        </span>
+                                        <span className="timer-total" style={{ fontSize: '0.7rem', fontWeight: '900', color: '#d4a017', letterSpacing: '0.1em', opacity: 0.8 }}>
+                                            {timerStats?.subtitleString}
+                                        </span>
                                     </div>
 
                                     {/* Premium Oval Controls */}
