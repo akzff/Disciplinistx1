@@ -276,7 +276,9 @@ export default function ActiveTaskPage() {
         const nextMessages = [...(todayChat?.messages || []), systemUserMsg];
 
         setLocalChat(activeDay, { activeTasks: nextActiveTasks, messages: nextMessages });
-        await cloudStorage.saveChat(activeDay, { activeTasks: nextActiveTasks, messages: nextMessages }, user?.id || undefined, true);
+        cloudStorage.saveChat(activeDay, { activeTasks: nextActiveTasks, messages: nextMessages }, user?.id || undefined, true).catch(err => {
+            console.warn('Background cloud save failed:', err);
+        });
 
         // Fetch real-time AI mentor response
         try {
@@ -302,7 +304,9 @@ export default function ActiveTaskPage() {
                 };
                 const finalMessages = [...nextMessages, aiMessage];
                 setLocalChat(activeDay, { messages: finalMessages });
-                await cloudStorage.saveChat(activeDay, { messages: finalMessages }, user?.id || undefined, true);
+                cloudStorage.saveChat(activeDay, { messages: finalMessages }, user?.id || undefined, true).catch(err => {
+                    console.warn('Background cloud save failed:', err);
+                });
             }
         } catch (e) {
             console.warn('AI start notification failed', e);
@@ -335,7 +339,9 @@ export default function ActiveTaskPage() {
         });
 
         setLocalChat(activeDay, { activeTasks: nextActiveTasks });
-        await cloudStorage.saveChat(activeDay, { activeTasks: nextActiveTasks }, user?.id || undefined, true);
+        cloudStorage.saveChat(activeDay, { activeTasks: nextActiveTasks }, user?.id || undefined, true).catch(err => {
+            console.warn('Background cloud save failed:', err);
+        });
     };
 
     const handleFinishTask = async () => {
@@ -396,12 +402,14 @@ export default function ActiveTaskPage() {
             todoHistory: updatedHistory,
             messages: nextMessages
         });
-        await cloudStorage.saveChat(activeDay, {
+        cloudStorage.saveChat(activeDay, {
             activeTasks: remaining,
             completedTasks: updatedCompleted,
             todoHistory: updatedHistory,
             messages: nextMessages
-        }, user?.id || undefined, true);
+        }, user?.id || undefined, true).catch(err => {
+            console.warn('Background cloud save failed:', err);
+        });
 
         // Fetch real-time AI mentor response
         try {
@@ -427,7 +435,9 @@ export default function ActiveTaskPage() {
                 };
                 const finalMessages = [...nextMessages, aiMessage];
                 setLocalChat(activeDay, { messages: finalMessages });
-                await cloudStorage.saveChat(activeDay, { messages: finalMessages }, user?.id || undefined, true);
+                cloudStorage.saveChat(activeDay, { messages: finalMessages }, user?.id || undefined, true).catch(err => {
+                    console.warn('Background cloud save failed:', err);
+                });
             }
         } catch (e) {
             console.warn('AI completion notification failed', e);
@@ -770,7 +780,10 @@ export default function ActiveTaskPage() {
                                     </div>
 
                                     {/* Looping Visual Card */}
-                                    <div className="visual-loop-card" onClick={handleToggleTask}>
+                                    <div 
+                                        className={`visual-loop-card${currentActiveTask.status !== 'RUNNING' ? ' visual-loop-card--paused' : ''}`} 
+                                        onClick={handleToggleTask}
+                                    >
                                         <div className="visual-loop-canvas-placeholder">
                                             {/* Looping Premium Video */}
                                             <video
@@ -829,7 +842,18 @@ export default function ActiveTaskPage() {
 
                                     {/* Premium Oval Controls */}
                                     <div className="timer-controls-row">
-                                        {currentActiveTask.status !== 'RUNNING' && (
+                                        {currentActiveTask.status === 'RUNNING' ? (
+                                            <button 
+                                                className="timer-btn-pause"
+                                                onClick={handleToggleTask}
+                                            >
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                                                    <rect x="6" y="4" width="4" height="16" fill="currentColor"></rect>
+                                                    <rect x="14" y="4" width="4" height="16" fill="currentColor"></rect>
+                                                </svg>
+                                                PAUSE
+                                            </button>
+                                        ) : (
                                             <button 
                                                 className="timer-btn-pause"
                                                 onClick={handleToggleTask}
