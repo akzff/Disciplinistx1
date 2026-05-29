@@ -104,7 +104,7 @@ export default function ActiveTaskPage() {
         if (stored) {
             try {
                 setSuggestions(JSON.parse(stored));
-            } catch (e) {
+            } catch {
                 setSuggestions(DEFAULT_SUGGESTIONS);
             }
         } else {

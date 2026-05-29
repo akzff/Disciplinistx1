@@ -354,7 +354,7 @@ export default function AnalyticsPage() {
                                 ].map(r => (
                                     <button
                                         key={r.id}
-                                        onClick={() => setDateRange(r.id as any)}
+                                        onClick={() => setDateRange(r.id as '7' | '14' | '30' | 'all')}
                                         style={{
                                             padding: '6px 12px',
                                             borderRadius: '8px',
