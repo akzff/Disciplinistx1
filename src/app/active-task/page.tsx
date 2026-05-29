@@ -10,6 +10,22 @@ import { NavigationBar } from '@/components/NavigationBar';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import Image from 'next/image';
 
+interface GoalTaskSuggestion {
+    id: string;
+    goal: string;
+    task: string;
+}
+
+const DEFAULT_SUGGESTIONS: GoalTaskSuggestion[] = [
+    { id: '1', goal: 'Workout', task: 'Back day' },
+    { id: '2', goal: 'Workout', task: 'Chest day' },
+    { id: '3', goal: 'Workout', task: 'Leg day' },
+    { id: '4', goal: 'Deep Work', task: 'Coding core loop' },
+    { id: '5', goal: 'Deep Work', task: 'Write documentation' },
+    { id: '6', goal: 'Study', task: 'Mathematics review' },
+    { id: '7', goal: 'Meditation', task: 'Mindfulness session' }
+];
+
 const MOTIVATIONAL_QUOTES = [
     { text: "The future depends on what you do today.", author: "Gandhi" },
     { text: "Your limitation—it's only your imagination.", author: "Anonymous" },
@@ -77,6 +93,78 @@ export default function ActiveTaskPage() {
     // Video Ref
     const videoRef = useRef<HTMLVideoElement>(null);
 
+    // Suggestions state
+    const [suggestions, setSuggestions] = useState<GoalTaskSuggestion[]>([]);
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editInputValue, setEditInputValue] = useState('');
+
+    // Load suggestions on mount
+    useEffect(() => {
+        const stored = localStorage.getItem('disciplinist_goal_task_suggestions');
+        if (stored) {
+            try {
+                setSuggestions(JSON.parse(stored));
+            } catch (e) {
+                setSuggestions(DEFAULT_SUGGESTIONS);
+            }
+        } else {
+            setSuggestions(DEFAULT_SUGGESTIONS);
+            localStorage.setItem('disciplinist_goal_task_suggestions', JSON.stringify(DEFAULT_SUGGESTIONS));
+        }
+    }, []);
+
+    const saveSuggestions = (list: GoalTaskSuggestion[]) => {
+        setSuggestions(list);
+        localStorage.setItem('disciplinist_goal_task_suggestions', JSON.stringify(list));
+    };
+
+    const handleSaveGoalEdit = (oldGoalName: string, newGoalName: string) => {
+        if (!newGoalName.trim()) return;
+        const updated = suggestions.map(s => {
+            if (s.goal.toLowerCase() === oldGoalName.toLowerCase()) {
+                return { ...s, goal: newGoalName.trim() };
+            }
+            return s;
+        });
+        saveSuggestions(updated);
+        setGoalName(newGoalName.trim());
+        setEditingId(null);
+    };
+
+    const handleDeleteGoal = (goalToDelete: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        const updated = suggestions.filter(s => s.goal.toLowerCase() !== goalToDelete.toLowerCase());
+        saveSuggestions(updated);
+        if (goalName.toLowerCase() === goalToDelete.toLowerCase()) {
+            setGoalName('');
+        }
+    };
+
+    const handleSaveTaskEdit = (suggestionId: string, newTaskName: string) => {
+        if (!newTaskName.trim()) return;
+        const updated = suggestions.map(s => {
+            if (s.id === suggestionId) {
+                return { ...s, task: newTaskName.trim() };
+            }
+            return s;
+        });
+        saveSuggestions(updated);
+        setTaskName(newTaskName.trim());
+        setEditingId(null);
+    };
+
+    const handleDeleteTask = (suggestionId: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        const updated = suggestions.filter(s => s.id !== suggestionId);
+        saveSuggestions(updated);
+        setTaskName('');
+    };
+
+    // Calculate unique goals for the suggestions bar
+    const uniqueGoals = useMemo(() => {
+        return Array.from(new Set(suggestions.map(s => s.goal)));
+    }, [suggestions]);
+
     // Quotes state
     const [leftQuote, setLeftQuote] = useState(MOTIVATIONAL_QUOTES[0]);
     const [rightQuote, setRightQuote] = useState(MOTIVATIONAL_QUOTES[1]);
@@ -140,6 +228,18 @@ export default function ActiveTaskPage() {
 
     const handleStartTask = async () => {
         if (!goalName.trim() || !taskName.trim()) return;
+        
+        // Auto-save new suggestions
+        const exists = suggestions.some(s => s.goal.toLowerCase() === goalName.trim().toLowerCase() && s.task.toLowerCase() === taskName.trim().toLowerCase());
+        if (!exists) {
+            const newSug = {
+                id: Date.now().toString(),
+                goal: goalName.trim(),
+                task: taskName.trim()
+            };
+            saveSuggestions([newSug, ...suggestions]);
+        }
+
         const name = `${goalName.trim()} - ${taskName.trim()}`;
         const targetDurationMs = durationMins * 60 * 1000;
 
@@ -412,6 +512,72 @@ export default function ActiveTaskPage() {
                                         value={goalName}
                                         onChange={(e) => setGoalName(e.target.value)}
                                     />
+                                    {/* Goal suggestions */}
+                                    <div className="suggestion-section">
+                                        <div className="suggestion-container">
+                                            {uniqueGoals.map(g => {
+                                                const isEditing = editingId === `goal-${g}`;
+                                                const isActive = goalName.toLowerCase() === g.toLowerCase();
+                                                return (
+                                                    <div 
+                                                        key={g}
+                                                        className={`suggestion-pill${isActive ? ' suggestion-pill--active' : ''}`}
+                                                        onClick={() => setGoalName(g)}
+                                                    >
+                                                        {isEditing ? (
+                                                            <>
+                                                                <input 
+                                                                    type="text"
+                                                                    className="suggestion-inline-input"
+                                                                    value={editInputValue}
+                                                                    onChange={(e) => setEditInputValue(e.target.value)}
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === 'Enter') handleSaveGoalEdit(g, editInputValue);
+                                                                        else if (e.key === 'Escape') setEditingId(null);
+                                                                    }}
+                                                                    autoFocus
+                                                                />
+                                                                <button 
+                                                                    className="suggestion-inline-save-btn"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleSaveGoalEdit(g, editInputValue);
+                                                                    }}
+                                                                >
+                                                                    ✓
+                                                                </button>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <span>{g}</span>
+                                                                <div className="suggestion-pill-actions">
+                                                                    <button 
+                                                                        className="suggestion-pill-btn"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setEditingId(`goal-${g}`);
+                                                                            setEditInputValue(g);
+                                                                        }}
+                                                                        title="Edit"
+                                                                    >
+                                                                        ✎
+                                                                    </button>
+                                                                    <button 
+                                                                        className="suggestion-pill-btn delete"
+                                                                        onClick={(e) => handleDeleteGoal(g, e)}
+                                                                        title="Delete"
+                                                                    >
+                                                                        ×
+                                                                    </button>
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div className="active-task-form-group">
@@ -423,6 +589,80 @@ export default function ActiveTaskPage() {
                                         value={taskName}
                                         onChange={(e) => setTaskName(e.target.value)}
                                     />
+                                    {/* Task suggestions mapped to selected Goal */}
+                                    <div className="suggestion-section">
+                                        <div className="suggestion-container">
+                                            {suggestions
+                                                .filter(s => s.goal.toLowerCase() === goalName.toLowerCase())
+                                                .map(s => {
+                                                    const isEditing = editingId === s.id;
+                                                    const isActive = taskName.toLowerCase() === s.task.toLowerCase();
+                                                    return (
+                                                        <div 
+                                                            key={s.id}
+                                                            className={`suggestion-pill${isActive ? ' suggestion-pill--active' : ''}`}
+                                                            onClick={() => setTaskName(s.task)}
+                                                        >
+                                                            {isEditing ? (
+                                                                <>
+                                                                    <input 
+                                                                        type="text"
+                                                                        className="suggestion-inline-input"
+                                                                        value={editInputValue}
+                                                                        onChange={(e) => setEditInputValue(e.target.value)}
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                        onKeyDown={(e) => {
+                                                                            if (e.key === 'Enter') handleSaveTaskEdit(s.id, editInputValue);
+                                                                            else if (e.key === 'Escape') setEditingId(null);
+                                                                        }}
+                                                                        autoFocus
+                                                                    />
+                                                                    <button 
+                                                                        className="suggestion-inline-save-btn"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handleSaveTaskEdit(s.id, editInputValue);
+                                                                        }}
+                                                                    >
+                                                                        ✓
+                                                                    </button>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <span>{s.task}</span>
+                                                                    <div className="suggestion-pill-actions">
+                                                                        <button 
+                                                                            className="suggestion-pill-btn"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                setEditingId(s.id);
+                                                                                setEditInputValue(s.task);
+                                                                            }}
+                                                                            title="Edit"
+                                                                        >
+                                                                            ✎
+                                                                        </button>
+                                                                        <button 
+                                                                            className="suggestion-pill-btn delete"
+                                                                            onClick={(e) => handleDeleteTask(s.id, e)}
+                                                                            title="Delete"
+                                                                        >
+                                                                            ×
+                                                                        </button>
+                                                                    </div>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            {suggestions.filter(s => s.goal.toLowerCase() === goalName.toLowerCase()).length === 0 && goalName.trim() !== '' && (
+                                                <span className="suggestion-hint">No mapped tasks. Save your session to auto-add suggestions.</span>
+                                            )}
+                                            {goalName.trim() === '' && (
+                                                <span className="suggestion-hint">Select a Goal to display associated tasks.</span>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div className="active-task-form-group">
