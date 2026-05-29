@@ -11,82 +11,100 @@ export const cloudStorage = {
         const currentUserId = userId;
         if (!currentUserId) return {};
 
-        let query = supabase
-            .from('disciplinist_daily_chats')
-            .select('date, data')
-            .eq('user_id', currentUserId)
-            .order('date', { ascending: false });
+        try {
+            let query = supabase
+                .from('disciplinist_daily_chats')
+                .select('date, data')
+                .eq('user_id', currentUserId)
+                .order('date', { ascending: false });
 
-        if (limit) {
-            query = query.limit(limit);
+            if (limit) {
+                query = query.limit(limit);
+            }
+
+            const { data, error } = await query;
+
+            if (error) { console.error('Cloud fetch chats error:', error); return {}; }
+
+            const result: Record<string, DailyChat> = {};
+            (data || []).forEach((row) => {
+                result[row.date] = row.data as DailyChat;
+            });
+
+            console.log('Cloud fetch successful:', {
+                chatsCount: Object.keys(result).length,
+                limitApplied: !!limit
+            });
+
+            return result;
+        } catch (err) {
+            console.error('Error fetching chats from cloud (network offline?):', err);
+            return {};
         }
-
-        const { data, error } = await query;
-
-        if (error) { console.error('Cloud fetch chats error:', error); return {}; }
-
-        const result: Record<string, DailyChat> = {};
-        (data || []).forEach((row) => {
-            result[row.date] = row.data as DailyChat;
-        });
-
-        console.log('Cloud fetch successful:', {
-            chatsCount: Object.keys(result).length,
-            limitApplied: !!limit
-        });
-
-        return result;
     },
 
     getChat: async (date: string, userId?: string): Promise<DailyChat | null> => {
         const currentUserId = userId;
         if (!currentUserId) return null;
 
-        const { data, error } = await supabase
-            .from('disciplinist_daily_chats')
-            .select('data')
-            .eq('user_id', currentUserId)
-            .eq('date', date)
-            .maybeSingle();
+        try {
+            const { data, error } = await supabase
+                .from('disciplinist_daily_chats')
+                .select('data')
+                .eq('user_id', currentUserId)
+                .eq('date', date)
+                .maybeSingle();
 
-        if (error) {
-            console.error('Cloud fetch chat error:', error);
+            if (error) {
+                console.error('Cloud fetch chat error:', error);
+                return null;
+            }
+
+            return data ? data.data as DailyChat : null;
+        } catch (err) {
+            console.error('Error fetching chat from cloud (network offline?):', err);
             return null;
         }
-
-        return data ? data.data as DailyChat : null;
     },
 
     saveChat: async (date: string, chatData: Partial<DailyChat>, userId?: string, skipFetch: boolean = false): Promise<void> => {
         const currentUserId = userId;
         if (!currentUserId) return;
 
-        let merged = chatData;
-        if (!skipFetch) {
-            // Upsert: load existing then merge
-            const existing = await cloudStorage.getChat(date, currentUserId);
-            const defaults: DailyChat = {
-                date,
-                messages: [],
-                status: 'OPEN',
-                activeTasks: [],
-                distractions: [],
-                todos: [],
-                dailies: [],
-                expenses: []
-            };
-            merged = { ...(existing || defaults), ...chatData };
+        try {
+            let merged = chatData;
+            if (!skipFetch) {
+                // Upsert: load existing then merge
+                const existing = await cloudStorage.getChat(date, currentUserId);
+                const defaults: DailyChat = {
+                    date,
+                    messages: [],
+                    status: 'OPEN',
+                    activeTasks: [],
+                    distractions: [],
+                    todos: [],
+                    dailies: [],
+                    expenses: []
+                };
+                merged = { ...(existing || defaults), ...chatData };
+            }
+
+            const { error } = await supabase
+                .from('disciplinist_daily_chats')
+                .upsert({ user_id: currentUserId, date, data: merged }, { onConflict: 'user_id,date' });
+
+            if (error) console.error('Cloud save chat error:', error);
+        } catch (err) {
+            console.error('Error saving chat to cloud (network offline?):', err);
         }
-
-        const { error } = await supabase
-            .from('disciplinist_daily_chats')
-            .upsert({ user_id: currentUserId, date, data: merged }, { onConflict: 'user_id,date' });
-
-        if (error) console.error('Cloud save chat error:', error);
     },
 
     closeChat: async (date: string, userId?: string): Promise<void> => {
-        await cloudStorage.saveChat(date, { status: 'CLOSED' }, userId);
+        try {
+            await cloudStorage.saveChat(date, { status: 'CLOSED' }, userId);
+        } catch (err) {
+            console.error('Error closing chat in cloud:', err);
+        }
     },
 
     // ── Preferences ────────────────────────────────────────────────────────
@@ -95,29 +113,38 @@ export const cloudStorage = {
         const currentUserId = userId;
         if (!currentUserId) return null;
 
-        const { data, error } = await supabase
-            .from('disciplinist_preferences')
-            .select('data')
-            .eq('user_id', currentUserId)
-            .maybeSingle();
+        try {
+            const { data, error } = await supabase
+                .from('disciplinist_preferences')
+                .select('data')
+                .eq('user_id', currentUserId)
+                .maybeSingle();
 
-        if (error) {
-            console.error('Cloud fetch prefs error:', error);
+            if (error) {
+                console.error('Cloud fetch prefs error:', error);
+                return null;
+            }
+
+            return data ? data.data as UserPreferences : null;
+        } catch (err) {
+            console.error('Error fetching preferences from cloud (network offline?):', err);
             return null;
         }
-
-        return data ? data.data as UserPreferences : null;
     },
 
     savePreferences: async (prefs: UserPreferences, userId?: string): Promise<void> => {
         const currentUserId = userId;
         if (!currentUserId) return;
 
-        const { error } = await supabase
-            .from('disciplinist_preferences')
-            .upsert({ user_id: currentUserId, data: prefs }, { onConflict: 'user_id' });
+        try {
+            const { error } = await supabase
+                .from('disciplinist_preferences')
+                .upsert({ user_id: currentUserId, data: prefs }, { onConflict: 'user_id' });
 
-        if (error) console.error('Cloud save prefs error:', error);
+            if (error) console.error('Cloud save prefs error:', error);
+        } catch (err) {
+            console.error('Error saving preferences to cloud (network offline?):', err);
+        }
     },
 
     // ── Data Verification ─────────────────────────────────────────────────────
