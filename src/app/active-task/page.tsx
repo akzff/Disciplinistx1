@@ -531,7 +531,7 @@ export default function ActiveTaskPage() {
                     <div className="active-task-page-container">
                         {!currentActiveTask ? (
                             /* Setup Form View */
-                            <div className="active-task-setup-card">
+                            <form onSubmit={(e) => { e.preventDefault(); handleStartTask(); }} className="active-task-setup-card">
                                 <h2 style={{ fontSize: '1.5rem', fontWeight: '900', marginBottom: '2.5rem', letterSpacing: '0.05em', textAlign: 'center', color: 'white' }}>LAUNCH ACTIVE MISSION</h2>
                                 
                                 <div className="active-task-form-group">
@@ -542,6 +542,7 @@ export default function ActiveTaskPage() {
                                         placeholder="e.g. Workout, Deep Work, Coding"
                                         value={goalName}
                                         onChange={(e) => setGoalName(e.target.value)}
+                                        required
                                     />
                                     {/* Goal suggestions */}
                                     <div className="suggestion-section">
@@ -570,6 +571,7 @@ export default function ActiveTaskPage() {
                                                                     autoFocus
                                                                 />
                                                                 <button 
+                                                                    type="button"
                                                                     className="suggestion-inline-save-btn"
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
@@ -584,6 +586,7 @@ export default function ActiveTaskPage() {
                                                                 <span>{g}</span>
                                                                 <div className="suggestion-pill-actions">
                                                                     <button 
+                                                                        type="button"
                                                                         className="suggestion-pill-btn"
                                                                         onClick={(e) => {
                                                                             e.stopPropagation();
@@ -595,6 +598,7 @@ export default function ActiveTaskPage() {
                                                                         ✎
                                                                     </button>
                                                                     <button 
+                                                                        type="button"
                                                                         className="suggestion-pill-btn delete"
                                                                         onClick={(e) => handleDeleteGoal(g, e)}
                                                                         title="Delete"
@@ -619,6 +623,7 @@ export default function ActiveTaskPage() {
                                         placeholder="e.g. Back day, Write API, Refactor CSS"
                                         value={taskName}
                                         onChange={(e) => setTaskName(e.target.value)}
+                                        required
                                     />
                                     {/* Task suggestions mapped to selected Goal */}
                                     <div className="suggestion-section">
@@ -649,6 +654,7 @@ export default function ActiveTaskPage() {
                                                                         autoFocus
                                                                     />
                                                                     <button 
+                                                                        type="button"
                                                                         className="suggestion-inline-save-btn"
                                                                         onClick={(e) => {
                                                                             e.stopPropagation();
@@ -663,6 +669,7 @@ export default function ActiveTaskPage() {
                                                                     <span>{s.task}</span>
                                                                     <div className="suggestion-pill-actions">
                                                                         <button 
+                                                                            type="button"
                                                                             className="suggestion-pill-btn"
                                                                             onClick={(e) => {
                                                                                 e.stopPropagation();
@@ -674,6 +681,7 @@ export default function ActiveTaskPage() {
                                                                             ✎
                                                                         </button>
                                                                         <button 
+                                                                            type="button"
                                                                             className="suggestion-pill-btn delete"
                                                                             onClick={(e) => handleDeleteTask(s.id, e)}
                                                                             title="Delete"
@@ -737,12 +745,12 @@ export default function ActiveTaskPage() {
                                 )}
 
                                 <button 
-                                    className="active-task-start-btn"
-                                    onClick={handleStartTask}
-                                >
-                                    Start Session
-                                </button>
-                            </div>
+                                                                    type="submit"
+                                                                    className="active-task-start-btn"
+                                                                >
+                                                                    Start Session
+                                                                </button>
+                            </form>
                         ) : (
                             /* Active Session dashboard View */
                             <div className="active-running-dashboard">
