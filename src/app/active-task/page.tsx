@@ -85,7 +85,7 @@ export default function ActiveTaskPage() {
     const { user } = useUser();
 
     // Setup form state
-    const [goalName, setGoalName] = useState('Workout');
+    const [goalName, setGoalName] = useState('');
     const [taskName, setTaskName] = useState('');
     const [durationMins, setDurationMins] = useState(25);
     const [timerMode, setTimerMode] = useState<'pomodoro' | 'stopwatch'>('pomodoro');
