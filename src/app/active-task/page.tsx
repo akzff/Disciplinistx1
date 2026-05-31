@@ -79,6 +79,69 @@ Use short, cutting sentences. Then land one clear action.`
     }
 };
 
+// Premium chimes synthesized using HTML5 Web Audio API
+const playSound = (type: 'success' | 'break-end') => {
+    try {
+        const AudioContextClass = typeof window !== 'undefined' ? (window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext) : null;
+        if (!AudioContextClass) return;
+        const ctx = new AudioContextClass();
+        
+        if (type === 'success') {
+            const osc1 = ctx.createOscillator();
+            const osc2 = ctx.createOscillator();
+            const gain = ctx.createGain();
+            
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(523.25, ctx.currentTime);
+            osc1.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.3);
+            
+            osc2.type = 'triangle';
+            osc2.frequency.setValueAtTime(659.25, ctx.currentTime);
+            osc2.frequency.exponentialRampToValueAtTime(1046.5, ctx.currentTime + 0.3);
+            
+            gain.gain.setValueAtTime(0.15, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+            
+            osc1.connect(gain);
+            osc2.connect(gain);
+            gain.connect(ctx.destination);
+            
+            osc1.start();
+            osc2.start();
+            osc1.stop(ctx.currentTime + 0.5);
+            osc2.stop(ctx.currentTime + 0.5);
+        } else if (type === 'break-end') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+            osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.15);
+            osc.frequency.setValueAtTime(987.77, ctx.currentTime + 0.3);
+            
+            gain.gain.setValueAtTime(0.12, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6);
+            
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            osc.start();
+            osc.stop(ctx.currentTime + 0.6);
+        }
+    } catch (e) {
+        console.warn('Audio synthesis playback failed:', e);
+    }
+};
+
+// Request and dispatch system tray notifications
+const sendBrowserNotification = (title: string, body: string) => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+        if (Notification.permission === 'granted') {
+            new Notification(title, { body });
+        }
+    }
+};
+
 export default function ActiveTaskPage() {
     const { allChats, preferences, setLocalChat } = useData();
     const { signOut } = useAuthContext();
@@ -102,6 +165,16 @@ export default function ActiveTaskPage() {
     // Layout and navigation states
     const [expandGoals, setExpandGoals] = useState(false);
     const [expandTasks, setExpandTasks] = useState(false);
+    
+    // Break timer states
+    const [breakActive, setBreakActive] = useState(false);
+    const [breakTotalDuration, setBreakTotalDuration] = useState(5 * 60 * 1000);
+    const [breakTimeRemaining, setBreakTimeRemaining] = useState(5 * 60 * 1000);
+    const [breakPaused, setBreakPaused] = useState(false);
+
+    // Pomodoro completion states
+    const [showFinishedOptions, setShowFinishedOptions] = useState(false);
+    const [pomodoroFinishedHandled, setPomodoroFinishedHandled] = useState(false);
     
     // Layout container refs for mouse scrollwheel navigation
     const goalsContainerRef = useRef<HTMLDivElement>(null);
@@ -264,11 +337,35 @@ export default function ActiveTaskPage() {
         return todayChat.activeTasks.find(t => t.status === 'RUNNING' || t.status === 'PAUSED') || null;
     }, [todayChat]);
 
-    // Track active day time tick
+    // Track active day time tick and request notifications permission on mount
     useEffect(() => {
-        const interval = setInterval(() => setNow(Date.now()), 1000);
-        return () => clearInterval(interval);
+        if (typeof window !== 'undefined' && 'Notification' in window) {
+            if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+                Notification.requestPermission();
+            }
+        }
     }, []);
+
+    // Time ticker for active session and break countdown
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setNow(Date.now());
+            
+            // Handle break timer tick down
+            if (breakActive && !breakPaused) {
+                setBreakTimeRemaining(prev => {
+                    if (prev <= 1000) {
+                        playSound('break-end');
+                        sendBrowserNotification("Break Over!", "Time to focus and crush your goals.");
+                        setBreakActive(false);
+                        return 0;
+                    }
+                    return prev - 1000;
+                });
+            }
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [breakActive, breakPaused]);
 
     // Sync video play/pause
     useEffect(() => {
@@ -525,6 +622,61 @@ export default function ActiveTaskPage() {
         }
     };
 
+    // Auto-detect when the Pomodoro timer finishes to trigger notifications and choice options
+    useEffect(() => {
+        if (!currentActiveTask || pomodoroFinishedHandled) return;
+        if (currentActiveTask.status !== 'RUNNING') return;
+        
+        const duration = currentActiveTask.duration;
+        if (!duration || duration === 0) return;
+
+        const activeTime = (currentActiveTask.totalActiveTime || 0) + Math.max(0, now - (currentActiveTask.lastStartedAt || currentActiveTask.startTime || now));
+        
+        if (activeTime >= duration) {
+            setPomodoroFinishedHandled(true);
+            setShowFinishedOptions(true);
+            playSound('success');
+            sendBrowserNotification("Mission Accomplished!", `"${currentActiveTask.name.split(' - ')[1] || currentActiveTask.name}" focus session has finished. Time for a break?`);
+        }
+    }, [now, currentActiveTask, pomodoroFinishedHandled]);
+
+    // Handle extending the current session
+    const handleExtendSession = (mins: number) => {
+        if (!currentActiveTask) return;
+        const targetDuration = (currentActiveTask.duration || 0) + (mins * 60 * 1000);
+        
+        const nextActiveTasks = (todayChat?.activeTasks || []).map(t => {
+            if (t.id === currentActiveTask.id) {
+                return {
+                    ...t,
+                    duration: targetDuration
+                };
+            }
+            return t;
+        });
+
+        setLocalChat(activeDay, { activeTasks: nextActiveTasks });
+        cloudStorage.saveChat(activeDay, { activeTasks: nextActiveTasks }, user?.id || undefined, true).catch(err => {
+            console.warn('Background cloud save failed:', err);
+        });
+
+        setPomodoroFinishedHandled(false);
+        setShowFinishedOptions(false);
+    };
+
+    // Handle starting a break session
+    const handleStartBreak = async (mins: number) => {
+        // Automatically finish current active task so it gets logged!
+        await handleFinishTask();
+        
+        // Launch break view states
+        setBreakTotalDuration(mins * 60 * 1000);
+        setBreakTimeRemaining(mins * 60 * 1000);
+        setBreakActive(true);
+        setBreakPaused(false);
+        setShowFinishedOptions(false);
+    };
+
     // Calculations for active task timer and progress
     const timerStats = useMemo(() => {
         if (!currentActiveTask) return null;
@@ -564,7 +716,7 @@ export default function ActiveTaskPage() {
 
     return (
         <main className="chat-page">
-            <div className="bg-mesh"></div>
+            <div className={`bg-mesh${breakActive ? ' bg-mesh--break' : ''}`}></div>
 
             <div className="chat-container">
                 <header className="chat-header">
@@ -620,7 +772,70 @@ export default function ActiveTaskPage() {
 
                 <div style={{ flex: 1, padding: '2.5rem', overflowY: 'auto', position: 'relative' }}>
                     <div className="active-task-page-container">
-                        {!currentActiveTask ? (
+                        {breakActive ? (
+                            /* Soothing Break Dashboard View */
+                            <div className="active-running-dashboard active-running-dashboard--break" style={{ position: 'relative', width: '100%' }}>
+                                <div className="active-running-title-block">
+                                    <div className="active-running-goal" style={{ color: '#10b981', letterSpacing: '0.3em' }}>
+                                        ☕ RECHARGE & RECOVER
+                                    </div>
+                                    <h2 className="active-running-task" style={{ textShadow: '0 0 20px rgba(16, 185, 129, 0.2)' }}>
+                                        {breakPaused ? 'Break Paused' : 'Taking a Relaxing Break'}
+                                    </h2>
+                                </div>
+
+                                <div className="active-running-quotes-row" style={{ minHeight: '120px', margin: '2rem 0' }}>
+                                    <div className="quote-flank left" style={{ opacity: 0.85, textAlign: 'center', width: '100%', maxWidth: '600px', margin: '0 auto' }}>
+                                        <p className="quote-flank-text" style={{ fontSize: '1rem', fontStyle: 'italic', lineHeight: '1.5' }}>
+                                            &ldquo;Rest is not idleness, and to lie sometimes on the grass under trees on a summer&apos;s day, listening to the murmur of the water, or watching the clouds float across the sky, is by no means a waste of time.&rdquo;
+                                        </p>
+                                        <span className="quote-flank-author" style={{ fontSize: '0.65rem', marginTop: '8px', display: 'block' }}>&mdash; Sir John Lubbock</span>
+                                    </div>
+                                </div>
+
+                                <div className="timer-progress-block" style={{ width: '100%', maxWidth: '680px' }}>
+                                    {/* Glowing Progress/Loading Bar */}
+                                    <div className="timer-loading-bar-bg" style={{ borderColor: 'rgba(16, 185, 129, 0.1)', overflow: 'hidden' }}>
+                                        <div 
+                                            className="timer-loading-bar-fill"
+                                            style={{ 
+                                                width: `${Math.min(100, ((breakTotalDuration - breakTimeRemaining) / breakTotalDuration) * 100)}%`,
+                                                background: 'linear-gradient(90deg, #34d399, #10b981)',
+                                                boxShadow: '0 0 20px rgba(16, 185, 129, 0.5)'
+                                            }}
+                                        ></div>
+                                    </div>
+
+                                    <div className="timer-numbers" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '0 4px', margin: '12px 0 6px 0' }}>
+                                        <span className="timer-elapsed" style={{ fontSize: '3rem', fontWeight: '950', fontFamily: 'monospace', letterSpacing: '-0.02em', color: '#10b981' }}>
+                                            {`${String(Math.floor(breakTimeRemaining / 60000)).padStart(2, '0')}:${String(Math.floor((breakTimeRemaining % 60000) / 1000)).padStart(2, '0')}`}
+                                        </span>
+                                        <span className="timer-total" style={{ fontSize: '0.7rem', fontWeight: '900', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em' }}>
+                                            TOTAL BREAK: {Math.round(breakTotalDuration / 60000)} MINS
+                                        </span>
+                                    </div>
+
+                                    {/* Soothing Controls */}
+                                    <div className="timer-controls-row" style={{ marginTop: '1.5rem' }}>
+                                        <button 
+                                            type="button"
+                                            className="timer-btn-pause"
+                                            onClick={() => setBreakPaused(!breakPaused)}
+                                        >
+                                            {breakPaused ? 'RESUME BREAK' : 'PAUSE BREAK'}
+                                        </button>
+                                        <button 
+                                            type="button"
+                                            className="timer-btn-finish"
+                                            onClick={() => setBreakActive(false)}
+                                            style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.3)' }}
+                                        >
+                                            SKIP BREAK (BACK TO WORK)
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : !currentActiveTask ? (
                             /* Setup Form View */
                             <form onSubmit={(e) => { e.preventDefault(); handleStartTask(); }} className="active-task-setup-card">
                                 <h2 style={{ fontSize: '1.5rem', fontWeight: '900', marginBottom: '2.5rem', letterSpacing: '0.05em', textAlign: 'center', color: 'white' }}>LAUNCH ACTIVE MISSION</h2>
@@ -873,7 +1088,7 @@ export default function ActiveTaskPage() {
                             </form>
                         ) : (
                             /* Active Session dashboard View */
-                            <div className="active-running-dashboard">
+                            <div className="active-running-dashboard" style={{ position: 'relative', width: '100%' }}>
                                 <div className="active-running-title-block">
                                     <div className="active-running-goal">
                                         <span className="active-running-goal-check">✓</span>
@@ -986,6 +1201,76 @@ export default function ActiveTaskPage() {
                                         </button>
                                     </div>
                                 </div>
+
+                                {showFinishedOptions && (
+                                    <div className="session-complete-overlay" style={{
+                                        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                                        background: 'rgba(10, 12, 18, 0.88)', backdropFilter: 'blur(20px)',
+                                        zIndex: 500, display: 'flex', flexDirection: 'column',
+                                        alignItems: 'center', justifyContent: 'center', borderRadius: '35px',
+                                        padding: '2.5rem', border: '1px solid rgba(255, 255, 255, 0.08)',
+                                        boxShadow: '0 30px 80px rgba(0,0,0,0.8)'
+                                    }}>
+                                        <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(212, 160, 23, 0.15)', border: '1.5px solid #d4a017', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem' }}>
+                                            <span style={{ fontSize: '1.5rem' }}>🎉</span>
+                                        </div>
+                                        <h2 style={{ fontSize: '1.75rem', fontWeight: '950', letterSpacing: '0.05em', color: 'white', marginBottom: '0.5rem', textTransform: 'uppercase', textAlign: 'center' }}>MISSION COMPLETE</h2>
+                                        <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', textAlign: 'center', maxWidth: '380px', marginBottom: '2.5rem', fontWeight: '500', lineHeight: '1.4' }}>
+                                            Excellent focus. You completed your target time. Ready to rest or extend?
+                                        </p>
+                                        
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', maxWidth: '320px' }}>
+                                            <button 
+                                                type="button"
+                                                className="session-complete-btn"
+                                                onClick={() => handleStartBreak(5)}
+                                                style={{
+                                                    background: '#10b981', color: 'black', fontWeight: '950', border: 'none',
+                                                    padding: '14px', borderRadius: '100px', fontSize: '0.85rem', cursor: 'pointer',
+                                                    letterSpacing: '0.05em', transition: '0.2s', boxShadow: '0 4px 15px rgba(16, 185, 129, 0.2)'
+                                                }}
+                                            >
+                                                ☕ TAKE A 5M BREAK
+                                            </button>
+                                            <button 
+                                                type="button"
+                                                className="session-complete-btn"
+                                                onClick={() => handleStartBreak(15)}
+                                                style={{
+                                                    background: 'rgba(255,255,255,0.05)', color: 'white', fontWeight: '900', border: '1px solid rgba(255,255,255,0.1)',
+                                                    padding: '14px', borderRadius: '100px', fontSize: '0.85rem', cursor: 'pointer',
+                                                    letterSpacing: '0.05em', transition: '0.2s'
+                                                }}
+                                            >
+                                                🌴 TAKE A 15M BREAK
+                                            </button>
+                                            <button 
+                                                type="button"
+                                                className="session-complete-btn"
+                                                onClick={() => handleExtendSession(5)}
+                                                style={{
+                                                    background: 'rgba(212,160,23,0.1)', color: '#d4a017', fontWeight: '900', border: '1px solid rgba(212,160,23,0.3)',
+                                                    padding: '14px', borderRadius: '100px', fontSize: '0.85rem', cursor: 'pointer',
+                                                    letterSpacing: '0.05em', transition: '0.2s'
+                                                }}
+                                            >
+                                                ⏱️ EXTEND FOCUS (+5M)
+                                            </button>
+                                            <button 
+                                                type="button"
+                                                className="session-complete-btn"
+                                                onClick={handleFinishTask}
+                                                style={{
+                                                    background: 'transparent', color: 'rgba(255,255,255,0.4)', fontWeight: '800', border: 'none',
+                                                    padding: '10px', fontSize: '0.8rem', cursor: 'pointer',
+                                                    textDecoration: 'underline', transition: '0.2s'
+                                                }}
+                                            >
+                                                FINISH & LOG SESSION
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>

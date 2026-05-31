@@ -3384,4 +3384,39 @@ input {
   background: transparent;
 }
 
+/* Session Complete Buttons hover effects */
+.session-complete-btn {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.session-complete-btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  filter: brightness(1.1);
+  box-shadow: 0 8px 25px rgba(255, 255, 255, 0.05);
+}
+
+.session-complete-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Soothing calm theme when a break is active */
+.bg-mesh--break {
+  background: radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.08) 0%, transparent 40%),
+              radial-gradient(circle at 90% 80%, rgba(52, 211, 153, 0.08) 0%, transparent 50%),
+              #08080e !important;
+  animation: break-mesh-drift 30s ease-in-out infinite alternate;
+}
+
+@keyframes break-mesh-drift {
+  0% { transform: scale(1) translate(0, 0); }
+  100% { transform: scale(1.08) translate(1%, 2%); }
+}
+
+.active-running-dashboard--break {
+  background: radial-gradient(circle at center, rgba(16, 185, 129, 0.06), transparent 70%),
+              rgba(10, 12, 18, 0.5) !important;
+  border-color: rgba(16, 185, 129, 0.12) !important;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.03) !important;
+}
+
 
