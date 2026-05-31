@@ -98,6 +98,14 @@ export default function ActiveTaskPage() {
     const [suggestions, setSuggestions] = useState<GoalTaskSuggestion[]>([]);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editInputValue, setEditInputValue] = useState('');
+    
+    // Layout and navigation states
+    const [expandGoals, setExpandGoals] = useState(false);
+    const [expandTasks, setExpandTasks] = useState(false);
+    
+    // Layout container refs for mouse scrollwheel navigation
+    const goalsContainerRef = useRef<HTMLDivElement>(null);
+    const tasksContainerRef = useRef<HTMLDivElement>(null);
 
     // Load suggestions on mount
     useEffect(() => {
@@ -165,6 +173,79 @@ export default function ActiveTaskPage() {
     const uniqueGoals = useMemo(() => {
         return Array.from(new Set(suggestions.map(s => s.goal)));
     }, [suggestions]);
+
+    // Recommend closest related registered goals based on typed letters
+    const filteredGoals = useMemo(() => {
+        const query = goalName.trim().toLowerCase();
+        if (!query) return uniqueGoals;
+        
+        return uniqueGoals
+            .filter(g => g.toLowerCase().includes(query))
+            .sort((a, b) => {
+                const aLow = a.toLowerCase();
+                const bLow = b.toLowerCase();
+                // Exact match first
+                if (aLow === query) return -1;
+                if (bLow === query) return 1;
+                // Starts-with next
+                if (aLow.startsWith(query) && !bLow.startsWith(query)) return -1;
+                if (bLow.startsWith(query) && !aLow.startsWith(query)) return 1;
+                // Alphabetical fallback
+                return aLow.localeCompare(bLow);
+            });
+    }, [uniqueGoals, goalName]);
+
+    // Recommend closest related registered tasks for selected goal based on typed letters
+    const filteredTasks = useMemo(() => {
+        const query = taskName.trim().toLowerCase();
+        const tasksForGoal = suggestions.filter(s => s.goal.toLowerCase() === goalName.toLowerCase());
+        if (!query) return tasksForGoal;
+        
+        return tasksForGoal
+            .filter(s => s.task.toLowerCase().includes(query))
+            .sort((a, b) => {
+                const aLow = a.task.toLowerCase();
+                const bLow = b.task.toLowerCase();
+                // Exact match first
+                if (aLow === query) return -1;
+                if (bLow === query) return 1;
+                // Starts-with next
+                if (aLow.startsWith(query) && !bLow.startsWith(query)) return -1;
+                if (bLow.startsWith(query) && !aLow.startsWith(query)) return 1;
+                // Alphabetical fallback
+                return aLow.localeCompare(bLow);
+            });
+    }, [suggestions, goalName, taskName]);
+
+    // Hook up wheel listener to translate vertical scroll to horizontal scroll on desktop
+    useEffect(() => {
+        const handleWheel = (e: WheelEvent) => {
+            const container = e.currentTarget as HTMLDivElement;
+            if (container && container.scrollWidth > container.clientWidth) {
+                e.preventDefault();
+                container.scrollLeft += e.deltaY;
+            }
+        };
+
+        const goalsEl = goalsContainerRef.current;
+        const tasksEl = tasksContainerRef.current;
+
+        if (goalsEl) {
+            goalsEl.addEventListener('wheel', handleWheel, { passive: false });
+        }
+        if (tasksEl) {
+            tasksEl.addEventListener('wheel', handleWheel, { passive: false });
+        }
+
+        return () => {
+            if (goalsEl) {
+                goalsEl.removeEventListener('wheel', handleWheel);
+            }
+            if (tasksEl) {
+                tasksEl.removeEventListener('wheel', handleWheel);
+            }
+        };
+    }, [filteredGoals, filteredTasks]);
 
     // Quotes state
     const [leftQuote, setLeftQuote] = useState(MOTIVATIONAL_QUOTES[0]);
@@ -545,7 +626,18 @@ export default function ActiveTaskPage() {
                                 <h2 style={{ fontSize: '1.5rem', fontWeight: '900', marginBottom: '2.5rem', letterSpacing: '0.05em', textAlign: 'center', color: 'white' }}>LAUNCH ACTIVE MISSION</h2>
                                 
                                 <div className="active-task-form-group">
-                                    <label className="active-task-form-label">Goal / Category</label>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <label className="active-task-form-label">Goal / Category</label>
+                                        {filteredGoals.length > 0 && (
+                                            <button 
+                                                type="button" 
+                                                className="suggestion-toggle-btn"
+                                                onClick={() => setExpandGoals(!expandGoals)}
+                                            >
+                                                {expandGoals ? 'Show Less' : `See All (${filteredGoals.length})`}
+                                            </button>
+                                        )}
+                                    </div>
                                     <input 
                                         type="text" 
                                         className="active-task-form-input" 
@@ -556,8 +648,11 @@ export default function ActiveTaskPage() {
                                     />
                                     {/* Goal suggestions */}
                                     <div className="suggestion-section">
-                                        <div className="suggestion-container">
-                                            {uniqueGoals.map(g => {
+                                        <div 
+                                            ref={goalsContainerRef}
+                                            className={`suggestion-container${expandGoals ? ' suggestion-container--expanded' : ''}`}
+                                        >
+                                            {filteredGoals.map(g => {
                                                 const isEditing = editingId === `goal-${g}`;
                                                 const isActive = goalName.toLowerCase() === g.toLowerCase();
                                                 return (
@@ -626,7 +721,18 @@ export default function ActiveTaskPage() {
                                 </div>
 
                                 <div className="active-task-form-group">
-                                    <label className="active-task-form-label">Specific Task</label>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <label className="active-task-form-label">Specific Task</label>
+                                        {filteredTasks.length > 0 && (
+                                            <button 
+                                                type="button" 
+                                                className="suggestion-toggle-btn"
+                                                onClick={() => setExpandTasks(!expandTasks)}
+                                            >
+                                                {expandTasks ? 'Show Less' : `See All (${filteredTasks.length})`}
+                                            </button>
+                                        )}
+                                    </div>
                                     <input 
                                         type="text" 
                                         className="active-task-form-input" 
@@ -637,75 +743,79 @@ export default function ActiveTaskPage() {
                                     />
                                     {/* Task suggestions mapped to selected Goal */}
                                     <div className="suggestion-section">
-                                        <div className="suggestion-container">
-                                            {suggestions
-                                                .filter(s => s.goal.toLowerCase() === goalName.toLowerCase())
-                                                .map(s => {
-                                                    const isEditing = editingId === s.id;
-                                                    const isActive = taskName.toLowerCase() === s.task.toLowerCase();
-                                                    return (
-                                                        <div 
-                                                            key={s.id}
-                                                            className={`suggestion-pill${isActive ? ' suggestion-pill--active' : ''}`}
-                                                            onClick={() => setTaskName(s.task)}
-                                                        >
-                                                            {isEditing ? (
-                                                                <>
-                                                                    <input 
-                                                                        type="text"
-                                                                        className="suggestion-inline-input"
-                                                                        value={editInputValue}
-                                                                        onChange={(e) => setEditInputValue(e.target.value)}
-                                                                        onClick={(e) => e.stopPropagation()}
-                                                                        onKeyDown={(e) => {
-                                                                            if (e.key === 'Enter') handleSaveTaskEdit(s.id, editInputValue);
-                                                                            else if (e.key === 'Escape') setEditingId(null);
-                                                                        }}
-                                                                        autoFocus
-                                                                    />
+                                        <div 
+                                            ref={tasksContainerRef}
+                                            className={`suggestion-container${expandTasks ? ' suggestion-container--expanded' : ''}`}
+                                        >
+                                            {filteredTasks.map(s => {
+                                                const isEditing = editingId === s.id;
+                                                const isActive = taskName.toLowerCase() === s.task.toLowerCase();
+                                                return (
+                                                    <div 
+                                                        key={s.id}
+                                                        className={`suggestion-pill${isActive ? ' suggestion-pill--active' : ''}`}
+                                                        onClick={() => setTaskName(s.task)}
+                                                    >
+                                                        {isEditing ? (
+                                                            <>
+                                                                <input 
+                                                                    type="text"
+                                                                    className="suggestion-inline-input"
+                                                                    value={editInputValue}
+                                                                    onChange={(e) => setEditInputValue(e.target.value)}
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === 'Enter') handleSaveTaskEdit(s.id, editInputValue);
+                                                                        else if (e.key === 'Escape') setEditingId(null);
+                                                                    }}
+                                                                    autoFocus
+                                                                />
+                                                                <button 
+                                                                    type="button"
+                                                                    className="suggestion-inline-save-btn"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleSaveTaskEdit(s.id, editInputValue);
+                                                                    }}
+                                                                >
+                                                                    ✓
+                                                                </button>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <span>{s.task}</span>
+                                                                <div className="suggestion-pill-actions">
                                                                     <button 
                                                                         type="button"
-                                                                        className="suggestion-inline-save-btn"
+                                                                        className="suggestion-pill-btn"
                                                                         onClick={(e) => {
                                                                             e.stopPropagation();
-                                                                            handleSaveTaskEdit(s.id, editInputValue);
+                                                                            setEditingId(s.id);
+                                                                            setEditInputValue(s.task);
                                                                         }}
+                                                                        title="Edit"
                                                                     >
-                                                                        ✓
+                                                                        ✎
                                                                     </button>
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <span>{s.task}</span>
-                                                                    <div className="suggestion-pill-actions">
-                                                                        <button 
-                                                                            type="button"
-                                                                            className="suggestion-pill-btn"
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                setEditingId(s.id);
-                                                                                setEditInputValue(s.task);
-                                                                            }}
-                                                                            title="Edit"
-                                                                        >
-                                                                            ✎
-                                                                        </button>
-                                                                        <button 
-                                                                            type="button"
-                                                                            className="suggestion-pill-btn delete"
-                                                                            onClick={(e) => handleDeleteTask(s.id, e)}
-                                                                            title="Delete"
-                                                                        >
-                                                                            ×
-                                                                        </button>
-                                                                    </div>
-                                                                </>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })}
+                                                                    <button 
+                                                                        type="button"
+                                                                        className="suggestion-pill-btn delete"
+                                                                        onClick={(e) => handleDeleteTask(s.id, e)}
+                                                                        title="Delete"
+                                                                    >
+                                                                        ×
+                                                                    </button>
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
                                             {suggestions.filter(s => s.goal.toLowerCase() === goalName.toLowerCase()).length === 0 && goalName.trim() !== '' && (
                                                 <span className="suggestion-hint">No mapped tasks. Save your session to auto-add suggestions.</span>
+                                            )}
+                                            {suggestions.filter(s => s.goal.toLowerCase() === goalName.toLowerCase()).length > 0 && filteredTasks.length === 0 && taskName.trim() !== '' && (
+                                                <span className="suggestion-hint">No matching registered tasks.</span>
                                             )}
                                             {goalName.trim() === '' && (
                                                 <span className="suggestion-hint">Select a Goal to display associated tasks.</span>

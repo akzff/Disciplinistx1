@@ -3330,4 +3330,58 @@ input {
   text-transform: uppercase;
 }
 
+.suggestion-toggle-btn {
+  background: none;
+  border: none;
+  color: #d4a017;
+  font-size: 0.65rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(212, 160, 23, 0.05);
+  border: 1px solid rgba(212, 160, 23, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+}
+
+.suggestion-toggle-btn:hover {
+  background: rgba(212, 160, 23, 0.15);
+  border-color: rgba(212, 160, 23, 0.5);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(212, 160, 23, 0.15);
+}
+
+.suggestion-toggle-btn:active {
+  transform: translateY(0);
+}
+
+/* Expanded container styles */
+.suggestion-container--expanded {
+  flex-wrap: wrap !important;
+  overflow-x: visible !important;
+  max-height: 250px;
+  overflow-y: auto !important;
+  scrollbar-width: thin !important;
+  padding-bottom: 6px !important;
+}
+
+.suggestion-container--expanded::-webkit-scrollbar {
+  display: block !important;
+  width: 4px;
+  height: 4px;
+}
+
+.suggestion-container--expanded::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+}
+
+.suggestion-container--expanded::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 
