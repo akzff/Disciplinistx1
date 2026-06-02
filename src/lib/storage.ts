@@ -155,6 +155,20 @@ export interface DailyChat {
     financialAudit?: string;
 }
 
+export interface PomodoroSettings {
+    focusMins: number;
+    shortBreakMins: number;
+    longBreakMins: number;
+    longBreakInterval: number;
+    autoStartBreaks: boolean;
+    autoStartFocus: boolean;
+    soundVolume: number; // 0 to 100
+    soundType: 'persona' | 'chime' | 'silent';
+    ambientSound: 'none' | 'pink_noise' | 'binaural_beats';
+    useReflectionPrompts: boolean;
+    activeBlueprint: 'classic' | 'monk' | 'ultra' | 'custom';
+}
+
 export interface UserPreferences {
     name: string;
     bio: string;
@@ -167,6 +181,7 @@ export interface UserPreferences {
     mentorLevel?: 1 | 2 | 3;
     habitNotes: HabitIssue[];
     selectedModel: string;
+    pomodoroSettings?: PomodoroSettings;
 }
 
 const getChatsKey = (userId?: string) => userId ? `disciplinist_chats_${userId}` : 'disciplinist_chats';

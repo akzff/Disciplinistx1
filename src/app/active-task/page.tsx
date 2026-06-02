@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useData } from '@/lib/DataContext';
 import { useAuthContext } from '@/lib/AuthContext';
 import { useUser } from '@clerk/nextjs';
@@ -79,54 +79,133 @@ Use short, cutting sentences. Then land one clear action.`
     }
 };
 
-// Premium chimes synthesized using HTML5 Web Audio API
-const playSound = (type: 'success' | 'break-end') => {
+// Premium chimes synthesized using HTML5 Web Audio API based on active persona
+const playPersonaSound = (
+    type: 'success' | 'break-end',
+    soundType: 'persona' | 'chime' | 'silent',
+    persona: string,
+    volumePercent: number
+) => {
     try {
+        if (soundType === 'silent') return;
+        
         const AudioContextClass = typeof window !== 'undefined' ? (window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext) : null;
         if (!AudioContextClass) return;
         const ctx = new AudioContextClass();
+        const volume = (volumePercent / 100) * 0.15; // normalize volume
         
-        if (type === 'success') {
-            const osc1 = ctx.createOscillator();
-            const osc2 = ctx.createOscillator();
+        if (soundType === 'chime') {
+            if (type === 'success') {
+                const osc1 = ctx.createOscillator();
+                const osc2 = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(523.25, ctx.currentTime);
+                osc1.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.3);
+                
+                osc2.type = 'triangle';
+                osc2.frequency.setValueAtTime(659.25, ctx.currentTime);
+                osc2.frequency.exponentialRampToValueAtTime(1046.5, ctx.currentTime + 0.3);
+                
+                gain.gain.setValueAtTime(volume, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+                
+                osc1.connect(gain);
+                osc2.connect(gain);
+                gain.connect(ctx.destination);
+                
+                osc1.start();
+                osc2.start();
+                osc1.stop(ctx.currentTime + 0.5);
+                osc2.stop(ctx.currentTime + 0.5);
+            } else {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+                osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.15);
+                osc.frequency.setValueAtTime(987.77, ctx.currentTime + 0.3);
+                
+                gain.gain.setValueAtTime(volume, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                osc.start();
+                osc.stop(ctx.currentTime + 0.6);
+            }
+        } else if (soundType === 'persona') {
             const gain = ctx.createGain();
-            
-            osc1.type = 'sine';
-            osc1.frequency.setValueAtTime(523.25, ctx.currentTime);
-            osc1.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.3);
-            
-            osc2.type = 'triangle';
-            osc2.frequency.setValueAtTime(659.25, ctx.currentTime);
-            osc2.frequency.exponentialRampToValueAtTime(1046.5, ctx.currentTime + 0.3);
-            
-            gain.gain.setValueAtTime(0.15, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-            
-            osc1.connect(gain);
-            osc2.connect(gain);
+            gain.gain.setValueAtTime(volume, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
             gain.connect(ctx.destination);
-            
-            osc1.start();
-            osc2.start();
-            osc1.stop(ctx.currentTime + 0.5);
-            osc2.stop(ctx.currentTime + 0.5);
-        } else if (type === 'break-end') {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-            osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.15);
-            osc.frequency.setValueAtTime(987.77, ctx.currentTime + 0.3);
-            
-            gain.gain.setValueAtTime(0.12, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6);
-            
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            
-            osc.start();
-            osc.stop(ctx.currentTime + 0.6);
+
+            if (persona === 'monk') {
+                // The Monk: Deep temple singing bowl
+                const oscs = [144, 288, 432, 576].map((freq, index) => {
+                    const osc = ctx.createOscillator();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                    
+                    const subGain = ctx.createGain();
+                    subGain.gain.setValueAtTime(index === 0 ? 0.8 : 0.3 / index, ctx.currentTime);
+                    subGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.5);
+                    
+                    osc.connect(subGain);
+                    subGain.connect(gain);
+                    return osc;
+                });
+                oscs.forEach(o => { o.start(); o.stop(ctx.currentTime + 1.5); });
+            } else if (persona === 'disciplinist') {
+                // The Disciplinist: Sword clang with beating frequencies
+                const osc1 = ctx.createOscillator();
+                const osc2 = ctx.createOscillator();
+                
+                osc1.type = 'sawtooth';
+                osc1.frequency.setValueAtTime(880, ctx.currentTime);
+                osc1.frequency.exponentialRampToValueAtTime(220, ctx.currentTime + 0.4);
+                
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(883, ctx.currentTime);
+                osc2.frequency.exponentialRampToValueAtTime(222, ctx.currentTime + 0.4);
+                
+                const bandpass = ctx.createBiquadFilter();
+                bandpass.type = 'bandpass';
+                bandpass.frequency.setValueAtTime(800, ctx.currentTime);
+                bandpass.Q.setValueAtTime(4, ctx.currentTime);
+                
+                osc1.connect(bandpass);
+                osc2.connect(bandpass);
+                bandpass.connect(gain);
+                
+                osc1.start();
+                osc2.start();
+                osc1.stop(ctx.currentTime + 0.6);
+                osc2.stop(ctx.currentTime + 0.6);
+            } else {
+                // The Friend: Upbeat warm major pentatonic arpeggio
+                const frequencies = type === 'success' 
+                    ? [523.25, 659.25, 783.99, 1046.50]
+                    : [587.33, 698.46, 880.00, 1174.66];
+                
+                frequencies.forEach((freq, index) => {
+                    const osc = ctx.createOscillator();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, ctx.currentTime + index * 0.12);
+                    
+                    const noteGain = ctx.createGain();
+                    noteGain.gain.setValueAtTime(0.6, ctx.currentTime + index * 0.12);
+                    noteGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + index * 0.12 + 0.5);
+                    
+                    osc.connect(noteGain);
+                    noteGain.connect(gain);
+                    osc.start(ctx.currentTime + index * 0.12);
+                    osc.stop(ctx.currentTime + index * 0.12 + 0.5);
+                });
+            }
         }
     } catch (e) {
         console.warn('Audio synthesis playback failed:', e);
@@ -142,10 +221,130 @@ const sendBrowserNotification = (title: string, body: string) => {
     }
 };
 
+const DEFAULT_POMODORO_SETTINGS = {
+    focusMins: 25,
+    shortBreakMins: 5,
+    longBreakMins: 15,
+    longBreakInterval: 4,
+    autoStartBreaks: false,
+    autoStartFocus: false,
+    soundVolume: 50,
+    soundType: 'persona' as const,
+    ambientSound: 'none' as const,
+    useReflectionPrompts: true,
+    activeBlueprint: 'classic' as const
+};
+
 export default function ActiveTaskPage() {
-    const { allChats, preferences, setLocalChat } = useData();
+    const { allChats, preferences, setLocalChat, updatePreferences } = useData();
     const { signOut } = useAuthContext();
     const { user } = useUser();
+
+    const pomoSettings = useMemo(() => {
+        return preferences?.pomodoroSettings || DEFAULT_POMODORO_SETTINGS;
+    }, [preferences?.pomodoroSettings]);
+
+    const ambientAudioRef = useRef<{
+        ctx: AudioContext;
+        sources: any[];
+    } | null>(null);
+
+    const [showSettingsPanel, setShowSettingsPanel] = useState(false);
+
+    const startAmbientSound = useCallback(() => {
+        try {
+            stopAmbientSound();
+            
+            const ambientType = pomoSettings.ambientSound;
+            if (ambientType === 'none') return;
+            
+            const AudioContextClass = typeof window !== 'undefined' ? (window.AudioContext || (window as any).webkitAudioContext) : null;
+            if (!AudioContextClass) return;
+            
+            const ctx = new AudioContextClass();
+            const sources: any[] = [];
+            const volumeNode = ctx.createGain();
+            volumeNode.gain.setValueAtTime((pomoSettings.soundVolume / 100) * 0.08, ctx.currentTime);
+            volumeNode.connect(ctx.destination);
+            
+            if (ambientType === 'binaural_beats') {
+                const oscL = ctx.createOscillator();
+                oscL.type = 'sine';
+                oscL.frequency.setValueAtTime(200, ctx.currentTime);
+                
+                const panL = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+                if (panL) {
+                    panL.pan.setValueAtTime(-1, ctx.currentTime);
+                    oscL.connect(panL);
+                    panL.connect(volumeNode);
+                } else {
+                    oscL.connect(volumeNode);
+                }
+                
+                const oscR = ctx.createOscillator();
+                oscR.type = 'sine';
+                oscR.frequency.setValueAtTime(210, ctx.currentTime);
+                
+                const panR = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+                if (panR) {
+                    panR.pan.setValueAtTime(1, ctx.currentTime);
+                    oscR.connect(panR);
+                    panR.connect(volumeNode);
+                } else {
+                    oscR.connect(volumeNode);
+                }
+                
+                oscL.start();
+                oscR.start();
+                sources.push(oscL, oscR);
+            } else if (ambientType === 'pink_noise') {
+                const bufferSize = 4096;
+                const node = ctx.createScriptProcessor ? ctx.createScriptProcessor(bufferSize, 1, 1) : null;
+                if (node) {
+                    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+                    node.onaudioprocess = (e) => {
+                        const output = e.outputBuffer.getChannelData(0);
+                        for (let i = 0; i < bufferSize; i++) {
+                            const white = Math.random() * 2 - 1;
+                            b0 = 0.99886 * b0 + white * 0.0555179;
+                            b1 = 0.99332 * b1 + white * 0.0750759;
+                            b2 = 0.96900 * b2 + white * 0.1538520;
+                            b3 = 0.86650 * b3 + white * 0.3104856;
+                            b4 = 0.55000 * b4 + white * 0.5329522;
+                            b5 = -0.7616 * b5 - white * 0.0168980;
+                            output[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
+                            output[i] *= 0.11;
+                            b6 = white * 0.115926;
+                        }
+                    };
+                    node.connect(volumeNode);
+                    sources.push(node);
+                }
+            }
+            
+            ambientAudioRef.current = { ctx, sources };
+        } catch (e) {
+            console.warn('Could not start ambient sound:', e);
+        }
+    }, [pomoSettings.ambientSound, pomoSettings.soundVolume]);
+
+    const stopAmbientSound = useCallback(() => {
+        try {
+            if (ambientAudioRef.current) {
+                const { ctx, sources } = ambientAudioRef.current;
+                sources.forEach(s => {
+                    try { s.stop(); } catch {}
+                    try { s.disconnect(); } catch {}
+                });
+                if (ctx.state !== 'closed') {
+                    ctx.close();
+                }
+                ambientAudioRef.current = null;
+            }
+        } catch (e) {
+            console.warn('Could not stop ambient sound:', e);
+        }
+    }, []);
 
     // Setup form state
     const [goalName, setGoalName] = useState('');
@@ -344,6 +543,53 @@ export default function ActiveTaskPage() {
         return completedCount + activeCount;
     }, [todayChat?.completedTasks, currentActiveTask?.completedCycles]);
 
+    // Dynamic Reflection Prompt based on Persona
+    const reflectionPrompt = useMemo(() => {
+        const pId = preferences?.persona || 'friend';
+        if (pId === 'monk') {
+            const prompts = [
+                "Take a deep, slow breath. Notice what thoughts are gently flowing in your mind.",
+                "Observe the quiet. What is one subtle thing in your surroundings you are grateful for?",
+                "Inhale peace, exhale tension. Let go of the task for a moment. How does your body feel?"
+            ];
+            return prompts[Math.floor(Math.random() * prompts.length)];
+        } else if (pId === 'disciplinist') {
+            const prompts = [
+                "Rate your intensity check: Did you maintain absolute focus, or did you stray?",
+                "Zero soft excuses. Rate your execution from 1-10 on this cycle.",
+                "Review your focus. Identify the exact moment you felt distracted, and banish it next cycle."
+            ];
+            return prompts[Math.floor(Math.random() * prompts.length)];
+        } else {
+            const prompts = [
+                "Great work, proud of you! How did that feel? Ready to stretch your legs?",
+                "Awesome cycle! Stand up, walk around, and grab a cold glass of water.",
+                "Fantastic focus! Give yourself a high-five, relax your shoulders, and breathe."
+            ];
+            return prompts[Math.floor(Math.random() * prompts.length)];
+        }
+    }, [preferences?.persona, showFinishedOptions]);
+
+    // Sync focus duration state with updated settings
+    useEffect(() => {
+        if (pomoSettings?.focusMins) {
+            setDurationMins(pomoSettings.focusMins);
+        }
+    }, [pomoSettings?.focusMins]);
+
+    // Synthesize Ambient Focus Audio (Pink Noise or Binaural Beats)
+    useEffect(() => {
+        const isRunning = currentActiveTask?.status === 'RUNNING' && !breakActive;
+        if (isRunning) {
+            startAmbientSound();
+        } else {
+            stopAmbientSound();
+        }
+        return () => {
+            stopAmbientSound();
+        };
+    }, [currentActiveTask?.status, breakActive, pomoSettings.ambientSound, pomoSettings.soundVolume, startAmbientSound, stopAmbientSound]);
+
     const handleEndBreak = () => {
         setBreakActive(false);
         setShowFinishedOptions(false);
@@ -393,7 +639,7 @@ export default function ActiveTaskPage() {
             if (breakActive && !breakPaused) {
                 setBreakTimeRemaining(prev => {
                     if (prev <= 1000) {
-                        playSound('break-end');
+                        playPersonaSound('break-end', pomoSettings.soundType, preferences?.persona || 'friend', pomoSettings.soundVolume);
                         sendBrowserNotification("Break Over!", "Time to focus and crush your goals.");
                         handleEndBreak();
                         return 0;
@@ -705,9 +951,17 @@ export default function ActiveTaskPage() {
         });
 
         setPomodoroFinishedHandled(true);
-        setShowFinishedOptions(true);
-        playSound('success');
+        playPersonaSound('success', pomoSettings.soundType, preferences?.persona || 'friend', pomoSettings.soundVolume);
         sendBrowserNotification("Focus Cycle Complete!", `"${currentActiveTask.name.split(' - ')[1] || currentActiveTask.name}" focus session has finished. Time for a break?`);
+
+        if (pomoSettings.autoStartBreaks) {
+            const nextCycleNum = (currentActiveTask.completedCycles || 0) + 1;
+            const isLongBreak = nextCycleNum % pomoSettings.longBreakInterval === 0;
+            const breakMins = isLongBreak ? pomoSettings.longBreakMins : pomoSettings.shortBreakMins;
+            handleStartBreak(breakMins);
+        } else {
+            setShowFinishedOptions(true);
+        }
     };
 
     // Auto-detect when the Pomodoro timer finishes to trigger notifications and choice options
@@ -1041,9 +1295,243 @@ export default function ActiveTaskPage() {
                             </div>
                         ) : !currentActiveTask ? (
                             /* Setup Form View */
-                            <form onSubmit={(e) => { e.preventDefault(); handleStartTask(); }} className="active-task-setup-card">
-                                <h2 style={{ fontSize: '1.5rem', fontWeight: '900', marginBottom: '2.5rem', letterSpacing: '0.05em', textAlign: 'center', color: 'white' }}>LAUNCH ACTIVE MISSION</h2>
+                             <form onSubmit={(e) => { e.preventDefault(); handleStartTask(); }} className="active-task-setup-card">
+                                <h2 style={{ fontSize: '1.5rem', fontWeight: '900', marginBottom: '1.5rem', letterSpacing: '0.05em', textAlign: 'center', color: 'white' }}>LAUNCH ACTIVE MISSION</h2>
                                 
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-0.5rem', marginBottom: '1.5rem' }}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowSettingsPanel(!showSettingsPanel)}
+                                        style={{
+                                            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                                            color: 'white', padding: '8px 16px', borderRadius: '100px', fontSize: '0.75rem',
+                                            fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
+                                            letterSpacing: '0.05em', transition: 'all 0.2s ease'
+                                        }}
+                                    >
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: showSettingsPanel ? 'rotate(45deg)' : 'none', transition: 'transform 0.3s ease' }}>
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                                        </svg>
+                                        {showSettingsPanel ? 'CLOSE SETTINGS' : 'POMODORO SETTINGS'}
+                                    </button>
+                                </div>
+
+                                {showSettingsPanel && (
+                                    <div style={{
+                                        background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
+                                        borderRadius: '20px', padding: '1.5rem', marginBottom: '2.5rem',
+                                        display: 'flex', flexDirection: 'column', gap: '1.25rem'
+                                    }}>
+                                        <div>
+                                            <h3 style={{ fontSize: '0.8rem', fontWeight: '900', color: 'white', marginBottom: '10px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Focus Blueprint</h3>
+                                            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                                                {[
+                                                    { id: 'classic', label: '⏳ Classic Pomo (25m)', desc: '25m Focus / 5m Break' },
+                                                    { id: 'monk', label: '🧘 Monk Sprint (50m)', desc: '50m Focus / 10m Break' },
+                                                    { id: 'ultra', label: '⚡ Ultra-Focus (90m)', desc: '90m Focus / 15m Break' },
+                                                    { id: 'custom', label: '⚙️ Custom', desc: 'Personalized times' }
+                                                ].map(bp => {
+                                                    const active = pomoSettings.activeBlueprint === bp.id;
+                                                    return (
+                                                        <button
+                                                            key={bp.id}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                let focus = pomoSettings.focusMins;
+                                                                let short = pomoSettings.shortBreakMins;
+                                                                let long = pomoSettings.longBreakMins;
+                                                                if (bp.id === 'classic') { focus = 25; short = 5; long = 15; }
+                                                                else if (bp.id === 'monk') { focus = 50; short = 10; long = 20; }
+                                                                else if (bp.id === 'ultra') { focus = 90; short = 15; long = 30; }
+                                                                
+                                                                updatePreferences({
+                                                                    pomodoroSettings: {
+                                                                        ...pomoSettings,
+                                                                        activeBlueprint: bp.id as any,
+                                                                        focusMins: focus,
+                                                                        shortBreakMins: short,
+                                                                        longBreakMins: long
+                                                                    }
+                                                                });
+                                                            }}
+                                                            style={{
+                                                                flex: '1 1 180px', padding: '10px 12px', borderRadius: '12px', textAlign: 'left',
+                                                                border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer',
+                                                                background: active ? '#d4a017' : 'rgba(255,255,255,0.03)',
+                                                                color: active ? 'black' : 'rgba(255,255,255,0.7)',
+                                                                transition: '0.2s ease'
+                                                            }}
+                                                        >
+                                                            <div style={{ fontWeight: '900', fontSize: '0.7rem', marginBottom: '2px' }}>{bp.label}</div>
+                                                            <div style={{ fontSize: '0.6rem', opacity: active ? 0.8 : 0.5 }}>{bp.desc}</div>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px' }}>
+                                            <div>
+                                                <label style={{ fontSize: '0.6rem', fontWeight: '900', color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: '4px', letterSpacing: '0.05em' }}>FOCUS MINS</label>
+                                                <input
+                                                    type="number"
+                                                    min="1" max="480"
+                                                    value={pomoSettings.focusMins}
+                                                    onChange={(e) => {
+                                                        const val = parseInt(e.target.value) || 25;
+                                                        updatePreferences({
+                                                            pomodoroSettings: { ...pomoSettings, focusMins: val, activeBlueprint: 'custom' }
+                                                        });
+                                                    }}
+                                                    style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', padding: '8px 10px', borderRadius: '10px', color: 'white', fontSize: '0.75rem', fontWeight: 'bold' }}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label style={{ fontSize: '0.6rem', fontWeight: '900', color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: '4px', letterSpacing: '0.05em' }}>SHORT BREAK</label>
+                                                <input
+                                                    type="number"
+                                                    min="1" max="120"
+                                                    value={pomoSettings.shortBreakMins}
+                                                    onChange={(e) => {
+                                                        const val = parseInt(e.target.value) || 5;
+                                                        updatePreferences({
+                                                            pomodoroSettings: { ...pomoSettings, shortBreakMins: val, activeBlueprint: 'custom' }
+                                                        });
+                                                    }}
+                                                    style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', padding: '8px 10px', borderRadius: '10px', color: 'white', fontSize: '0.75rem', fontWeight: 'bold' }}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label style={{ fontSize: '0.6rem', fontWeight: '900', color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: '4px', letterSpacing: '0.05em' }}>LONG BREAK</label>
+                                                <input
+                                                    type="number"
+                                                    min="1" max="240"
+                                                    value={pomoSettings.longBreakMins}
+                                                    onChange={(e) => {
+                                                        const val = parseInt(e.target.value) || 15;
+                                                        updatePreferences({
+                                                            pomodoroSettings: { ...pomoSettings, longBreakMins: val, activeBlueprint: 'custom' }
+                                                        });
+                                                    }}
+                                                    style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', padding: '8px 10px', borderRadius: '10px', color: 'white', fontSize: '0.75rem', fontWeight: 'bold' }}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label style={{ fontSize: '0.6rem', fontWeight: '900', color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: '4px', letterSpacing: '0.05em' }}>LONG INTERVAL</label>
+                                                <input
+                                                    type="number"
+                                                    min="1" max="20"
+                                                    value={pomoSettings.longBreakInterval}
+                                                    onChange={(e) => {
+                                                        const val = parseInt(e.target.value) || 4;
+                                                        updatePreferences({
+                                                            pomodoroSettings: { ...pomoSettings, longBreakInterval: val }
+                                                        });
+                                                    }}
+                                                    style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', padding: '8px 10px', borderRadius: '10px', color: 'white', fontSize: '0.75rem', fontWeight: 'bold' }}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '12px' }}>
+                                            <div>
+                                                <h4 style={{ fontSize: '0.7rem', fontWeight: '900', color: 'white', marginBottom: '6px', letterSpacing: '0.05em' }}>ALARM AUDIO</h4>
+                                                <div style={{ display: 'flex', gap: '4px' }}>
+                                                    {[
+                                                        { id: 'persona', label: 'AI Mentor ⚡' },
+                                                        { id: 'chime', label: 'Chime' },
+                                                        { id: 'silent', label: 'Silent' }
+                                                    ].map(t => (
+                                                        <button
+                                                            key={t.id}
+                                                            type="button"
+                                                            onClick={() => updatePreferences({ pomodoroSettings: { ...pomoSettings, soundType: t.id as any } })}
+                                                            style={{
+                                                                flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)',
+                                                                background: pomoSettings.soundType === t.id ? '#d4a017' : 'rgba(255,255,255,0.03)',
+                                                                color: pomoSettings.soundType === t.id ? 'black' : 'rgba(255,255,255,0.6)',
+                                                                fontWeight: 'bold', fontSize: '0.65rem', cursor: 'pointer', transition: '0.2s'
+                                                            }}
+                                                        >
+                                                            {t.label}
+                                                        </button>
+                                                    ))}
+                                                </div>
+
+                                                <div style={{ marginTop: '10px' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6rem', fontWeight: 'bold', color: 'rgba(255,255,255,0.5)', marginBottom: '4px' }}>
+                                                        <span>VOLUME</span>
+                                                        <span>{pomoSettings.soundVolume}%</span>
+                                                    </div>
+                                                    <input
+                                                        type="range" min="0" max="100"
+                                                        value={pomoSettings.soundVolume}
+                                                        onChange={(e) => updatePreferences({ pomodoroSettings: { ...pomoSettings, soundVolume: parseInt(e.target.value) || 50 } })}
+                                                        style={{ width: '100%', accentColor: '#d4a017', cursor: 'pointer' }}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <h4 style={{ fontSize: '0.7rem', fontWeight: '900', color: 'white', marginBottom: '6px', letterSpacing: '0.05em' }}>FOCUS BACKGROUND SOUND</h4>
+                                                <div style={{ display: 'flex', gap: '4px', flexDirection: 'column' }}>
+                                                    {[
+                                                        { id: 'none', label: 'None' },
+                                                        { id: 'pink_noise', label: 'Pink Noise' },
+                                                        { id: 'binaural_beats', label: 'Binaural Beats (Alpha 10Hz)' }
+                                                    ].map(t => (
+                                                        <button
+                                                            key={t.id}
+                                                            type="button"
+                                                            onClick={() => updatePreferences({ pomodoroSettings: { ...pomoSettings, ambientSound: t.id as any } })}
+                                                            style={{
+                                                                padding: '8px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', textAlign: 'left',
+                                                                background: pomoSettings.ambientSound === t.id ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.03)',
+                                                                color: pomoSettings.ambientSound === t.id ? '#10b981' : 'rgba(255,255,255,0.6)',
+                                                                borderColor: pomoSettings.ambientSound === t.id ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.08)',
+                                                                fontWeight: 'bold', fontSize: '0.65rem', cursor: 'pointer', transition: '0.2s'
+                                                            }}
+                                                        >
+                                                            {t.label}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '12px' }}>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 'bold', color: 'rgba(255,255,255,0.7)' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={pomoSettings.autoStartBreaks}
+                                                    onChange={(e) => updatePreferences({ pomodoroSettings: { ...pomoSettings, autoStartBreaks: e.target.checked } })}
+                                                    style={{ accentColor: '#d4a017', width: '14px', height: '14px' }}
+                                                />
+                                                AUTO-START BREAKS
+                                            </label>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 'bold', color: 'rgba(255,255,255,0.7)' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={pomoSettings.autoStartFocus}
+                                                    onChange={(e) => updatePreferences({ pomodoroSettings: { ...pomoSettings, autoStartFocus: e.target.checked } })}
+                                                    style={{ accentColor: '#d4a017', width: '14px', height: '14px' }}
+                                                />
+                                                AUTO-START NEXT FOCUS CYCLE
+                                            </label>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 'bold', color: 'rgba(255,255,255,0.7)' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={pomoSettings.useReflectionPrompts}
+                                                    onChange={(e) => updatePreferences({ pomodoroSettings: { ...pomoSettings, useReflectionPrompts: e.target.checked } })}
+                                                    style={{ accentColor: '#d4a017', width: '14px', height: '14px' }}
+                                                />
+                                                ENABLE PERSONA REFLECTION PROMPTS
+                                            </label>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="active-task-form-group">
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <label className="active-task-form-label">Goal / Category</label>
@@ -1269,19 +1757,29 @@ export default function ActiveTaskPage() {
                                 </div>
 
                                 {timerMode === 'pomodoro' && (
-                                    <div className="active-task-form-group">
-                                        <label className="active-task-form-label">Duration (Minutes)</label>
-                                        <input 
-                                            type="number" 
-                                            min="1"
-                                            max="480"
-                                            className="active-task-form-input" 
-                                            placeholder="25"
-                                            value={durationMins}
-                                            onChange={(e) => setDurationMins(parseInt(e.target.value) || 25)}
-                                        />
-                                    </div>
-                                )}
+                                     <div className="active-task-form-group">
+                                         <label className="active-task-form-label">Duration (Minutes)</label>
+                                         <input 
+                                             type="number" 
+                                             min="1"
+                                             max="480"
+                                             className="active-task-form-input" 
+                                             placeholder="25"
+                                             value={durationMins}
+                                             onChange={(e) => {
+                                                 const val = parseInt(e.target.value) || 25;
+                                                 setDurationMins(val);
+                                                 updatePreferences({
+                                                     pomodoroSettings: {
+                                                         ...pomoSettings,
+                                                         focusMins: val,
+                                                         activeBlueprint: 'custom'
+                                                     }
+                                                 });
+                                             }}
+                                         />
+                                     </div>
+                                 )}
 
                                 <button 
                                                                     type="submit"
@@ -1426,34 +1924,34 @@ export default function ActiveTaskPage() {
                                             <span style={{ fontSize: '1.5rem' }}>🎉</span>
                                         </div>
                                         <h2 style={{ fontSize: '1.75rem', fontWeight: '950', letterSpacing: '0.05em', color: 'white', marginBottom: '0.5rem', textTransform: 'uppercase', textAlign: 'center' }}>MISSION COMPLETE</h2>
-                                        <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', textAlign: 'center', maxWidth: '380px', marginBottom: '2.5rem', fontWeight: '500', lineHeight: '1.4' }}>
-                                            Excellent focus. You completed your target time. Ready to rest or extend?
+                                        <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', textAlign: 'center', maxWidth: '420px', marginBottom: '2rem', fontWeight: '600', lineHeight: '1.5', background: 'rgba(255,255,255,0.02)', padding: '12px 18px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                                            {pomoSettings.useReflectionPrompts ? reflectionPrompt : "Excellent focus. You completed your target time. Ready to rest or extend?"}
                                         </p>
                                         
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', maxWidth: '320px' }}>
                                             <button 
                                                 type="button"
                                                 className="session-complete-btn"
-                                                onClick={() => handleStartBreak(5)}
+                                                onClick={() => handleStartBreak(pomoSettings.shortBreakMins)}
                                                 style={{
                                                     background: '#10b981', color: 'black', fontWeight: '950', border: 'none',
                                                     padding: '14px', borderRadius: '100px', fontSize: '0.85rem', cursor: 'pointer',
                                                     letterSpacing: '0.05em', transition: '0.2s', boxShadow: '0 4px 15px rgba(16, 185, 129, 0.2)'
                                                 }}
                                             >
-                                                ☕ TAKE A 5M BREAK
+                                                ☕ TAKE A {pomoSettings.shortBreakMins}M SHORT BREAK
                                             </button>
                                             <button 
                                                 type="button"
                                                 className="session-complete-btn"
-                                                onClick={() => handleStartBreak(15)}
+                                                onClick={() => handleStartBreak(pomoSettings.longBreakMins)}
                                                 style={{
                                                     background: 'rgba(255,255,255,0.05)', color: 'white', fontWeight: '900', border: '1px solid rgba(255,255,255,0.1)',
                                                     padding: '14px', borderRadius: '100px', fontSize: '0.85rem', cursor: 'pointer',
                                                     letterSpacing: '0.05em', transition: '0.2s'
                                                 }}
                                             >
-                                                🌴 TAKE A 15M BREAK
+                                                🌴 TAKE A {pomoSettings.longBreakMins}M LONG BREAK
                                             </button>
                                             <button 
                                                 type="button"
