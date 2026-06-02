@@ -382,6 +382,8 @@ export default function ActiveTaskPage() {
         }
     }, []);
 
+
+
     // Time ticker for active session and break countdown
     useEffect(() => {
         const interval = setInterval(() => {
@@ -813,6 +815,30 @@ export default function ActiveTaskPage() {
             subtitleString
         };
     }, [currentActiveTask, now]);
+
+    // Dynamically update document title to show focus or break timer in browser tab
+    useEffect(() => {
+        if (typeof document === 'undefined') return;
+
+        if (breakActive) {
+            const minutes = Math.floor(breakTimeRemaining / 60000);
+            const seconds = Math.floor((breakTimeRemaining % 60000) / 1000);
+            const breakTimeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            document.title = `☕ (${breakTimeStr}) Disciplinist`;
+        } else if (currentActiveTask && timerStats) {
+            document.title = `⏱️ (${timerStats.mainTimerString}) Disciplinist`;
+        } else {
+            document.title = 'Disciplinist';
+        }
+    }, [breakActive, breakTimeRemaining, currentActiveTask, timerStats]);
+
+    useEffect(() => {
+        return () => {
+            if (typeof document !== 'undefined') {
+                document.title = 'Disciplinist';
+            }
+        };
+    }, []);
 
     return (
         <main className="chat-page">
@@ -1310,7 +1336,7 @@ export default function ActiveTaskPage() {
                                             </span>
                                             {currentActiveTask.completedCycles !== undefined && (
                                                 <span style={{ fontSize: '0.65rem', fontWeight: '800', color: '#10b981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: '100px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-                                                    🎯 CYCLES COMPLETED: {currentActiveTask.completedCycles}
+                                                    CYCLES COMPLETED: {currentActiveTask.completedCycles}
                                                 </span>
                                             )}
                                         </div>
