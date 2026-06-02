@@ -840,6 +840,40 @@ export default function ActiveTaskPage() {
         };
     }, []);
 
+    // Automatic spacebar play/pause trigger
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.code === 'Space' || e.key === ' ') {
+                // Ignore if currently focused inside a text input or textarea
+                if (
+                    typeof document !== 'undefined' &&
+                    (document.activeElement?.tagName === 'INPUT' ||
+                     document.activeElement?.tagName === 'TEXTAREA')
+                ) {
+                    return;
+                }
+
+                // Prevent page scroll when space bar is pressed
+                e.preventDefault();
+
+                if (breakActive) {
+                    setBreakPaused(prev => !prev);
+                } else if (currentActiveTask) {
+                    handleToggleTask();
+                }
+            }
+        };
+
+        if (typeof window !== 'undefined') {
+            window.addEventListener('keydown', handleKeyDown);
+        }
+        return () => {
+            if (typeof window !== 'undefined') {
+                window.removeEventListener('keydown', handleKeyDown);
+            }
+        };
+    }, [breakActive, currentActiveTask, todayChat]);
+
     return (
         <main className="chat-page">
             <div className={`bg-mesh${breakActive ? ' bg-mesh--break' : ''}`}></div>
@@ -973,7 +1007,7 @@ export default function ActiveTaskPage() {
                                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', flexWrap: 'wrap',
                                             boxShadow: '0 4px 20px rgba(0,0,0,0.15)'
                                         }}>
-                                            <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: '800', letterSpacing: '0.05em' }}>🎯 ON DECK:</span>
+                                            <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: '800', letterSpacing: '0.05em' }}>ON DECK:</span>
                                             <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.85)', fontWeight: '700' }}>{currentActiveTask.name}</span>
                                             <span style={{
                                                 fontSize: '0.65rem', padding: '2px 10px', borderRadius: '100px',
