@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { DailyChat, TodoHistoryEntry, formatTime } from '@/lib/storage';
+import { useState, useMemo } from 'react';
+import { TodoHistoryEntry, formatTime } from '@/lib/storage';
 import { NavigationBar } from '@/components/NavigationBar';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { useData } from '@/lib/DataContext';

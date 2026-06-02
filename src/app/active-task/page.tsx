@@ -246,10 +246,32 @@ export default function ActiveTaskPage() {
 
     const ambientAudioRef = useRef<{
         ctx: AudioContext;
-        sources: any[];
+        sources: (OscillatorNode | ScriptProcessorNode | AudioNode)[];
     } | null>(null);
 
     const [showSettingsPanel, setShowSettingsPanel] = useState(false);
+
+    const stopAmbientSound = useCallback(() => {
+        try {
+            if (ambientAudioRef.current) {
+                const { ctx, sources } = ambientAudioRef.current;
+                sources.forEach(s => {
+                    try {
+                        if ('stop' in s && typeof (s as OscillatorNode).stop === 'function') {
+                            (s as OscillatorNode).stop();
+                        }
+                    } catch {}
+                    try { s.disconnect(); } catch {}
+                });
+                if (ctx.state !== 'closed') {
+                    ctx.close();
+                }
+                ambientAudioRef.current = null;
+            }
+        } catch (e) {
+            console.warn('Could not stop ambient sound:', e);
+        }
+    }, []);
 
     const startAmbientSound = useCallback(() => {
         try {
@@ -258,11 +280,11 @@ export default function ActiveTaskPage() {
             const ambientType = pomoSettings.ambientSound;
             if (ambientType === 'none') return;
             
-            const AudioContextClass = typeof window !== 'undefined' ? (window.AudioContext || (window as any).webkitAudioContext) : null;
+            const AudioContextClass = typeof window !== 'undefined' ? (window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext) : null;
             if (!AudioContextClass) return;
             
             const ctx = new AudioContextClass();
-            const sources: any[] = [];
+            const sources: (OscillatorNode | ScriptProcessorNode | AudioNode)[] = [];
             const volumeNode = ctx.createGain();
             volumeNode.gain.setValueAtTime((pomoSettings.soundVolume / 100) * 0.08, ctx.currentTime);
             volumeNode.connect(ctx.destination);
@@ -326,25 +348,7 @@ export default function ActiveTaskPage() {
         } catch (e) {
             console.warn('Could not start ambient sound:', e);
         }
-    }, [pomoSettings.ambientSound, pomoSettings.soundVolume]);
-
-    const stopAmbientSound = useCallback(() => {
-        try {
-            if (ambientAudioRef.current) {
-                const { ctx, sources } = ambientAudioRef.current;
-                sources.forEach(s => {
-                    try { s.stop(); } catch {}
-                    try { s.disconnect(); } catch {}
-                });
-                if (ctx.state !== 'closed') {
-                    ctx.close();
-                }
-                ambientAudioRef.current = null;
-            }
-        } catch (e) {
-            console.warn('Could not stop ambient sound:', e);
-        }
-    }, []);
+    }, [pomoSettings.ambientSound, pomoSettings.soundVolume, stopAmbientSound]);
 
     // Setup form state
     const [goalName, setGoalName] = useState('');
@@ -568,7 +572,7 @@ export default function ActiveTaskPage() {
             ];
             return prompts[Math.floor(Math.random() * prompts.length)];
         }
-    }, [preferences?.persona, showFinishedOptions]);
+    }, [preferences?.persona]);
 
     // Sync focus duration state with updated settings
     useEffect(() => {
@@ -590,7 +594,7 @@ export default function ActiveTaskPage() {
         };
     }, [currentActiveTask?.status, breakActive, pomoSettings.ambientSound, pomoSettings.soundVolume, startAmbientSound, stopAmbientSound]);
 
-    const handleEndBreak = () => {
+    const handleEndBreak = useCallback(() => {
         setBreakActive(false);
         setShowFinishedOptions(false);
         setPomodoroFinishedHandled(false);
@@ -617,7 +621,7 @@ export default function ActiveTaskPage() {
         cloudStorage.saveChat(activeDay, { activeTasks: nextActiveTasks }, user?.id || undefined, true).catch(err => {
             console.warn('Background cloud save failed:', err);
         });
-    };
+    }, [currentActiveTask, todayChat?.activeTasks, setLocalChat, activeDay, user?.id]);
 
     // Track active day time tick and request notifications permission on mount
     useEffect(() => {
@@ -649,7 +653,7 @@ export default function ActiveTaskPage() {
             }
         }, 1000);
         return () => clearInterval(interval);
-    }, [breakActive, breakPaused, currentActiveTask, todayChat]);
+    }, [breakActive, breakPaused, currentActiveTask, todayChat, handleEndBreak, pomoSettings.soundType, pomoSettings.soundVolume, preferences?.persona]);
 
     // Sync video play/pause
     useEffect(() => {
@@ -777,7 +781,7 @@ export default function ActiveTaskPage() {
         }
     };
 
-    const handleToggleTask = async () => {
+    const handleToggleTask = useCallback(() => {
         if (!currentActiveTask) return;
         const timestamp = Date.now();
         const nextActiveTasks = (todayChat?.activeTasks || []).map(t => {
@@ -806,7 +810,7 @@ export default function ActiveTaskPage() {
         cloudStorage.saveChat(activeDay, { activeTasks: nextActiveTasks }, user?.id || undefined, true).catch(err => {
             console.warn('Background cloud save failed:', err);
         });
-    };
+    }, [currentActiveTask, todayChat?.activeTasks, setLocalChat, activeDay, user?.id]);
 
     const handleFinishTask = async () => {
         if (!currentActiveTask) return;
@@ -915,7 +919,36 @@ export default function ActiveTaskPage() {
         }
     };
 
-    const handleFocusCycleFinished = () => {
+    // Handle starting a break session
+    const handleStartBreak = useCallback((mins: number) => {
+        if (!currentActiveTask) return;
+        
+        const nextActiveTasks = (todayChat?.activeTasks || []).map(t => {
+            if (t.id === currentActiveTask.id) {
+                return {
+                    ...t,
+                    sessionState: 'BREAK' as const,
+                    status: 'PAUSED' as const,
+                    lastPausedAt: Date.now()
+                };
+            }
+            return t;
+        });
+        
+        setLocalChat(activeDay, { activeTasks: nextActiveTasks });
+        cloudStorage.saveChat(activeDay, { activeTasks: nextActiveTasks }, user?.id || undefined, true).catch(err => {
+            console.warn('Background cloud save failed:', err);
+        });
+
+        // Launch break view states
+        setBreakTotalDuration(mins * 60 * 1000);
+        setBreakTimeRemaining(mins * 60 * 1000);
+        setBreakActive(true);
+        setBreakPaused(false);
+        setShowFinishedOptions(false);
+    }, [currentActiveTask, todayChat?.activeTasks, setLocalChat, activeDay, user?.id]);
+
+    const handleFocusCycleFinished = useCallback(() => {
         if (!currentActiveTask) return;
         
         const nowTime = Date.now();
@@ -962,7 +995,7 @@ export default function ActiveTaskPage() {
         } else {
             setShowFinishedOptions(true);
         }
-    };
+    }, [currentActiveTask, todayChat?.activeTasks, setLocalChat, activeDay, user?.id, pomoSettings.soundType, preferences?.persona, pomoSettings.soundVolume, pomoSettings.autoStartBreaks, pomoSettings.longBreakInterval, pomoSettings.longBreakMins, pomoSettings.shortBreakMins, handleStartBreak]);
 
     // Auto-detect when the Pomodoro timer finishes to trigger notifications and choice options
     useEffect(() => {
@@ -978,7 +1011,7 @@ export default function ActiveTaskPage() {
         if (activeTime >= duration) {
             handleFocusCycleFinished();
         }
-    }, [now, currentActiveTask, pomodoroFinishedHandled]);
+    }, [now, currentActiveTask, pomodoroFinishedHandled, handleFocusCycleFinished]);
 
     // Handle extending the current session
     const handleExtendSession = (mins: number) => {
@@ -1001,35 +1034,6 @@ export default function ActiveTaskPage() {
         });
 
         setPomodoroFinishedHandled(false);
-        setShowFinishedOptions(false);
-    };
-
-    // Handle starting a break session
-    const handleStartBreak = async (mins: number) => {
-        if (!currentActiveTask) return;
-        
-        const nextActiveTasks = (todayChat?.activeTasks || []).map(t => {
-            if (t.id === currentActiveTask.id) {
-                return {
-                    ...t,
-                    sessionState: 'BREAK' as const,
-                    status: 'PAUSED' as const,
-                    lastPausedAt: Date.now()
-                };
-            }
-            return t;
-        });
-        
-        setLocalChat(activeDay, { activeTasks: nextActiveTasks });
-        cloudStorage.saveChat(activeDay, { activeTasks: nextActiveTasks }, user?.id || undefined, true).catch(err => {
-            console.warn('Background cloud save failed:', err);
-        });
-
-        // Launch break view states
-        setBreakTotalDuration(mins * 60 * 1000);
-        setBreakTimeRemaining(mins * 60 * 1000);
-        setBreakActive(true);
-        setBreakPaused(false);
         setShowFinishedOptions(false);
     };
 
@@ -1126,7 +1130,7 @@ export default function ActiveTaskPage() {
                 window.removeEventListener('keydown', handleKeyDown);
             }
         };
-    }, [breakActive, currentActiveTask, todayChat]);
+    }, [breakActive, currentActiveTask, todayChat, handleToggleTask]);
 
     return (
         <main className="chat-page">
@@ -1348,7 +1352,7 @@ export default function ActiveTaskPage() {
                                                                 updatePreferences({
                                                                     pomodoroSettings: {
                                                                         ...pomoSettings,
-                                                                        activeBlueprint: bp.id as any,
+                                                                        activeBlueprint: bp.id as 'classic' | 'monk' | 'ultra' | 'custom',
                                                                         focusMins: focus,
                                                                         shortBreakMins: short,
                                                                         longBreakMins: long
@@ -1446,7 +1450,7 @@ export default function ActiveTaskPage() {
                                                         <button
                                                             key={t.id}
                                                             type="button"
-                                                            onClick={() => updatePreferences({ pomodoroSettings: { ...pomoSettings, soundType: t.id as any } })}
+                                                            onClick={() => updatePreferences({ pomodoroSettings: { ...pomoSettings, soundType: t.id as 'persona' | 'chime' | 'silent' } })}
                                                             style={{
                                                                 flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)',
                                                                 background: pomoSettings.soundType === t.id ? '#d4a017' : 'rgba(255,255,255,0.03)',
@@ -1484,7 +1488,7 @@ export default function ActiveTaskPage() {
                                                         <button
                                                             key={t.id}
                                                             type="button"
-                                                            onClick={() => updatePreferences({ pomodoroSettings: { ...pomoSettings, ambientSound: t.id as any } })}
+                                                            onClick={() => updatePreferences({ pomodoroSettings: { ...pomoSettings, ambientSound: t.id as 'none' | 'pink_noise' | 'binaural_beats' } })}
                                                             style={{
                                                                 padding: '8px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', textAlign: 'left',
                                                                 background: pomoSettings.ambientSound === t.id ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.03)',
