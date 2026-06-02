@@ -34,6 +34,10 @@ export interface ActiveTask {
     lastPausedAt?: number;
     notes?: TaskNote[];
     duration?: number; // Target duration in milliseconds
+    completedCycles?: number;
+    sessionState?: 'FOCUS' | 'BREAK';
+    accumulatedActiveTime?: number;
+    accumulatedPausedTime?: number;
 }
 
 export interface TodoHistoryEntry {
@@ -48,6 +52,7 @@ export interface TodoHistoryEntry {
     type: 'todo' | 'daily' | 'active';
     activeTime?: number;
     pausedTime?: number;
+    completedCycles?: number;
 }
 
 export interface HabitIssue {
@@ -67,6 +72,7 @@ export interface CompletedTask {
     abandonmentReason?: string;
     notes?: TaskNote[];
     rating?: number;
+    completedCycles?: number;
 }
 
 export interface DailyChat {

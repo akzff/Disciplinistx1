@@ -337,6 +337,42 @@ export default function ActiveTaskPage() {
         return todayChat.activeTasks.find(t => t.status === 'RUNNING' || t.status === 'PAUSED') || null;
     }, [todayChat]);
 
+    // Today's total Pomodoro focus cycles completed
+    const todayTotalCycles = useMemo(() => {
+        const completedCount = (todayChat?.completedTasks || []).reduce((sum, t) => sum + (t.completedCycles || 0), 0);
+        const activeCount = currentActiveTask?.completedCycles || 0;
+        return completedCount + activeCount;
+    }, [todayChat?.completedTasks, currentActiveTask?.completedCycles]);
+
+    const handleEndBreak = () => {
+        setBreakActive(false);
+        setShowFinishedOptions(false);
+        setPomodoroFinishedHandled(false);
+
+        if (!currentActiveTask) return;
+
+        const nowTime = Date.now();
+        const nextActiveTasks = (todayChat?.activeTasks || []).map(t => {
+            if (t.id === currentActiveTask.id) {
+                return {
+                    ...t,
+                    sessionState: 'FOCUS' as const,
+                    status: 'RUNNING' as const,
+                    startTime: nowTime,
+                    lastStartedAt: nowTime,
+                    totalActiveTime: 0,
+                    totalPausedTime: 0
+                };
+            }
+            return t;
+        });
+
+        setLocalChat(activeDay, { activeTasks: nextActiveTasks });
+        cloudStorage.saveChat(activeDay, { activeTasks: nextActiveTasks }, user?.id || undefined, true).catch(err => {
+            console.warn('Background cloud save failed:', err);
+        });
+    };
+
     // Track active day time tick and request notifications permission on mount
     useEffect(() => {
         if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -357,7 +393,7 @@ export default function ActiveTaskPage() {
                     if (prev <= 1000) {
                         playSound('break-end');
                         sendBrowserNotification("Break Over!", "Time to focus and crush your goals.");
-                        setBreakActive(false);
+                        handleEndBreak();
                         return 0;
                     }
                     return prev - 1000;
@@ -365,7 +401,7 @@ export default function ActiveTaskPage() {
             }
         }, 1000);
         return () => clearInterval(interval);
-    }, [breakActive, breakPaused]);
+    }, [breakActive, breakPaused, currentActiveTask, todayChat]);
 
     // Sync video play/pause
     useEffect(() => {
@@ -441,7 +477,9 @@ export default function ActiveTaskPage() {
             totalActiveTime: 0,
             totalPausedTime: 0,
             lastStartedAt: Date.now(),
-            duration: targetDurationMs
+            duration: targetDurationMs,
+            completedCycles: 0,
+            sessionState: 'FOCUS'
         };
 
         const currentActiveTasks = todayChat?.activeTasks || [];
@@ -525,12 +563,16 @@ export default function ActiveTaskPage() {
     const handleFinishTask = async () => {
         if (!currentActiveTask) return;
         const timestamp = Date.now();
-        const finalActiveTime = currentActiveTask.status === 'RUNNING'
-            ? (currentActiveTask.totalActiveTime || 0) + Math.max(0, timestamp - (currentActiveTask.lastStartedAt || currentActiveTask.startTime || timestamp))
-            : (currentActiveTask.totalActiveTime || 0);
-        const finalPausedTime = currentActiveTask.status === 'PAUSED'
-            ? (currentActiveTask.totalPausedTime || 0) + Math.max(0, timestamp - (currentActiveTask.lastPausedAt || currentActiveTask.startTime || timestamp))
-            : (currentActiveTask.totalPausedTime || 0);
+        const finalActiveTime = (currentActiveTask.accumulatedActiveTime || 0) + (
+            currentActiveTask.status === 'RUNNING'
+                ? (currentActiveTask.totalActiveTime || 0) + Math.max(0, timestamp - (currentActiveTask.lastStartedAt || currentActiveTask.startTime || timestamp))
+                : (currentActiveTask.totalActiveTime || 0)
+        );
+        const finalPausedTime = (currentActiveTask.accumulatedPausedTime || 0) + (
+            currentActiveTask.status === 'PAUSED'
+                ? (currentActiveTask.totalPausedTime || 0) + Math.max(0, timestamp - (currentActiveTask.lastPausedAt || currentActiveTask.startTime || timestamp))
+                : (currentActiveTask.totalPausedTime || 0)
+        );
 
         const remaining = (todayChat?.activeTasks || []).filter(t => t.id !== currentActiveTask.id);
         const updatedCompleted = [
@@ -541,7 +583,8 @@ export default function ActiveTaskPage() {
                 pausedTime: finalPausedTime,
                 finishedAt: timestamp,
                 abandonmentReason: '',
-                notes: currentActiveTask.notes || []
+                notes: currentActiveTask.notes || [],
+                completedCycles: currentActiveTask.completedCycles || 0
             }
         ];
 
@@ -554,7 +597,8 @@ export default function ActiveTaskPage() {
             importance: 5,
             type: 'active' as const,
             activeTime: finalActiveTime,
-            pausedTime: finalPausedTime
+            pausedTime: finalPausedTime,
+            completedCycles: currentActiveTask.completedCycles || 0
         };
         const updatedHistory = [...(todayChat?.todoHistory || []), historyEntry];
 
@@ -567,7 +611,8 @@ export default function ActiveTaskPage() {
                 endTime: timestamp,
                 activeTime: finalActiveTime,
                 pausedTime: finalPausedTime,
-                notes: currentActiveTask.notes || []
+                notes: currentActiveTask.notes || [],
+                completedCycles: currentActiveTask.completedCycles || 0
             },
             timestamp: timestamp
         };
@@ -622,10 +667,52 @@ export default function ActiveTaskPage() {
         }
     };
 
+    const handleFocusCycleFinished = () => {
+        if (!currentActiveTask) return;
+        
+        const nowTime = Date.now();
+        const cycleActiveTime = currentActiveTask.status === 'RUNNING'
+            ? (currentActiveTask.totalActiveTime || 0) + Math.max(0, nowTime - (currentActiveTask.lastStartedAt || currentActiveTask.startTime || nowTime))
+            : (currentActiveTask.totalActiveTime || 0);
+        const cyclePausedTime = currentActiveTask.status === 'PAUSED'
+            ? (currentActiveTask.totalPausedTime || 0) + Math.max(0, nowTime - (currentActiveTask.lastPausedAt || currentActiveTask.startTime || nowTime))
+            : (currentActiveTask.totalPausedTime || 0);
+
+        const nextActiveTasks = (todayChat?.activeTasks || []).map(t => {
+            if (t.id === currentActiveTask.id) {
+                return {
+                    ...t,
+                    completedCycles: (t.completedCycles || 0) + 1,
+                    accumulatedActiveTime: (t.accumulatedActiveTime || 0) + cycleActiveTime,
+                    accumulatedPausedTime: (t.accumulatedPausedTime || 0) + cyclePausedTime,
+                    // Reset focus timer details for the next cycle
+                    startTime: nowTime,
+                    lastStartedAt: nowTime,
+                    totalActiveTime: 0,
+                    totalPausedTime: 0,
+                    status: 'PAUSED' as const,
+                    lastPausedAt: nowTime
+                };
+            }
+            return t;
+        });
+        
+        setLocalChat(activeDay, { activeTasks: nextActiveTasks });
+        cloudStorage.saveChat(activeDay, { activeTasks: nextActiveTasks }, user?.id || undefined, true).catch(err => {
+            console.warn('Background cloud save failed:', err);
+        });
+
+        setPomodoroFinishedHandled(true);
+        setShowFinishedOptions(true);
+        playSound('success');
+        sendBrowserNotification("Focus Cycle Complete!", `"${currentActiveTask.name.split(' - ')[1] || currentActiveTask.name}" focus session has finished. Time for a break?`);
+    };
+
     // Auto-detect when the Pomodoro timer finishes to trigger notifications and choice options
     useEffect(() => {
         if (!currentActiveTask || pomodoroFinishedHandled) return;
         if (currentActiveTask.status !== 'RUNNING') return;
+        if (currentActiveTask.sessionState === 'BREAK') return;
         
         const duration = currentActiveTask.duration;
         if (!duration || duration === 0) return;
@@ -633,10 +720,7 @@ export default function ActiveTaskPage() {
         const activeTime = (currentActiveTask.totalActiveTime || 0) + Math.max(0, now - (currentActiveTask.lastStartedAt || currentActiveTask.startTime || now));
         
         if (activeTime >= duration) {
-            setPomodoroFinishedHandled(true);
-            setShowFinishedOptions(true);
-            playSound('success');
-            sendBrowserNotification("Mission Accomplished!", `"${currentActiveTask.name.split(' - ')[1] || currentActiveTask.name}" focus session has finished. Time for a break?`);
+            handleFocusCycleFinished();
         }
     }, [now, currentActiveTask, pomodoroFinishedHandled]);
 
@@ -666,9 +750,25 @@ export default function ActiveTaskPage() {
 
     // Handle starting a break session
     const handleStartBreak = async (mins: number) => {
-        // Automatically finish current active task so it gets logged!
-        await handleFinishTask();
+        if (!currentActiveTask) return;
         
+        const nextActiveTasks = (todayChat?.activeTasks || []).map(t => {
+            if (t.id === currentActiveTask.id) {
+                return {
+                    ...t,
+                    sessionState: 'BREAK' as const,
+                    status: 'PAUSED' as const,
+                    lastPausedAt: Date.now()
+                };
+            }
+            return t;
+        });
+        
+        setLocalChat(activeDay, { activeTasks: nextActiveTasks });
+        cloudStorage.saveChat(activeDay, { activeTasks: nextActiveTasks }, user?.id || undefined, true).catch(err => {
+            console.warn('Background cloud save failed:', err);
+        });
+
         // Launch break view states
         setBreakTotalDuration(mins * 60 * 1000);
         setBreakTimeRemaining(mins * 60 * 1000);
@@ -772,6 +872,30 @@ export default function ActiveTaskPage() {
 
                 <div style={{ flex: 1, padding: '2.5rem', overflowY: 'auto', position: 'relative' }}>
                     <div className="active-task-page-container">
+                        {/* Premium Stats Indicator Bar */}
+                        <div style={{
+                            display: 'flex', justifyContent: 'center', marginBottom: '2.5rem',
+                            animation: 'fadeIn 0.6s ease-out'
+                        }}>
+                            <div style={{
+                                display: 'flex', alignItems: 'center', gap: '14px',
+                                padding: '10px 24px', borderRadius: '100px',
+                                background: 'rgba(212, 160, 23, 0.04)',
+                                border: '1px solid rgba(212, 160, 23, 0.15)',
+                                backdropFilter: 'blur(12px)',
+                                boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.25)',
+                                transition: 'all 0.3s ease'
+                            }}>
+                                <span style={{ fontSize: '1.2rem', filter: 'drop-shadow(0 0 6px rgba(212,160,23,0.6))' }}>⚡</span>
+                                <span style={{ fontSize: '0.75rem', fontWeight: '850', color: 'rgba(255, 255, 255, 0.75)', letterSpacing: '0.08em' }}>
+                                    TODAY&apos;S PROGRESS:
+                                </span>
+                                <span style={{ fontSize: '0.85rem', fontWeight: '950', color: '#d4a017', background: 'rgba(212, 160, 23, 0.14)', padding: '3px 12px', borderRadius: '100px', border: '1px solid rgba(212, 160, 23, 0.25)', textShadow: '0 0 8px rgba(212,160,23,0.3)' }}>
+                                    {todayTotalCycles} Focus Cycle{todayTotalCycles !== 1 ? 's' : ''} Completed
+                                </span>
+                            </div>
+                        </div>
+
                         {breakActive ? (
                             /* Soothing Break Dashboard View */
                             <div className="active-running-dashboard active-running-dashboard--break" style={{ position: 'relative', width: '100%' }}>
@@ -815,6 +939,26 @@ export default function ActiveTaskPage() {
                                         </span>
                                     </div>
 
+                                    {/* Mission detail on break page */}
+                                    {currentActiveTask && (
+                                        <div style={{
+                                            marginTop: '1.25rem', padding: '14px 20px', borderRadius: '18px',
+                                            background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.06)',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', flexWrap: 'wrap',
+                                            boxShadow: '0 4px 20px rgba(0,0,0,0.15)'
+                                        }}>
+                                            <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: '800', letterSpacing: '0.05em' }}>🎯 ON DECK:</span>
+                                            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.85)', fontWeight: '700' }}>{currentActiveTask.name}</span>
+                                            <span style={{
+                                                fontSize: '0.65rem', padding: '2px 10px', borderRadius: '100px',
+                                                background: 'rgba(16, 185, 129, 0.12)', color: '#34d399', fontWeight: '900',
+                                                border: '1px solid rgba(16, 185, 129, 0.25)', letterSpacing: '0.02em'
+                                            }}>
+                                                CYCLE #{ (currentActiveTask.completedCycles || 0) + 1 } NEXT
+                                            </span>
+                                        </div>
+                                    )}
+
                                     {/* Soothing Controls */}
                                     <div className="timer-controls-row" style={{ marginTop: '1.5rem' }}>
                                         <button 
@@ -827,7 +971,7 @@ export default function ActiveTaskPage() {
                                         <button 
                                             type="button"
                                             className="timer-btn-finish"
-                                            onClick={() => setBreakActive(false)}
+                                            onClick={handleEndBreak}
                                             style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.3)' }}
                                         >
                                             SKIP BREAK (BACK TO WORK)
@@ -1160,9 +1304,16 @@ export default function ActiveTaskPage() {
                                         <span className="timer-elapsed" style={{ fontSize: '3rem', fontWeight: '950', fontFamily: 'monospace', letterSpacing: '-0.02em', color: 'white' }}>
                                             {timerStats?.mainTimerString}
                                         </span>
-                                        <span className="timer-total" style={{ fontSize: '0.7rem', fontWeight: '900', color: '#d4a017', letterSpacing: '0.1em', opacity: 0.8 }}>
-                                            {timerStats?.subtitleString}
-                                        </span>
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                                            <span className="timer-total" style={{ fontSize: '0.7rem', fontWeight: '900', color: '#d4a017', letterSpacing: '0.1em', opacity: 0.8 }}>
+                                                {timerStats?.subtitleString}
+                                            </span>
+                                            {currentActiveTask.completedCycles !== undefined && (
+                                                <span style={{ fontSize: '0.65rem', fontWeight: '800', color: '#10b981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: '100px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                                                    🎯 CYCLES COMPLETED: {currentActiveTask.completedCycles}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
 
                                     {/* Premium Oval Controls */}
@@ -1247,9 +1398,21 @@ export default function ActiveTaskPage() {
                                             <button 
                                                 type="button"
                                                 className="session-complete-btn"
+                                                onClick={handleEndBreak}
+                                                style={{
+                                                    background: 'rgba(212,160,23,0.12)', color: '#d4a017', fontWeight: '950', border: '1px solid rgba(212,160,23,0.3)',
+                                                    padding: '14px', borderRadius: '100px', fontSize: '0.85rem', cursor: 'pointer',
+                                                    letterSpacing: '0.05em', transition: '0.2s', boxShadow: '0 4px 15px rgba(212, 160, 23, 0.1)'
+                                                }}
+                                            >
+                                                ⏭️ SKIP BREAK & FOCUS AGAIN
+                                            </button>
+                                            <button 
+                                                type="button"
+                                                className="session-complete-btn"
                                                 onClick={() => handleExtendSession(5)}
                                                 style={{
-                                                    background: 'rgba(212,160,23,0.1)', color: '#d4a017', fontWeight: '900', border: '1px solid rgba(212,160,23,0.3)',
+                                                    background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.7)', fontWeight: '900', border: '1px solid rgba(255,255,255,0.08)',
                                                     padding: '14px', borderRadius: '100px', fontSize: '0.85rem', cursor: 'pointer',
                                                     letterSpacing: '0.05em', transition: '0.2s'
                                                 }}
