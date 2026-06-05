@@ -1815,8 +1815,12 @@ export default function ActiveTaskPage() {
                                         className={`visual-loop-card${currentActiveTask.status !== 'RUNNING' ? ' visual-loop-card--paused' : ''}`} 
                                         onClick={handleToggleTask}
                                         style={{
-                                            width: preferences?.persona === 'disciplinist' ? '400px' : '480px',
-                                            height: '480px'
+                                            width: '480px',
+                                            height: '480px',
+                                            background: preferences?.persona === 'disciplinist' ? 'transparent' : undefined,
+                                            border: preferences?.persona === 'disciplinist' ? 'none' : undefined,
+                                            boxShadow: preferences?.persona === 'disciplinist' ? 'none' : undefined,
+                                            backdropFilter: preferences?.persona === 'disciplinist' ? 'none' : undefined
                                         }}
                                     >
                                         <div className="visual-loop-canvas-placeholder">
@@ -1832,7 +1836,7 @@ export default function ActiveTaskPage() {
                                                 style={{
                                                     width: '100%',
                                                     height: '100%',
-                                                    objectFit: 'cover',
+                                                    objectFit: preferences?.persona === 'disciplinist' ? 'contain' : 'cover',
                                                     borderRadius: '35px',
                                                     zIndex: 0,
                                                     willChange: 'transform',
