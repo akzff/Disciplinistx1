@@ -663,7 +663,7 @@ export default function ActiveTaskPage() {
         } else {
             videoRef.current.pause();
         }
-    }, [currentActiveTask?.status]);
+    }, [currentActiveTask?.status, preferences?.persona]);
 
     // Quote rotation effect
     useEffect(() => {
@@ -1819,7 +1819,8 @@ export default function ActiveTaskPage() {
                                             {/* Looping Premium Video */}
                                             <video
                                                 ref={videoRef}
-                                                src="/video/focus-loop.mp4.mp4"
+                                                src={preferences?.persona === 'disciplinist' ? "/video/hardcore.mp4" : "/video/focus-loop.mp4.mp4"}
+                                                key={preferences?.persona === 'disciplinist' ? "hardcore" : "focus-loop"}
                                                 loop
                                                 muted
                                                 playsInline
