@@ -1832,7 +1832,7 @@ export default function ActiveTaskPage() {
                                                     borderRadius: '35px',
                                                     zIndex: 0,
                                                     willChange: 'transform',
-                                                    transform: 'translate3d(0, 0, 0)'
+                                                    transform: preferences?.persona === 'disciplinist' ? 'scale(1.2) translate3d(0, 0, 0)' : 'translate3d(0, 0, 0)'
                                                 }}
                                             />
 
