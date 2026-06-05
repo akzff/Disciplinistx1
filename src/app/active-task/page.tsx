@@ -236,7 +236,7 @@ const DEFAULT_POMODORO_SETTINGS = {
 };
 
 export default function ActiveTaskPage() {
-    const { allChats, preferences, setLocalChat, updatePreferences } = useData();
+    const { allChats, preferences, isCloudSynced, setLocalChat, updatePreferences } = useData();
     const { signOut } = useAuthContext();
     const { user } = useUser();
 
@@ -573,6 +573,31 @@ export default function ActiveTaskPage() {
             return prompts[Math.floor(Math.random() * prompts.length)];
         }
     }, [preferences?.persona]);
+
+    // Sync breakActive and breakRemaining when task is loaded (handles page refreshes)
+    const prevTaskId = useRef<string | null>(null);
+    useEffect(() => {
+        if (!isCloudSynced || !currentActiveTask) return;
+        
+        if (prevTaskId.current !== currentActiveTask.id) {
+            prevTaskId.current = currentActiveTask.id;
+            
+            if (currentActiveTask.sessionState === 'BREAK') {
+                setBreakActive(true);
+                // Calculate remaining break time
+                const elapsedSinceStart = Date.now() - (currentActiveTask.lastPausedAt || currentActiveTask.startTime || Date.now());
+                const targetMins = currentActiveTask.completedCycles && (currentActiveTask.completedCycles % pomoSettings.longBreakInterval === 0)
+                    ? pomoSettings.longBreakMins
+                    : pomoSettings.shortBreakMins;
+                const totalDur = targetMins * 60 * 1000;
+                setBreakTotalDuration(totalDur);
+                setBreakTimeRemaining(Math.max(0, totalDur - elapsedSinceStart));
+                setBreakPaused(currentActiveTask.status === 'PAUSED');
+            } else {
+                setBreakActive(false);
+            }
+        }
+    }, [isCloudSynced, currentActiveTask, pomoSettings.longBreakInterval, pomoSettings.longBreakMins, pomoSettings.shortBreakMins]);
 
     // Sync focus duration state with updated settings
     useEffect(() => {
@@ -1214,7 +1239,24 @@ export default function ActiveTaskPage() {
                             </div>
                         </div>
 
-                        {breakActive ? (
+                        {!isCloudSynced ? (
+                            /* Premium Loading View while syncing cloud data */
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '300px', gap: '1.5rem', width: '100%' }}>
+                                <div className="timer-loading-bar-bg" style={{ width: '240px', height: '8px', overflow: 'hidden', borderRadius: '100px' }}>
+                                    <div 
+                                        className="timer-loading-bar-fill" 
+                                        style={{ 
+                                            width: '100%', 
+                                            animation: 'nav-live-pulse 2s ease-in-out infinite',
+                                            background: 'linear-gradient(90deg, #d4a017, #b8860b)' 
+                                        }}
+                                    ></div>
+                                </div>
+                                <span style={{ fontSize: '0.75rem', fontWeight: '900', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+                                    Syncing active mission state...
+                                </span>
+                            </div>
+                        ) : breakActive ? (
                             /* Soothing Break Dashboard View */
                             <div className="active-running-dashboard active-running-dashboard--break" style={{ position: 'relative', width: '100%' }}>
                                 <div className="active-running-title-block">
@@ -1815,7 +1857,7 @@ export default function ActiveTaskPage() {
                                         className={`visual-loop-card${currentActiveTask.status !== 'RUNNING' ? ' visual-loop-card--paused' : ''}`} 
                                         onClick={handleToggleTask}
                                         style={{
-                                            width: '480px',
+                                            width: preferences?.persona === 'disciplinist' ? '440px' : '480px',
                                             height: '480px',
                                             background: preferences?.persona === 'disciplinist' ? 'transparent' : undefined,
                                             border: preferences?.persona === 'disciplinist' ? 'none' : undefined,
@@ -1836,11 +1878,11 @@ export default function ActiveTaskPage() {
                                                 style={{
                                                     width: '100%',
                                                     height: '100%',
-                                                    objectFit: preferences?.persona === 'disciplinist' ? 'contain' : 'cover',
+                                                    objectFit: 'cover',
                                                     borderRadius: '35px',
                                                     zIndex: 0,
                                                     willChange: 'transform',
-                                                    transform: 'translate3d(0, 0, 0)'
+                                                    transform: preferences?.persona === 'disciplinist' ? 'scale(1.15) translate3d(0, 0, 0)' : 'translate3d(0, 0, 0)'
                                                 }}
                                             />
 
