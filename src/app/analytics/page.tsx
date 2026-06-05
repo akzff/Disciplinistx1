@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { TodoHistoryEntry, formatTime } from '@/lib/storage';
 import { NavigationBar } from '@/components/NavigationBar';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
@@ -17,6 +17,15 @@ export default function AnalyticsPage() {
 
     // DATE RANGE SELECTION
     const [dateRange, setDateRange] = useState<'7' | '14' | '30' | 'all'>('14');
+
+    // Real-time clock to sync live active tasks
+    const [now, setNow] = useState(Date.now());
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setNow(Date.now());
+        }, 5000);
+        return () => clearInterval(interval);
+    }, []);
 
     // CHART VISIBILITY FILTER
     const [chartFilters, setChartFilters] = useState({
@@ -71,6 +80,19 @@ export default function AnalyticsPage() {
                         }
                     });
                 }
+                // Include active task in progress time
+                if (chat.activeTasks && Array.isArray(chat.activeTasks)) {
+                    chat.activeTasks.forEach(task => {
+                        let taskActive = (task.accumulatedActiveTime || 0) + (task.totalActiveTime || 0);
+                        if (task.status === 'RUNNING') {
+                            taskActive += Math.max(0, now - (task.lastStartedAt || task.startTime || now));
+                        }
+                        if (taskActive > 0) {
+                            totalFocusTimeMs += taskActive;
+                            totalActiveMissions++;
+                        }
+                    });
+                }
             }
         });
 
@@ -94,7 +116,7 @@ export default function AnalyticsPage() {
             totalActiveMissions,
             disciplineIndex
         };
-    }, [allChats, filteredDates]);
+    }, [allChats, filteredDates, now]);
 
     // DAY-BY-DAY DATASET FOR INTERACTIVE CHART
     const chartData = useMemo(() => {
@@ -117,6 +139,16 @@ export default function AnalyticsPage() {
                         }
                     });
                 }
+                // Include active task in progress time
+                if (chat.activeTasks && Array.isArray(chat.activeTasks)) {
+                    chat.activeTasks.forEach(task => {
+                        let taskActive = (task.accumulatedActiveTime || 0) + (task.totalActiveTime || 0);
+                        if (task.status === 'RUNNING') {
+                            taskActive += Math.max(0, now - (task.lastStartedAt || task.startTime || now));
+                        }
+                        focusHours += taskActive / 3600000;
+                    });
+                }
             }
 
             return {
@@ -127,7 +159,106 @@ export default function AnalyticsPage() {
                 focusHours: parseFloat(focusHours.toFixed(1))
             };
         });
-    }, [allChats, filteredDates]);
+    }, [allChats, filteredDates, now]);
+
+    // DETAILED ACTIVE TASK DATA ANALYSIS
+    const activeTasksAnalysis = useMemo(() => {
+        const goalFocusMap: Record<string, { totalActive: number; totalPaused: number; sessions: number }> = {};
+        let grandTotalActive = 0;
+        let grandTotalPaused = 0;
+        let totalCycles = 0;
+        let totalSessionsCount = 0;
+        
+        const todayStr = new Date().toISOString().split('T')[0];
+        const todayChat = allChats[todayStr];
+        const currentLiveTask = todayChat?.activeTasks?.find(t => t.status === 'RUNNING' || t.status === 'PAUSED') || null;
+
+        filteredDates.forEach(date => {
+            const chat = allChats[date];
+            if (!chat) return;
+
+            // 1. Completed active tasks from todoHistory
+            if (chat.todoHistory && Array.isArray(chat.todoHistory)) {
+                chat.todoHistory.forEach(entry => {
+                    if (entry.type === 'active') {
+                        const name = entry.text || 'Unknown';
+                        const parts = name.split(' - ');
+                        const goal = parts[0]?.trim() || 'General';
+                        
+                        const active = entry.activeTime || 0;
+                        const paused = entry.pausedTime || 0;
+                        const cycles = entry.completedCycles || 0;
+
+                        if (!goalFocusMap[goal]) {
+                            goalFocusMap[goal] = { totalActive: 0, totalPaused: 0, sessions: 0 };
+                        }
+                        goalFocusMap[goal].totalActive += active;
+                        goalFocusMap[goal].totalPaused += paused;
+                        goalFocusMap[goal].sessions += 1;
+
+                        grandTotalActive += active;
+                        grandTotalPaused += paused;
+                        totalCycles += cycles;
+                        totalSessionsCount += 1;
+                    }
+                });
+            }
+
+            // 2. In-progress active tasks
+            if (chat.activeTasks && Array.isArray(chat.activeTasks)) {
+                chat.activeTasks.forEach(task => {
+                    let taskActive = (task.accumulatedActiveTime || 0) + (task.totalActiveTime || 0);
+                    let taskPaused = (task.accumulatedPausedTime || 0) + (task.totalPausedTime || 0);
+                    
+                    if (task.status === 'RUNNING') {
+                        taskActive += Math.max(0, now - (task.lastStartedAt || task.startTime || now));
+                    } else if (task.status === 'PAUSED') {
+                        taskPaused += Math.max(0, now - (task.lastPausedAt || task.startTime || now));
+                    }
+
+                    if (taskActive > 0 || taskPaused > 0) {
+                        const parts = task.name.split(' - ');
+                        const goal = parts[0]?.trim() || 'General';
+
+                        if (!goalFocusMap[goal]) {
+                            goalFocusMap[goal] = { totalActive: 0, totalPaused: 0, sessions: 0 };
+                        }
+                        goalFocusMap[goal].totalActive += taskActive;
+                        goalFocusMap[goal].totalPaused += taskPaused;
+                        goalFocusMap[goal].sessions += 1;
+
+                        grandTotalActive += taskActive;
+                        grandTotalPaused += taskPaused;
+                        totalCycles += task.completedCycles || 0;
+                        totalSessionsCount += 1;
+                    }
+                });
+            }
+        });
+
+        const goalStats = Object.entries(goalFocusMap).map(([goal, stats]) => ({
+            goal,
+            ...stats,
+            percentage: grandTotalActive > 0 ? Math.round((stats.totalActive / grandTotalActive) * 100) : 0
+        })).sort((a, b) => b.totalActive - a.totalActive);
+
+        const activePercentage = (grandTotalActive + grandTotalPaused) > 0 
+            ? Math.round((grandTotalActive / (grandTotalActive + grandTotalPaused)) * 100) 
+            : 100;
+
+        const averageSessionMs = totalSessionsCount > 0 ? grandTotalActive / totalSessionsCount : 0;
+
+        return {
+            goalStats,
+            grandTotalActive,
+            grandTotalPaused,
+            totalCycles,
+            totalSessionsCount,
+            activePercentage,
+            averageSessionMs,
+            currentLiveTask
+        };
+    }, [allChats, filteredDates, now]);
 
 
 
@@ -365,6 +496,160 @@ export default function AnalyticsPage() {
                                                 {formatTime(rangeStats.totalFocusTimeMs, false)}
                                             </h2>
                                             <p style={{ fontSize: '0.65rem', opacity: 0.4 }}>Accumulated over {rangeStats.totalActiveMissions} live focus slots</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* LIVE ACTIVE TASK ALERT CARD */}
+                                {activeTasksAnalysis.currentLiveTask && (
+                                    <div className="block-card" style={{
+                                        padding: '1.5rem 2rem',
+                                        background: 'linear-gradient(135deg, rgba(212, 160, 23, 0.08), rgba(16, 185, 129, 0.03))',
+                                        border: '1.5px solid rgba(212, 160, 23, 0.3)',
+                                        borderRadius: '24px',
+                                        boxShadow: '0 8px 32px 0 rgba(212, 160, 23, 0.05)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        flexWrap: 'wrap',
+                                        gap: '1rem',
+                                        animation: 'fadeIn 0.5s ease-out'
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <div style={{
+                                                    width: '12px',
+                                                    height: '12px',
+                                                    borderRadius: '50%',
+                                                    backgroundColor: activeTasksAnalysis.currentLiveTask.status === 'RUNNING' ? '#10b981' : '#f59e0b',
+                                                    animation: activeTasksAnalysis.currentLiveTask.status === 'RUNNING' ? 'pulse 2s infinite' : 'none'
+                                                }} />
+                                            </div>
+                                            <div>
+                                                <span style={{ fontSize: '0.55rem', fontWeight: '900', letterSpacing: '0.2em', color: '#d4a017' }}>
+                                                    {activeTasksAnalysis.currentLiveTask.status === 'RUNNING' ? 'LIVE FOCUS SESSION' : 'LIVE FOCUS PAUSED'}
+                                                </span>
+                                                <h4 style={{ fontSize: '1rem', fontWeight: '850', color: 'white', margin: '4px 0 0 0' }}>
+                                                    {activeTasksAnalysis.currentLiveTask.name}
+                                                </h4>
+                                            </div>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                                            <div style={{ textAlign: 'right' }}>
+                                                <span style={{ fontSize: '0.55rem', fontWeight: '900', opacity: 0.4, letterSpacing: '0.1em' }}>ELAPSED</span>
+                                                <p style={{ fontSize: '1.1rem', fontWeight: '900', color: 'white', margin: 0 }}>
+                                                    {(() => {
+                                                        const task = activeTasksAnalysis.currentLiveTask;
+                                                        let taskActive = (task.accumulatedActiveTime || 0) + (task.totalActiveTime || 0);
+                                                        if (task.status === 'RUNNING') {
+                                                            taskActive += Math.max(0, now - (task.lastStartedAt || task.startTime || now));
+                                                        }
+                                                        return formatTime(taskActive, true);
+                                                    })()}
+                                                </p>
+                                            </div>
+                                            <a href="/active-task" style={{
+                                                padding: '10px 20px',
+                                                background: '#d4a017',
+                                                border: 'none',
+                                                borderRadius: '100px',
+                                                color: 'black',
+                                                fontWeight: '900',
+                                                fontSize: '0.7rem',
+                                                letterSpacing: '0.05em',
+                                                textDecoration: 'none',
+                                                cursor: 'pointer',
+                                                boxShadow: '0 4px 14px rgba(212, 160, 23, 0.3)',
+                                                transition: 'all 0.3s'
+                                            }}
+                                            onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.03)'; }}
+                                            onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}>
+                                                VIEW TIMER
+                                            </a>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* FOCUS DATA ANALYSIS ROW */}
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
+                                    {/* Goal breakdown */}
+                                    <div className="block-card" style={{ padding: '2rem 2.5rem', background: 'rgba(255,255,255,0.02)' }}>
+                                        <div style={{ marginBottom: '1.5rem' }}>
+                                            <span style={{ fontSize: '0.65rem', fontWeight: '900', letterSpacing: '0.15em', opacity: 0.3 }}>GOAL DISTRIBUTION</span>
+                                            <h3 style={{ fontSize: '1.1rem', fontWeight: '900', margin: '4px 0 0 0', letterSpacing: '0.02em' }}>Focus Time by Strategy Core</h3>
+                                        </div>
+                                        {activeTasksAnalysis.goalStats.length === 0 ? (
+                                            <div style={{ padding: '2rem 0', textAlign: 'center', opacity: 0.3, border: '1px dashed rgba(255,255,255,0.08)', borderRadius: '16px', fontSize: '0.75rem' }}>
+                                                No focus distribution available. Log active sessions to see analysis.
+                                            </div>
+                                        ) : (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                                                {activeTasksAnalysis.goalStats.map((item, index) => {
+                                                    const colors = ['#d4a017', '#10b981', '#8b5cf6', '#3b82f6', '#ec4899'];
+                                                    const barColor = colors[index % colors.length];
+                                                    return (
+                                                        <div key={item.goal} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                <span style={{ fontSize: '0.8rem', fontWeight: '850', color: 'rgba(255,255,255,0.85)' }}>{item.goal}</span>
+                                                                <span style={{ fontSize: '0.75rem', fontWeight: '900', color: barColor }}>
+                                                                    {formatTime(item.totalActive, false)} ({item.percentage}%)
+                                                                </span>
+                                                            </div>
+                                                            <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.03)', borderRadius: '100px', overflow: 'hidden' }}>
+                                                                <div style={{ width: `${item.percentage}%`, height: '100%', background: barColor, borderRadius: '100px' }} />
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Focus Efficiency & Metrics breakdown */}
+                                    <div className="block-card" style={{ padding: '2rem 2.5rem', background: 'rgba(255,255,255,0.02)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                        <div>
+                                            <div style={{ marginBottom: '1.5rem' }}>
+                                                <span style={{ fontSize: '0.65rem', fontWeight: '900', letterSpacing: '0.15em', opacity: 0.3 }}>EFFICIENCY METRICS</span>
+                                                <h3 style={{ fontSize: '1.1rem', fontWeight: '900', margin: '4px 0 0 0', letterSpacing: '0.02em' }}>Execution Quality Summary</h3>
+                                            </div>
+
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.03)', paddingBottom: '10px' }}>
+                                                    <span style={{ fontSize: '0.75rem', opacity: 0.5, fontWeight: '700' }}>Active Focus Time</span>
+                                                    <span style={{ fontSize: '0.8rem', fontWeight: '900', color: 'white' }}>{formatTime(activeTasksAnalysis.grandTotalActive, false)}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.03)', paddingBottom: '10px' }}>
+                                                    <span style={{ fontSize: '0.75rem', opacity: 0.5, fontWeight: '700' }}>Paused Buffer Time</span>
+                                                    <span style={{ fontSize: '0.8rem', fontWeight: '900', color: 'white' }}>{formatTime(activeTasksAnalysis.grandTotalPaused, false)}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.03)', paddingBottom: '10px' }}>
+                                                    <span style={{ fontSize: '0.75rem', opacity: 0.5, fontWeight: '700' }}>Average Session Duration</span>
+                                                    <span style={{ fontSize: '0.8rem', fontWeight: '900', color: 'white' }}>{formatTime(activeTasksAnalysis.averageSessionMs, false)}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '10px' }}>
+                                                    <span style={{ fontSize: '0.75rem', opacity: 0.5, fontWeight: '700' }}>Completed Pomo Cycles</span>
+                                                    <span style={{ fontSize: '0.8rem', fontWeight: '900', color: '#d4a017' }}>{activeTasksAnalysis.totalCycles} cycles</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div style={{
+                                            marginTop: '1.5rem',
+                                            padding: '1rem',
+                                            background: 'rgba(255,255,255,0.02)',
+                                            borderRadius: '16px',
+                                            border: '1px solid rgba(255,255,255,0.04)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between'
+                                        }}>
+                                            <div>
+                                                <p style={{ margin: 0, fontSize: '0.55rem', fontWeight: '900', opacity: 0.4, letterSpacing: '0.05em' }}>ACTIVE/PAUSED RATIO</p>
+                                                <p style={{ margin: '2px 0 0 0', fontSize: '0.95rem', fontWeight: '900', color: '#10b981' }}>{activeTasksAnalysis.activePercentage}% Focus Intensity</p>
+                                            </div>
+                                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid #10b981' }}>
+                                                <span style={{ fontSize: '0.65rem', fontWeight: '950', color: '#10b981' }}>{activeTasksAnalysis.activePercentage}%</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -725,6 +1010,11 @@ export default function AnalyticsPage() {
                 .chart-node-group:hover circle {
                     r: 6px;
                     stroke-width: 2px;
+                }
+                @keyframes pulse {
+                    0% { transform: scale(0.95); opacity: 0.5; }
+                    50% { transform: scale(1.05); opacity: 1; }
+                    100% { transform: scale(0.95); opacity: 0.5; }
                 }
             `}</style>
         </main>
