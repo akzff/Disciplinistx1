@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { DailyChat, UserPreferences } from './storage';
+import { DailyChat, UserPreferences, storage } from './storage';
 
 // ─── Cloud sync layer that talks directly to Supabase with Clerk auth ──────────────────────
 
@@ -73,20 +73,25 @@ export const cloudStorage = {
 
         try {
             let merged = chatData;
+            const defaults: DailyChat = {
+                date,
+                messages: [],
+                status: 'OPEN',
+                activeTasks: [],
+                distractions: [],
+                todos: [],
+                dailies: [],
+                expenses: []
+            };
+
             if (!skipFetch) {
-                // Upsert: load existing then merge
+                // Upsert: load existing then merge from cloud
                 const existing = await cloudStorage.getChat(date, currentUserId);
-                const defaults: DailyChat = {
-                    date,
-                    messages: [],
-                    status: 'OPEN',
-                    activeTasks: [],
-                    distractions: [],
-                    todos: [],
-                    dailies: [],
-                    expenses: []
-                };
                 merged = { ...(existing || defaults), ...chatData };
+            } else {
+                // Upsert: load existing then merge from local cache to prevent wiping other keys
+                const localExisting = storage.getChat(date, currentUserId);
+                merged = { ...(localExisting || defaults), ...chatData };
             }
 
             const { error } = await supabase
