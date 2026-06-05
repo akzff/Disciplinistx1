@@ -1814,6 +1814,10 @@ export default function ActiveTaskPage() {
                                     <div 
                                         className={`visual-loop-card${currentActiveTask.status !== 'RUNNING' ? ' visual-loop-card--paused' : ''}`} 
                                         onClick={handleToggleTask}
+                                        style={{
+                                            width: preferences?.persona === 'disciplinist' ? '400px' : '480px',
+                                            height: '480px'
+                                        }}
                                     >
                                         <div className="visual-loop-canvas-placeholder">
                                             {/* Looping Premium Video */}
@@ -1832,7 +1836,7 @@ export default function ActiveTaskPage() {
                                                     borderRadius: '35px',
                                                     zIndex: 0,
                                                     willChange: 'transform',
-                                                    transform: preferences?.persona === 'disciplinist' ? 'scale(1.4) translate3d(0, 0, 0)' : 'translate3d(0, 0, 0)'
+                                                    transform: 'translate3d(0, 0, 0)'
                                                 }}
                                             />
 
