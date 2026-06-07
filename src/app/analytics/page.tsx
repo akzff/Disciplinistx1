@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { TodoHistoryEntry, formatTime, DailyChat, WrapUpData } from '@/lib/storage';
+import { TodoHistoryEntry, formatTime, WrapUpData } from '@/lib/storage';
 import { NavigationBar } from '@/components/NavigationBar';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { useData } from '@/lib/DataContext';
@@ -351,7 +351,7 @@ export default function AnalyticsPage() {
             }
             if (chat.activeTasks && Array.isArray(chat.activeTasks)) {
                 chat.activeTasks.forEach(task => {
-                    let taskActive = (task.accumulatedActiveTime || 0) + (task.totalActiveTime || 0);
+                    const taskActive = (task.accumulatedActiveTime || 0) + (task.totalActiveTime || 0);
                     if (taskActive > 0) {
                         sessions.push(taskActive);
                         dailyTotal += taskActive;

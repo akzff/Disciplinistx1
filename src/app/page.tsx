@@ -361,13 +361,6 @@ export default function ChatPage() {
 
   const saveWrapUp = (wrapUpData: DailyChat['wrapUp']) => {
     if (!activeDay) return;
-    
-    // Save to local state and trigger DB save
-    const updatedChat = {
-      wrapUp: wrapUpData,
-      status: 'CLOSED' as const // Close the day's chat once wrapped up
-    };
-    
     setChatStatus('CLOSED');
     
     // Immediately persist wrap-up snapshot
