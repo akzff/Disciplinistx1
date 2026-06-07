@@ -75,6 +75,21 @@ export interface CompletedTask {
     completedCycles?: number;
 }
 
+export interface MoodData {
+    x: number;       // Tone [-1 to 1]
+    y: number;       // Energy [-1 to 1]
+    energy: 'high' | 'low';
+    tone: 'positive' | 'negative';
+    label: 'Flow / Inspired' | 'Anxious / Frustrated' | 'Calm / Clear-Headed' | 'Drained / Bored';
+}
+
+export interface WrapUpData {
+    mood: MoodData;
+    journal: string;
+    tags: string[];
+    completedAt: number;
+}
+
 export interface DailyChat {
     date: string; // YYYY-MM-DD
     messages: Message[];
@@ -83,6 +98,7 @@ export interface DailyChat {
     distractions: string[];
     botMood?: 'NEUTRAL' | 'DISAPPOINTED' | 'HOPEFUL' | 'DOMINATOR';
     clientId?: string;
+    wrapUp?: WrapUpData;
     todos: {
         id: string;
         text: string;

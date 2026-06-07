@@ -7,6 +7,7 @@ import TaskDetailDrawer from '@/components/TaskDetailDrawer';
 import { IMPORTANCE, TIME_SLOTS } from '@/utils/taskConstants';
 import { formatDueDate, formatRecurrence, formatHour } from '@/utils/taskFormatters';
 import { isBefore, isToday, parseISO, startOfDay } from 'date-fns';
+import { shouldShowToday } from '@/utils/taskVisibility';
 
 interface MissionChecklistProps {
     todos: DailyChat['todos'];
@@ -169,10 +170,13 @@ export default function MissionChecklist({
         };
     }, [sidebarOpen, onClose]);
 
-    const completedDailies = dailies.filter(d => d.completed).length;
-    const completedTodos = todos.filter(t => t.completed).length;
-    const totalDailies = dailies.length;
-    const totalTodos = todos.length;
+    const visibleTodos = useMemo(() => todos.filter(shouldShowToday), [todos]);
+    const visibleDailies = useMemo(() => dailies.filter(shouldShowToday), [dailies]);
+
+    const completedDailies = visibleDailies.filter(d => d.completed).length;
+    const completedTodos = visibleTodos.filter(t => t.completed).length;
+    const totalDailies = visibleDailies.length;
+    const totalTodos = visibleTodos.length;
     const handleSaveAdd = () => {
         if (!addingText.trim()) { setAddingType(null); return; }
         if (addingType === 'DAILIES' && onAddDaily) onAddDaily(addingText.trim());
@@ -187,10 +191,18 @@ export default function MissionChecklist({
     const handleDrop = (e: React.DragEvent, targetIndex: number, type: 'DAILIES' | 'TODOS') => {
         e.preventDefault();
         if (!dragInfo || dragInfo.type !== type) return;
-        const items = type === 'DAILIES' ? [...dailies] : [...todos];
-        const [moved] = items.splice(dragInfo.index, 1);
-        items.splice(targetIndex, 0, moved);
-        if (type === 'DAILIES') onReorderDaily(items); else onReorderTodo(items);
+        const visibleItems = type === 'DAILIES' ? visibleDailies : visibleTodos;
+        const fullItems = type === 'DAILIES' ? [...dailies] : [...todos];
+        const movedItem = visibleItems[dragInfo.index];
+        const targetItem = visibleItems[targetIndex];
+        if (!movedItem || !targetItem) return;
+        const fromIndex = fullItems.findIndex(item => item.id === movedItem.id);
+        const toIndex = fullItems.findIndex(item => item.id === targetItem.id);
+        if (fromIndex !== -1 && toIndex !== -1) {
+            const [moved] = fullItems.splice(fromIndex, 1);
+            fullItems.splice(toIndex, 0, moved);
+            if (type === 'DAILIES') onReorderDaily(fullItems); else onReorderTodo(fullItems);
+        }
         setDragInfo(null);
     };
 
@@ -243,13 +255,13 @@ export default function MissionChecklist({
             night: [],
             anytime: []
         };
-        dailies.forEach((daily, index) => {
+        visibleDailies.forEach((daily, index) => {
             const slot = daily.time_slot && daily.time_slot !== 'anytime' ? daily.time_slot : 'anytime';
             if (!groups[slot]) groups[slot] = [];
             groups[slot].push({ item: daily, index });
         });
         return groups;
-    }, [dailies]);
+    }, [visibleDailies]);
 
     const isOverdue = (todo: Todo) => {
         if (!todo.due_date) return false;
@@ -528,7 +540,7 @@ export default function MissionChecklist({
                             </p>
                         </div>
                     )}
-                    {todos.map((todo, idx) => renderTodoItem(todo, idx))}
+                    {visibleTodos.map((todo, idx) => renderTodoItem(todo, idx))}
                 </div>
             </div>
         </div>

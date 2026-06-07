@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { TodoHistoryEntry, formatTime } from '@/lib/storage';
+import { TodoHistoryEntry, formatTime, DailyChat, WrapUpData } from '@/lib/storage';
 import { NavigationBar } from '@/components/NavigationBar';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { useData } from '@/lib/DataContext';
@@ -13,7 +13,7 @@ export default function AnalyticsPage() {
     const { signOut } = useAuthContext();
     
     // TAB NAVIGATION
-    const [activeTab, setActiveTab] = useState<'overview' | 'history'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'history' | 'wrapup'>('overview');
 
     // DATE RANGE SELECTION
     const [dateRange, setDateRange] = useState<'7' | '14' | '30' | 'all'>('14');
@@ -288,6 +288,156 @@ export default function AnalyticsPage() {
         return history.sort((a, b) => b.tickedAt - a.tickedAt);
     }, [allChats]);
 
+    // WRAP-UP CORRELATION ENGINE STATS
+    const wrapUpStats = useMemo(() => {
+        const allWrapUps: { date: string; wrapUp: WrapUpData }[] = [];
+        sortedDates.forEach(date => {
+            const chat = allChats[date];
+            if (chat && chat.wrapUp) {
+                allWrapUps.push({ date, wrapUp: chat.wrapUp });
+            }
+        });
+
+        let flowCount = 0;
+        let anxiousCount = 0;
+        let calmCount = 0;
+        let drainedCount = 0;
+        const totalWrapUps = allWrapUps.length;
+
+        // Filtered wrap ups for display
+        const filteredWrapUps = allWrapUps.filter(item => filteredDates.includes(item.date));
+
+        // Calculate distributions
+        const distributionSource = dateRange === 'all' ? allWrapUps : filteredWrapUps;
+        const distTotal = distributionSource.length;
+
+        distributionSource.forEach(item => {
+            const label = item.wrapUp.mood?.label;
+            if (label === 'Flow / Inspired') flowCount++;
+            else if (label === 'Anxious / Frustrated') anxiousCount++;
+            else if (label === 'Calm / Clear-Headed') calmCount++;
+            else if (label === 'Drained / Bored') drainedCount++;
+        });
+
+        const flowPct = distTotal > 0 ? Math.round((flowCount / distTotal) * 100) : 0;
+        const anxiousPct = distTotal > 0 ? Math.round((anxiousCount / distTotal) * 100) : 0;
+        const calmPct = distTotal > 0 ? Math.round((calmCount / distTotal) * 100) : 0;
+        const drainedPct = distTotal > 0 ? Math.round((drainedCount / distTotal) * 100) : 0;
+
+        // Focus sessions on Calm vs Flow days (All-Time)
+        const calmSessionDurations: number[] = [];
+        const flowSessionDurations: number[] = [];
+        const allSessionDurations: number[] = [];
+
+        // Daily total focus times
+        const dailyTotalFocusTimes: number[] = [];
+        const panicHangoverDailyTotalFocusTimes: number[] = [];
+        const panicHangoverSessionDurations: number[] = [];
+
+        sortedDates.forEach((date, index) => {
+            const chat = allChats[date];
+            if (!chat) return;
+
+            const sessions: number[] = [];
+            let dailyTotal = 0;
+
+            if (chat.todoHistory && Array.isArray(chat.todoHistory)) {
+                chat.todoHistory.forEach(entry => {
+                    if (entry.type === 'active' && entry.activeTime && entry.activeTime > 0) {
+                        sessions.push(entry.activeTime);
+                        dailyTotal += entry.activeTime;
+                    }
+                });
+            }
+            if (chat.activeTasks && Array.isArray(chat.activeTasks)) {
+                chat.activeTasks.forEach(task => {
+                    let taskActive = (task.accumulatedActiveTime || 0) + (task.totalActiveTime || 0);
+                    if (taskActive > 0) {
+                        sessions.push(taskActive);
+                        dailyTotal += taskActive;
+                    }
+                });
+            }
+
+            allSessionDurations.push(...sessions);
+            dailyTotalFocusTimes.push(dailyTotal);
+
+            if (chat.wrapUp && chat.wrapUp.mood) {
+                const label = chat.wrapUp.mood.label;
+                if (label === 'Calm / Clear-Headed') {
+                    calmSessionDurations.push(...sessions);
+                } else if (label === 'Flow / Inspired') {
+                    flowSessionDurations.push(...sessions);
+                }
+            }
+
+            // Check if previous day was Anxious/Frustrated
+            if (index > 0) {
+                const prevDate = sortedDates[index - 1];
+                const prevChat = allChats[prevDate];
+                if (prevChat && prevChat.wrapUp && prevChat.wrapUp.mood?.label === 'Anxious / Frustrated') {
+                    panicHangoverSessionDurations.push(...sessions);
+                    panicHangoverDailyTotalFocusTimes.push(dailyTotal);
+                }
+            }
+        });
+
+        const avgCalmSessionMs = calmSessionDurations.length > 0
+            ? calmSessionDurations.reduce((a, b) => a + b, 0) / calmSessionDurations.length
+            : 0;
+
+        const avgFlowSessionMs = flowSessionDurations.length > 0
+            ? flowSessionDurations.reduce((a, b) => a + b, 0) / flowSessionDurations.length
+            : 0;
+
+        const avgOverallSessionMs = allSessionDurations.length > 0
+            ? allSessionDurations.reduce((a, b) => a + b, 0) / allSessionDurations.length
+            : 0;
+
+        const avgPanicHangoverSessionMs = panicHangoverSessionDurations.length > 0
+            ? panicHangoverSessionDurations.reduce((a, b) => a + b, 0) / panicHangoverSessionDurations.length
+            : 0;
+
+        const panicDropPct = avgOverallSessionMs > 0 && avgPanicHangoverSessionMs < avgOverallSessionMs
+            ? Math.round(((avgOverallSessionMs - avgPanicHangoverSessionMs) / avgOverallSessionMs) * 100)
+            : 0;
+
+        const avgOverallDailyFocusMs = dailyTotalFocusTimes.length > 0
+            ? dailyTotalFocusTimes.reduce((a, b) => a + b, 0) / dailyTotalFocusTimes.length
+            : 0;
+
+        const avgPanicHangoverDailyFocusMs = panicHangoverDailyTotalFocusTimes.length > 0
+            ? panicHangoverDailyTotalFocusTimes.reduce((a, b) => a + b, 0) / panicHangoverDailyTotalFocusTimes.length
+            : 0;
+
+        const panicDailyDropPct = avgOverallDailyFocusMs > 0 && avgPanicHangoverDailyFocusMs < avgOverallDailyFocusMs
+            ? Math.round(((avgOverallDailyFocusMs - avgPanicHangoverDailyFocusMs) / avgOverallDailyFocusMs) * 100)
+            : 0;
+
+        return {
+            totalWrapUps,
+            distTotal,
+            flowCount,
+            anxiousCount,
+            calmCount,
+            drainedCount,
+            flowPct,
+            anxiousPct,
+            calmPct,
+            drainedPct,
+            avgCalmSessionMs,
+            avgFlowSessionMs,
+            avgOverallSessionMs,
+            avgPanicHangoverSessionMs,
+            panicDropPct,
+            avgOverallDailyFocusMs,
+            avgPanicHangoverDailyFocusMs,
+            panicDailyDropPct,
+            filteredWrapUps,
+            allWrapUps
+        };
+    }, [allChats, sortedDates, filteredDates, dateRange]);
+
     // DYNAMIC SVG CHART DIMENSION CALCULATIONS
     const svgWidth = 800;
     const svgHeight = 240;
@@ -400,6 +550,13 @@ export default function AnalyticsPage() {
                                 >
                                     MISSION LOG
                                 </button>
+
+                                <button 
+                                    onClick={() => setActiveTab('wrapup')}
+                                    style={{ padding: '1rem 0', background: 'none', border: 'none', color: activeTab === 'wrapup' ? '#d4a017' : 'rgba(255,255,255,0.3)', fontWeight: '900', fontSize: '0.8rem', letterSpacing: '0.2em', cursor: 'pointer', borderBottom: activeTab === 'wrapup' ? '2.5px solid #d4a017' : '2.5px solid transparent', transition: 'all 0.3s' }}
+                                >
+                                    WRAP-UP ANALYTICS
+                                </button>
                             </div>
 
                             {/* DATE RANGE SEGMENT CONTROL */}
@@ -472,14 +629,14 @@ export default function AnalyticsPage() {
                                             </div>
                                         </div>
                                         <p style={{ fontSize: '0.7rem', opacity: 0.4, textAlign: 'center', marginTop: '1.5rem', maxWidth: '85%' }}>
-                                            Weighted indicator matching Daily rites completed (40%), To-dos finished (30%), and Focus time (30%).
+                                            Weighted indicator matching Dailies completed (40%), To-dos finished (30%), and Focus time (30%).
                                         </p>
                                     </div>
 
                                     {/* Stats Grid */}
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                                         <div className="stat-card-deep" style={{ borderLeft: '4px solid #10b981' }}>
-                                            <p style={{ fontSize: '0.65rem', fontWeight: '900', color: '#10b981', opacity: 0.8, letterSpacing: '0.05em' }}>DAILY RITES</p>
+                                            <p style={{ fontSize: '0.65rem', fontWeight: '900', color: '#10b981', opacity: 0.8, letterSpacing: '0.05em' }}>DAILIES</p>
                                             <h2 style={{ fontSize: '2.5rem', fontWeight: '900', color: 'white', margin: '4px 0' }}>{rangeStats.dailySuccessRate}%</h2>
                                             <p style={{ fontSize: '0.65rem', opacity: 0.4 }}>{rangeStats.totalDailiesCompleted} of {rangeStats.totalDailiesAssigned} synced</p>
                                         </div>
@@ -670,7 +827,7 @@ export default function AnalyticsPage() {
                                                 style={{ '--pill-color': '#10b981' } as React.CSSProperties}
                                             >
                                                 <span className="dot" style={{ backgroundColor: '#10b981' }} />
-                                                DAILY RITES
+                                                DAILIES
                                             </button>
                                             <button 
                                                 onClick={() => setChartFilters(prev => ({ ...prev, todos: !prev.todos }))}
@@ -858,6 +1015,381 @@ export default function AnalyticsPage() {
 
 
 
+                        {/* --- TAB 2: WRAP-UP & CORRELATION --- */}
+                        {activeTab === 'wrapup' && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+                                
+                                {/* CORRELATION INSIGHTS PANEL */}
+                                <div>
+                                    <h3 style={{ fontSize: '1rem', fontWeight: '900', letterSpacing: '0.15em', marginBottom: '1.25rem', color: 'rgba(255,255,255,0.9)' }}>CORRELATION INSIGHTS</h3>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
+                                        
+                                        {/* INSIGHT A: MINDFULNESS VS MOMENTUM */}
+                                        <div className="block-card insight-card" style={{ borderLeft: '4px solid #06b6d4', padding: '2rem 2.5rem', background: 'rgba(255,255,255,0.02)' }}>
+                                            <span style={{ fontSize: '0.55rem', fontWeight: '900', color: '#06b6d4', letterSpacing: '0.15em' }}>INSIGHT A • COGNITIVE STATE VS SESSION LENGTH</span>
+                                            <h4 style={{ fontSize: '1.1rem', fontWeight: '900', margin: '6px 0 1rem 0', color: 'white' }}>Mindfulness vs. Momentum</h4>
+                                            
+                                            {wrapUpStats.avgCalmSessionMs === 0 && wrapUpStats.avgFlowSessionMs === 0 ? (
+                                                <p style={{ fontSize: '0.75rem', opacity: 0.4 }}>No active focus sessions logged on Calm or Flow days yet.</p>
+                                            ) : (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                                                            <span style={{ opacity: 0.6 }}>Calm / Clear-Headed sessions</span>
+                                                            <span style={{ fontWeight: '800', color: '#3b82f6' }}>{formatTime(wrapUpStats.avgCalmSessionMs, false)}</span>
+                                                        </div>
+                                                        <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', overflow: 'hidden' }}>
+                                                            <div style={{
+                                                                width: wrapUpStats.avgCalmSessionMs + wrapUpStats.avgFlowSessionMs > 0
+                                                                    ? `${(wrapUpStats.avgCalmSessionMs / (wrapUpStats.avgCalmSessionMs + wrapUpStats.avgFlowSessionMs)) * 100}%`
+                                                                    : '0%',
+                                                                height: '100%',
+                                                                background: '#3b82f6'
+                                                            }} />
+                                                        </div>
+                                                    </div>
+
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                                                            <span style={{ opacity: 0.6 }}>Flow / Inspired sessions</span>
+                                                            <span style={{ fontWeight: '800', color: '#06b6d4' }}>{formatTime(wrapUpStats.avgFlowSessionMs, false)}</span>
+                                                        </div>
+                                                        <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', overflow: 'hidden' }}>
+                                                            <div style={{
+                                                                width: wrapUpStats.avgCalmSessionMs + wrapUpStats.avgFlowSessionMs > 0
+                                                                    ? `${(wrapUpStats.avgFlowSessionMs / (wrapUpStats.avgCalmSessionMs + wrapUpStats.avgFlowSessionMs)) * 100}%`
+                                                                    : '0%',
+                                                                height: '100%',
+                                                                background: '#06b6d4'
+                                                            }} />
+                                                        </div>
+                                                    </div>
+
+                                                    <p style={{ fontSize: '0.75rem', opacity: 0.5, lineHeight: '1.4', marginTop: '0.5rem', margin: 0 }}>
+                                                        {wrapUpStats.avgCalmSessionMs > wrapUpStats.avgFlowSessionMs ? (
+                                                            <span>
+                                                                <strong>Calm states promote sustained focus.</strong> Your sessions are on average{' '}
+                                                                <span style={{ color: '#3b82f6', fontWeight: '800' }}>
+                                                                    {Math.round(((wrapUpStats.avgCalmSessionMs - wrapUpStats.avgFlowSessionMs) / (wrapUpStats.avgFlowSessionMs || 1)) * 100)}%
+                                                                </span>{' '}
+                                                                longer than during high-energy Flow states. Calm minds avoid premature distraction.
+                                                            </span>
+                                                        ) : wrapUpStats.avgFlowSessionMs > wrapUpStats.avgCalmSessionMs ? (
+                                                            <span>
+                                                                <strong>Flow states drive momentum.</strong> Your sessions are on average{' '}
+                                                                <span style={{ color: '#06b6d4', fontWeight: '800' }}>
+                                                                    {Math.round(((wrapUpStats.avgFlowSessionMs - wrapUpStats.avgCalmSessionMs) / (wrapUpStats.avgCalmSessionMs || 1)) * 100)}%
+                                                                </span>{' '}
+                                                                longer when inspired. Energy fuels longer execution blocks.
+                                                            </span>
+                                                        ) : (
+                                                            <span>Your focus session durations are equal between Calm and Flow states. Keep logging data to discover patterns.</span>
+                                                        )}
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* INSIGHT B: THE PANIC HANGOVER */}
+                                        <div className="block-card insight-card" style={{ borderLeft: '4px solid #f97316', padding: '2rem 2.5rem', background: 'rgba(255,255,255,0.02)' }}>
+                                            <span style={{ fontSize: '0.55rem', fontWeight: '900', color: '#f97316', letterSpacing: '0.15em' }}>INSIGHT B • ANXIETY HANGOVER DROP</span>
+                                            <h4 style={{ fontSize: '1.1rem', fontWeight: '900', margin: '6px 0 1rem 0', color: 'white' }}>The Panic Hangover</h4>
+                                            
+                                            {wrapUpStats.anxiousCount === 0 ? (
+                                                <p style={{ fontSize: '0.75rem', opacity: 0.4 }}>No Anxious / Frustrated days logged yet to calculate hangover metrics.</p>
+                                            ) : (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                                        <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', padding: '12px', borderRadius: '12px', textAlign: 'center' }}>
+                                                            <span style={{ fontSize: '0.55rem', opacity: 0.4, fontWeight: '800', display: 'block', marginBottom: '4px' }}>SESSION DURATION DROP</span>
+                                                            <h5 style={{ fontSize: '1.5rem', fontWeight: '900', margin: 0, color: wrapUpStats.panicDropPct > 0 ? '#f97316' : '#10b981' }}>
+                                                                {wrapUpStats.panicDropPct > 0 ? `-${wrapUpStats.panicDropPct}%` : '0%'}
+                                                            </h5>
+                                                            <span style={{ fontSize: '0.6rem', opacity: 0.35 }}>
+                                                                {formatTime(wrapUpStats.avgPanicHangoverSessionMs, false)} vs {formatTime(wrapUpStats.avgOverallSessionMs, false)} avg
+                                                            </span>
+                                                        </div>
+
+                                                        <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', padding: '12px', borderRadius: '12px', textAlign: 'center' }}>
+                                                            <span style={{ fontSize: '0.55rem', opacity: 0.4, fontWeight: '800', display: 'block', marginBottom: '4px' }}>DAILY TOTAL FOCUS DROP</span>
+                                                            <h5 style={{ fontSize: '1.5rem', fontWeight: '900', margin: 0, color: wrapUpStats.panicDailyDropPct > 0 ? '#f97316' : '#10b981' }}>
+                                                                {wrapUpStats.panicDailyDropPct > 0 ? `-${wrapUpStats.panicDailyDropPct}%` : '0%'}
+                                                            </h5>
+                                                            <span style={{ fontSize: '0.6rem', opacity: 0.35 }}>
+                                                                {formatTime(wrapUpStats.avgPanicHangoverDailyFocusMs, false)} vs {formatTime(wrapUpStats.avgOverallDailyFocusMs, false)} avg
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    <p style={{ fontSize: '0.75rem', opacity: 0.5, lineHeight: '1.4', margin: 0 }}>
+                                                        {wrapUpStats.panicDailyDropPct > 0 || wrapUpStats.panicDropPct > 0 ? (
+                                                            <span>
+                                                                <strong>Emotional friction leaves a hangover.</strong> The day following an Anxious / Frustrated state shows a{' '}
+                                                                <span style={{ color: '#f97316', fontWeight: '800' }}>{wrapUpStats.panicDailyDropPct}% drop</span> in total daily focus time. Emotional fatigue drags productivity down.
+                                                            </span>
+                                                        ) : (
+                                                            <span>No significant focus drop detected following Anxious / Frustrated days. You maintain stability well!</span>
+                                                        )}
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* MOOD MATRIX QUADRANT DISTRIBUTION */}
+                                <div className="block-card" style={{ padding: '2.5rem 3rem' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                                        <div>
+                                            <h3 style={{ fontSize: '1rem', fontWeight: '900', letterSpacing: '0.1em' }}>MOOD MATRIX QUADRANT DISTRIBUTION</h3>
+                                            <p style={{ fontSize: '0.75rem', opacity: 0.4, marginTop: '2px' }}>
+                                                Current view based on {wrapUpStats.distTotal} logged days in selected range.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {wrapUpStats.distTotal === 0 ? (
+                                        <div style={{ padding: '3rem', textAlign: 'center', opacity: 0.3, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '16px' }}>
+                                            No wrap-up mood logs recorded in the selected date range.
+                                        </div>
+                                    ) : (
+                                        <div className="mood-matrix-container" style={{
+                                            display: 'grid',
+                                            gridTemplateColumns: '1fr 1fr',
+                                            gap: '1.5rem',
+                                            maxWidth: '640px',
+                                            margin: '1.5rem auto',
+                                            position: 'relative'
+                                        }}>
+                                            {/* Labels for Energy / Tone */}
+                                            <div style={{
+                                                position: 'absolute',
+                                                top: '-24px',
+                                                left: 0,
+                                                right: 0,
+                                                textAlign: 'center',
+                                                fontSize: '0.6rem',
+                                                fontWeight: '800',
+                                                letterSpacing: '0.15em',
+                                                opacity: 0.3
+                                            }}>HIGH ENERGY (Wired / Driven)</div>
+
+                                            <div style={{
+                                                position: 'absolute',
+                                                bottom: '-28px',
+                                                left: 0,
+                                                right: 0,
+                                                textAlign: 'center',
+                                                fontSize: '0.6rem',
+                                                fontWeight: '800',
+                                                letterSpacing: '0.15em',
+                                                opacity: 0.3
+                                            }}>LOW ENERGY (Sluggish / Quiet)</div>
+
+                                            <div style={{
+                                                position: 'absolute',
+                                                left: '-40px',
+                                                top: 0,
+                                                bottom: 0,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                transform: 'rotate(-90deg)',
+                                                fontSize: '0.6rem',
+                                                fontWeight: '800',
+                                                letterSpacing: '0.15em',
+                                                opacity: 0.3,
+                                                whiteSpace: 'nowrap'
+                                            }}>NEGATIVE TONE</div>
+
+                                            <div style={{
+                                                position: 'absolute',
+                                                right: '-40px',
+                                                top: 0,
+                                                bottom: 0,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                transform: 'rotate(90deg)',
+                                                fontSize: '0.6rem',
+                                                fontWeight: '800',
+                                                letterSpacing: '0.15em',
+                                                opacity: 0.3,
+                                                whiteSpace: 'nowrap'
+                                            }}>POSITIVE TONE</div>
+
+                                            {/* QUADRANTS */}
+                                            {/* TOP-LEFT: ANXIOUS / FRUSTRATED */}
+                                            <div className="matrix-quadrant quad-anxious" style={{
+                                                background: 'rgba(249, 115, 22, 0.02)',
+                                                border: '1.5px solid rgba(249, 115, 22, 0.08)',
+                                                borderRadius: '20px',
+                                                padding: '2rem',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                textAlign: 'center',
+                                                transition: 'all 0.3s ease',
+                                                minHeight: '130px'
+                                            }}>
+                                                <span style={{ fontSize: '0.55rem', fontWeight: '900', color: '#f97316', letterSpacing: '0.15em', marginBottom: '6px' }}>ANXIOUS / FRUSTRATED</span>
+                                                <h4 style={{ fontSize: '2.5rem', fontWeight: '950', margin: 0, color: 'white' }}>{wrapUpStats.anxiousPct}%</h4>
+                                                <span style={{ fontSize: '0.65rem', opacity: 0.4, marginTop: '4px' }}>{wrapUpStats.anxiousCount} of {wrapUpStats.distTotal} logs</span>
+                                            </div>
+
+                                            {/* TOP-RIGHT: FLOW / INSPIRED */}
+                                            <div className="matrix-quadrant quad-flow" style={{
+                                                background: 'rgba(6, 182, 212, 0.02)',
+                                                border: '1.5px solid rgba(6, 182, 212, 0.08)',
+                                                borderRadius: '20px',
+                                                padding: '2rem',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                textAlign: 'center',
+                                                transition: 'all 0.3s ease',
+                                                minHeight: '130px'
+                                            }}>
+                                                <span style={{ fontSize: '0.55rem', fontWeight: '900', color: '#06b6d4', letterSpacing: '0.15em', marginBottom: '6px' }}>FLOW / INSPIRED</span>
+                                                <h4 style={{ fontSize: '2.5rem', fontWeight: '950', margin: 0, color: 'white' }}>{wrapUpStats.flowPct}%</h4>
+                                                <span style={{ fontSize: '0.65rem', opacity: 0.4, marginTop: '4px' }}>{wrapUpStats.flowCount} of {wrapUpStats.distTotal} logs</span>
+                                            </div>
+
+                                            {/* BOTTOM-LEFT: DRAINED / BORED */}
+                                            <div className="matrix-quadrant quad-drained" style={{
+                                                background: 'rgba(156, 163, 175, 0.02)',
+                                                border: '1.5px solid rgba(156, 163, 175, 0.08)',
+                                                borderRadius: '20px',
+                                                padding: '2rem',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                textAlign: 'center',
+                                                transition: 'all 0.3s ease',
+                                                minHeight: '130px'
+                                            }}>
+                                                <span style={{ fontSize: '0.55rem', fontWeight: '900', color: '#9ca3af', letterSpacing: '0.15em', marginBottom: '6px' }}>DRAINED / BORED</span>
+                                                <h4 style={{ fontSize: '2.5rem', fontWeight: '950', margin: 0, color: 'white' }}>{wrapUpStats.drainedPct}%</h4>
+                                                <span style={{ fontSize: '0.65rem', opacity: 0.4, marginTop: '4px' }}>{wrapUpStats.drainedCount} of {wrapUpStats.distTotal} logs</span>
+                                            </div>
+
+                                            {/* BOTTOM-RIGHT: CALM / CLEAR-HEADED */}
+                                            <div className="matrix-quadrant quad-calm" style={{
+                                                background: 'rgba(59, 130, 246, 0.02)',
+                                                border: '1.5px solid rgba(59, 130, 246, 0.08)',
+                                                borderRadius: '20px',
+                                                padding: '2rem',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                textAlign: 'center',
+                                                transition: 'all 0.3s ease',
+                                                minHeight: '130px'
+                                            }}>
+                                                <span style={{ fontSize: '0.55rem', fontWeight: '900', color: '#3b82f6', letterSpacing: '0.15em', marginBottom: '6px' }}>CALM / CLEAR-HEADED</span>
+                                                <h4 style={{ fontSize: '2.5rem', fontWeight: '950', margin: 0, color: 'white' }}>{wrapUpStats.calmPct}%</h4>
+                                                <span style={{ fontSize: '0.65rem', opacity: 0.4, marginTop: '4px' }}>{wrapUpStats.calmCount} of {wrapUpStats.distTotal} logs</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* JOURNAL LOG timeline FEED */}
+                                <div className="block-card" style={{ padding: '2.5rem 3rem' }}>
+                                    <div style={{ marginBottom: '2.5rem' }}>
+                                        <h3 style={{ fontSize: '1rem', fontWeight: '900', letterSpacing: '0.1em' }}>MICRO-JOURNAL HISTORY</h3>
+                                        <p style={{ fontSize: '0.75rem', opacity: 0.4, marginTop: '2px' }}>
+                                            Logged daily reflections and hashtags.
+                                        </p>
+                                    </div>
+
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                                        {wrapUpStats.filteredWrapUps.length === 0 ? (
+                                            <div style={{ padding: '2.5rem', textAlign: 'center', opacity: 0.3, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '16px' }}>
+                                                No micro-journal logs found in the selected date range.
+                                            </div>
+                                        ) : (
+                                            [...wrapUpStats.filteredWrapUps].reverse().map((item, idx) => {
+                                                const label = item.wrapUp.mood?.label;
+                                                const badgeColor =
+                                                    label === 'Flow / Inspired' ? '#06b6d4' :
+                                                    label === 'Anxious / Frustrated' ? '#f97316' :
+                                                    label === 'Calm / Clear-Headed' ? '#3b82f6' : '#9ca3af';
+
+                                                return (
+                                                    <div key={idx} style={{
+                                                        padding: '1.5rem',
+                                                        background: 'rgba(255,255,255,0.01)',
+                                                        border: '1px solid rgba(255,255,255,0.04)',
+                                                        borderRadius: '16px',
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        gap: '0.75rem'
+                                                    }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                                            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                                                <span style={{ fontSize: '0.95rem', fontWeight: '900', color: 'white' }}>
+                                                                    {new Date(item.date).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                                                                </span>
+                                                                <span style={{
+                                                                    padding: '3px 8px',
+                                                                    borderRadius: '100px',
+                                                                    fontSize: '0.55rem',
+                                                                    fontWeight: '900',
+                                                                    background: `${badgeColor}15`,
+                                                                    color: badgeColor,
+                                                                    border: `1px solid ${badgeColor}30`,
+                                                                    letterSpacing: '0.05em'
+                                                                }}>
+                                                                    {label.toUpperCase()}
+                                                                </span>
+                                                            </div>
+                                                            <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)' }}>
+                                                                Tone: {item.wrapUp.mood?.x >= 0 ? '+' : ''}{item.wrapUp.mood?.x} | Energy: {item.wrapUp.mood?.y >= 0 ? '+' : ''}{item.wrapUp.mood?.y}
+                                                            </div>
+                                                        </div>
+
+                                                        {item.wrapUp.journal ? (
+                                                            <p style={{ margin: 0, fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)', lineHeight: '1.5' }}>
+                                                                {item.wrapUp.journal}
+                                                            </p>
+                                                        ) : (
+                                                            <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>
+                                                                No written reflection logged.
+                                                            </p>
+                                                        )}
+
+                                                        {item.wrapUp.tags && item.wrapUp.tags.length > 0 && (
+                                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
+                                                                {item.wrapUp.tags.map(tag => (
+                                                                    <span key={tag} style={{
+                                                                        fontSize: '0.65rem',
+                                                                        fontWeight: '800',
+                                                                        color: '#d4a017',
+                                                                        background: 'rgba(212, 160, 23, 0.05)',
+                                                                        padding: '2px 8px',
+                                                                        borderRadius: '4px',
+                                                                        border: '1px solid rgba(212, 160, 23, 0.15)'
+                                                                    }}>
+                                                                        #{tag}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+                                </div>
+
+                            </div>
+                        )}
+
                         {/* --- TAB 3: MISSION LOG --- */}
                         {activeTab === 'history' && (
                             <div className="block-card" style={{ padding: '3rem', marginTop: '1rem' }}>
@@ -898,7 +1430,7 @@ export default function AnalyticsPage() {
                                                                 entry.type === 'daily' ? '#10b981' : '#8b5cf6',
                                                             letterSpacing: '0.1em'
                                                         }}>
-                                                            {entry.type === 'active' ? 'ACTIVE MISSION' : entry.type === 'daily' ? 'DAILY RITE' : 'ONE-OFF'}
+                                                            {entry.type === 'active' ? 'ACTIVE MISSION' : entry.type === 'daily' ? 'DAILY' : 'ONE-OFF'}
                                                         </span>
                                                         <p style={{ margin: 0, fontWeight: '800', fontSize: '1rem', color: 'white' }}>{entry.text}</p>
                                                     </div>
@@ -1015,6 +1547,33 @@ export default function AnalyticsPage() {
                     0% { transform: scale(0.95); opacity: 0.5; }
                     50% { transform: scale(1.05); opacity: 1; }
                     100% { transform: scale(0.95); opacity: 0.5; }
+                }
+                .matrix-quadrant:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+                }
+                .quad-anxious:hover {
+                    border-color: rgba(249, 115, 22, 0.3) !important;
+                    background: rgba(249, 115, 22, 0.04) !important;
+                }
+                .quad-flow:hover {
+                    border-color: rgba(6, 182, 212, 0.3) !important;
+                    background: rgba(6, 182, 212, 0.04) !important;
+                }
+                .quad-drained:hover {
+                    border-color: rgba(156, 163, 175, 0.3) !important;
+                    background: rgba(156, 163, 175, 0.04) !important;
+                }
+                .quad-calm:hover {
+                    border-color: rgba(59, 130, 246, 0.3) !important;
+                    background: rgba(59, 130, 246, 0.04) !important;
+                }
+                .insight-card {
+                    transition: transform 0.2s ease, box-shadow 0.2s ease;
+                }
+                .insight-card:hover {
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 20px rgba(255,255,255,0.01);
                 }
             `}</style>
         </main>

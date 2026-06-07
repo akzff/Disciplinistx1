@@ -19,6 +19,7 @@ import { supabase } from '@/lib/supabase';
 import GroupChat from '@/components/GroupChat';
 import SettingsSidebar from '@/components/SettingsSidebar';
 import PresetTaskSelector from '@/components/PresetTaskSelector';
+import WrapUpModal from '@/components/WrapUpModal';
 import { filterTasksForToday, getNextSeasonalDate } from '@/utils/taskVisibility';
 import { format } from 'date-fns';
 
@@ -86,8 +87,8 @@ function useRealtimeSync(
           if (incomingData.activeTasks) s.setActiveTasks(incomingData.activeTasks);
           if (incomingData.distractions) s.setDistractions(incomingData.distractions);
           if (incomingData.botMood) s.setBotMood(incomingData.botMood);
-          if (incomingData.todos) s.setTodos(filterTasksForToday(incomingData.todos));
-          if (incomingData.dailies) s.setDailies(filterTasksForToday(incomingData.dailies));
+          if (incomingData.todos) s.setTodos(incomingData.todos);
+          if (incomingData.dailies) s.setDailies(incomingData.dailies);
           if (incomingData.completedTasks) s.setCompletedTasks(incomingData.completedTasks);
           if (incomingData.todoHistory) s.setTodoHistory(incomingData.todoHistory);
           if (incomingData.expenses) s.setExpenses(incomingData.expenses);
@@ -194,6 +195,7 @@ export default function ChatPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [liveMissionOpen, setLiveMissionOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [wrapUpOpen, setWrapUpOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [showPresetTasks, setShowPresetTasks] = useState(false);
   const [autoGenerating, setAutoGenerating] = useState(false);
@@ -289,8 +291,8 @@ export default function ChatPage() {
         setBotMood(prevChat.botMood || 'NEUTRAL');
         setActiveTasks(prevChat.activeTasks || []);
         setDistractions(prevChat.distractions || []);
-        setTodos(filterTasksForToday(prevChat.todos || []));
-        setDailies(filterTasksForToday(prevChat.dailies || []));
+        setTodos(prevChat.todos || []);
+        setDailies(prevChat.dailies || []);
         setCompletedTasks(prevChat.completedTasks || []);
         setTodoHistory(prevChat.todoHistory || []);
         setExpenses(prevChat.expenses || []);
@@ -321,8 +323,8 @@ export default function ChatPage() {
         setBotMood((base as typeof todayChat & { botMood?: string })?.botMood as typeof botMood || 'NEUTRAL');
         setActiveTasks(base.activeTasks || []);
         setDistractions(base.distractions || []);
-        setTodos(filterTasksForToday(base.todos || []));
-        setDailies(filterTasksForToday(base.dailies || []));
+        setTodos(base.todos || []);
+        setDailies(base.dailies || []);
         setCompletedTasks((base as typeof todayChat)?.completedTasks || []);
         setTodoHistory((base as typeof todayChat)?.todoHistory || []);
         setExpenses(base.expenses || []);
@@ -337,6 +339,64 @@ export default function ChatPage() {
     init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [globalPrefs, isCloudSynced, isInitialized]);
+
+  // Exit-Intent wrap-up modal trigger
+  useEffect(() => {
+    if (!isInitialized || !activeDay) return;
+    const todayChat = allChats[activeDay];
+    
+    const handleMouseLeave = (e: MouseEvent) => {
+      // If mouse leaves the top of the viewport (indicating tab closing/switching)
+      if (e.clientY < 20) {
+        const hasWrappedUp = todayChat?.wrapUp || false;
+        const dismissed = sessionStorage.getItem(`wrapUpDismissed_${activeDay}`);
+        if (!hasWrappedUp && !dismissed && chatStatus === 'OPEN') {
+          setWrapUpOpen(true);
+        }
+      }
+    };
+    document.addEventListener('mouseleave', handleMouseLeave);
+    return () => document.removeEventListener('mouseleave', handleMouseLeave);
+  }, [isInitialized, allChats, activeDay, chatStatus]);
+
+  const saveWrapUp = (wrapUpData: DailyChat['wrapUp']) => {
+    if (!activeDay) return;
+    
+    // Save to local state and trigger DB save
+    const updatedChat = {
+      wrapUp: wrapUpData,
+      status: 'CLOSED' as const // Close the day's chat once wrapped up
+    };
+    
+    setChatStatus('CLOSED');
+    
+    // Immediately persist wrap-up snapshot
+    const chatD = { 
+      messages, 
+      status: 'CLOSED' as const, 
+      activeTasks, 
+      distractions, 
+      botMood, 
+      todos, 
+      dailies, 
+      completedTasks, 
+      todoHistory, 
+      expenses, 
+      wrapUp: wrapUpData,
+      clientId: myClientId 
+    };
+    cloudStorage.saveChat(activeDay, chatD, user?.id || undefined, true);
+    setLocalChat(activeDay, chatD as DailyChat);
+    
+    // Trigger notification to bot context
+    const timestamp = Date.now();
+    const wrapUpMsg: Message = {
+      role: 'assistant',
+      content: `Today's wrap-up submitted. State logged as: ${wrapUpData?.mood.label}. Reflection: "${wrapUpData?.journal}"`,
+      timestamp
+    };
+    setMessages(prev => [...prev, wrapUpMsg]);
+  };
 
   // Debounced cloud save (2000ms) to avoid hammering Supabase on every keystroke
   useEffect(() => {
@@ -571,13 +631,13 @@ export default function ChatPage() {
     try {
       // Compressed State for Token Optimization
       const completed = [
-        ...(todos?.filter(t => t.completed).map(t => t.text) || []),
-        ...(dailies?.filter(d => d.completed).map(d => d.text) || [])
+        ...(filterTasksForToday(todos || [])?.filter(t => t.completed).map(t => t.text) || []),
+        ...(filterTasksForToday(dailies || [])?.filter(d => d.completed).map(d => d.text) || [])
       ].join(', ') || 'None';
 
       const pending = [
-        ...(todos?.filter(t => !t.completed).map(t => t.text) || []),
-        ...(dailies?.filter(d => !d.completed).map(d => d.text) || [])
+        ...(filterTasksForToday(todos || [])?.filter(t => !t.completed).map(t => t.text) || []),
+        ...(filterTasksForToday(dailies || [])?.filter(d => !d.completed).map(d => d.text) || [])
       ].join(', ') || 'None';
 
       // Token Optimization: Last 8 messages for balance of context vs cost
@@ -991,7 +1051,7 @@ OPERATIONAL TAGS:
     setActiveTasks(base.activeTasks || []);
     setDistractions(base.distractions || []);
     setBotMood((base as typeof todayChat & { botMood?: string })?.botMood as typeof botMood || 'NEUTRAL');
-    setTodos(filterTasksForToday(base.todos || []));
+    setTodos(base.todos || []);
     setDailies(base.dailies || []);
     setCompletedTasks((base as typeof todayChat)?.completedTasks || []);
     setTodoHistory((base as typeof todayChat)?.todoHistory || []);
@@ -1058,6 +1118,22 @@ OPERATIONAL TAGS:
 
           <div className="header-controls" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              {chatStatus === 'OPEN' && (
+                <button
+                  onClick={() => setWrapUpOpen(true)}
+                  className="lux-start-btn"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(212, 160, 23, 0.1), rgba(168, 85, 247, 0.05))',
+                    border: '1px solid rgba(212, 160, 23, 0.3)',
+                    color: '#d4a017'
+                  }}
+                >
+                  <span className="lux-start-icon" aria-hidden="true" style={{ fontSize: '10px' }}>
+                    📝
+                  </span>
+                  <span className="lux-start-label">WRAP UP</span>
+                </button>
+              )}
               <div className="lux-start-wrap" ref={liveMissionAnchorRef}>
                 <button
                   onClick={triggerStartMission}
@@ -2184,6 +2260,16 @@ OPERATIONAL TAGS:
           onClose={() => setShowPresetTasks(false)}
         />
       )}
+      <WrapUpModal
+        open={wrapUpOpen}
+        onClose={() => {
+          setWrapUpOpen(false);
+          if (activeDay) {
+            sessionStorage.setItem(`wrapUpDismissed_${activeDay}`, 'true');
+          }
+        }}
+        onSave={saveWrapUp}
+      />
     </div>
   );
 }
