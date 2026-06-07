@@ -9,15 +9,50 @@ interface WrapUpModalProps {
     onSave: (data: WrapUpData) => void;
 }
 
-const SUGGESTED_TAGS = ['focus', 'productivity', 'burnout', 'debug', 'database', 'flow', 'anxious', 'calm', 'distracted'];
+const DEFAULT_SUGGESTED_TAGS = ['focus', 'productivity', 'burnout', 'debug', 'database', 'flow', 'anxious', 'calm', 'distracted'];
 
 export default function WrapUpModal({ open, onClose, onSave }: WrapUpModalProps) {
+    // Custom Suggested Tags state
+    const [suggestedTags, setSuggestedTags] = useState<string[]>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('disciplinist_custom_tags');
+            if (saved) {
+                try {
+                    return JSON.parse(saved);
+                } catch (e) {
+                    // fallback
+                }
+            }
+        }
+        return DEFAULT_SUGGESTED_TAGS;
+    });
+    const [newTagInput, setNewTagInput] = useState('');
+    const [isAddingTag, setIsAddingTag] = useState(false);
+
     // Coordinate values range from -1 to 1
     const [x, setX] = useState<number>(0); // Tone
     const [y, setY] = useState<number>(0); // Energy
     const [isDragging, setIsDragging] = useState(false);
     const [journalText, setJournalText] = useState('');
     const gridRef = useRef<HTMLDivElement>(null);
+
+    const handleAddTag = () => {
+        const cleanTag = newTagInput.trim().toLowerCase().replace(/#/g, '');
+        if (cleanTag && !suggestedTags.includes(cleanTag)) {
+            const updated = [...suggestedTags, cleanTag];
+            setSuggestedTags(updated);
+            localStorage.setItem('disciplinist_custom_tags', JSON.stringify(updated));
+            setNewTagInput('');
+            setIsAddingTag(false);
+        }
+    };
+
+    const handleRemoveSuggestedTag = (e: React.MouseEvent, tagToRemove: string) => {
+        e.stopPropagation(); // Prevent toggling the tag as active/inactive
+        const updated = suggestedTags.filter(t => t !== tagToRemove);
+        setSuggestedTags(updated);
+        localStorage.setItem('disciplinist_custom_tags', JSON.stringify(updated));
+    };
 
     // Close on escape key
     useEffect(() => {
@@ -298,13 +333,14 @@ export default function WrapUpModal({ open, onClose, onSave }: WrapUpModalProps)
                     />
 
                     {/* Tag Suggestions and Active Tags */}
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
-                        {SUGGESTED_TAGS.map(tag => {
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '4px', alignItems: 'center' }}>
+                        {suggestedTags.map(tag => {
                             const active = autoTags.includes(tag);
                             return (
                                 <button
                                     key={tag}
                                     onClick={() => handleTagToggle(tag)}
+                                    className="customizable-tag"
                                     style={{
                                         padding: '4px 10px',
                                         borderRadius: '100px',
@@ -314,13 +350,95 @@ export default function WrapUpModal({ open, onClose, onSave }: WrapUpModalProps)
                                         background: active ? '#d4a01720' : 'transparent',
                                         color: active ? '#d4a017' : 'rgba(255, 255, 255, 0.4)',
                                         cursor: 'pointer',
-                                        transition: 'all 0.2s'
+                                        transition: 'all 0.2s',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '4px'
                                     }}
                                 >
-                                    #{tag}
+                                    <span>#{tag}</span>
+                                    <span 
+                                        onClick={(e) => handleRemoveSuggestedTag(e, tag)}
+                                        className="delete-tag-btn"
+                                        style={{
+                                            opacity: 0.4,
+                                            marginLeft: '2px',
+                                            fontSize: '11px',
+                                            fontWeight: 900,
+                                            transition: 'opacity 0.2s'
+                                        }}
+                                        title="Remove from suggestions"
+                                    >
+                                        ×
+                                    </span>
                                 </button>
                             );
                         })}
+
+                        {/* Inline custom tag adder */}
+                        {isAddingTag ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <input
+                                    type="text"
+                                    value={newTagInput}
+                                    onChange={(e) => setNewTagInput(e.target.value)}
+                                    placeholder="new tag..."
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleAddTag();
+                                        if (e.key === 'Escape') setIsAddingTag(false);
+                                    }}
+                                    autoFocus
+                                    style={{
+                                        background: '#040406',
+                                        border: '1px solid rgba(212, 160, 23, 0.3)',
+                                        borderRadius: '100px',
+                                        padding: '4px 10px',
+                                        fontSize: '0.65rem',
+                                        color: 'white',
+                                        outline: 'none',
+                                        width: '80px',
+                                        boxSizing: 'border-box'
+                                    }}
+                                />
+                                <button 
+                                    onClick={handleAddTag}
+                                    style={{ background: 'transparent', border: 'none', color: '#d4a017', fontSize: '0.85rem', cursor: 'pointer', padding: '2px' }}
+                                >
+                                    ✓
+                                </button>
+                                <button 
+                                    onClick={() => setIsAddingTag(false)}
+                                    style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', cursor: 'pointer', padding: '2px' }}
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => setIsAddingTag(true)}
+                                style={{
+                                    padding: '4px 10px',
+                                    borderRadius: '100px',
+                                    fontSize: '0.65rem',
+                                    fontWeight: 800,
+                                    border: '1px dashed rgba(255, 255, 255, 0.15)',
+                                    background: 'transparent',
+                                    color: 'rgba(255, 255, 255, 0.35)',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.borderColor = '#d4a017';
+                                    e.currentTarget.style.color = '#d4a017';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+                                    e.currentTarget.style.color = 'rgba(255, 255, 255, 0.35)';
+                                }}
+                            >
+                                + ADD SUGGESTION
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -382,6 +500,13 @@ export default function WrapUpModal({ open, onClose, onSave }: WrapUpModalProps)
                 @keyframes scaleUp {
                     from { transform: scale(0.95); opacity: 0; }
                     to { transform: scale(1); opacity: 1; }
+                }
+                .customizable-tag:hover .delete-tag-btn {
+                    opacity: 0.85 !important;
+                }
+                .delete-tag-btn:hover {
+                    color: #ef4444;
+                    opacity: 1 !important;
                 }
             `}</style>
         </div>
