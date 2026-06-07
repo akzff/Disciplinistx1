@@ -20,7 +20,7 @@ export default function WrapUpModal({ open, onClose, onSave, initialData }: Wrap
             if (saved) {
                 try {
                     return JSON.parse(saved);
-                } catch (e) {
+                } catch {
                     // fallback
                 }
             }
