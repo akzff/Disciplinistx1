@@ -70,10 +70,17 @@ export default function WrapUpModal({ open, onClose, onSave }: WrapUpModalProps)
         const energy: 'high' | 'low' = y >= 0 ? 'high' : 'low';
 
         let label: MoodData['label'] = 'Calm / Clear-Headed';
-        if (energy === 'high' && tone === 'positive') label = 'Flow / Inspired';
-        else if (energy === 'high' && tone === 'negative') label = 'Anxious / Frustrated';
-        else if (energy === 'low' && tone === 'positive') label = 'Calm / Clear-Headed';
-        else if (energy === 'low' && tone === 'negative') label = 'Drained / Bored';
+        if (x === 0 && y === 0) {
+            label = 'Calm / Clear-Headed'; // Balanced/Neutral starting state defaults to Calm
+        } else if (energy === 'high' && tone === 'positive') {
+            label = 'Flow / Inspired';
+        } else if (energy === 'high' && tone === 'negative') {
+            label = 'Anxious / Frustrated';
+        } else if (energy === 'low' && tone === 'positive') {
+            label = 'Calm / Clear-Headed';
+        } else if (energy === 'low' && tone === 'negative') {
+            label = 'Drained / Bored';
+        }
 
         return { x, y, energy, tone, label };
     }, [x, y]);
@@ -162,6 +169,20 @@ export default function WrapUpModal({ open, onClose, onSave }: WrapUpModalProps)
         } else {
             // Append to text
             setJournalText(prev => prev.trim() ? `${prev} ${hashtag}` : hashtag);
+            // Snap coordinates to corresponding quadrant centers for emotional tags
+            if (tag === 'calm') {
+                setX(0.5);
+                setY(-0.5);
+            } else if (tag === 'flow') {
+                setX(0.5);
+                setY(0.5);
+            } else if (tag === 'anxious') {
+                setX(-0.5);
+                setY(0.5);
+            } else if (tag === 'drained') {
+                setX(-0.5);
+                setY(-0.5);
+            }
         }
     };
 
