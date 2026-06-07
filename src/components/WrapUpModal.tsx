@@ -35,6 +35,38 @@ export default function WrapUpModal({ open, onClose, onSave }: WrapUpModalProps)
     const [isDragging, setIsDragging] = useState(false);
     const [journalText, setJournalText] = useState('');
     const gridRef = useRef<HTMLDivElement>(null);
+    const hasManuallyMoved = useRef(false);
+
+    // Scan journal text for emotional tags/keywords to auto-align the grid dot if the user has not manually interacted with the grid.
+    useEffect(() => {
+        if (isDragging || hasManuallyMoved.current) return;
+
+        const text = journalText.toLowerCase();
+        
+        // Scan for emotional keywords/tags
+        const isAnxious = text.includes('#anxious') || text.includes('anxious') || text.includes('frustrat') || text.includes('stress') || text.includes('panic') || text.includes('worry') || text.includes('worried');
+        const isFlow = text.includes('#flow') || text.includes('flow') || text.includes('inspir') || text.includes('excit') || text.includes('productiv') || text.includes('focus') || text.includes('#focus');
+        const isCalm = text.includes('#calm') || text.includes('calm') || text.includes('clear') || text.includes('relax') || text.includes('peace') || text.includes('chill');
+        const isDrained = text.includes('#drained') || text.includes('#burnout') || text.includes('drain') || text.includes('bore') || text.includes('tire') || text.includes('exhaust') || text.includes('burnout');
+
+        if (isAnxious) {
+            setX(-0.5);
+            setY(0.5);
+        } else if (isFlow) {
+            setX(0.5);
+            setY(0.5);
+        } else if (isCalm) {
+            setX(0.5);
+            setY(-0.5);
+        } else if (isDrained) {
+            setX(-0.5);
+            setY(-0.5);
+        } else {
+            // Default center if no keyword is typed
+            setX(0);
+            setY(0);
+        }
+    }, [journalText, isDragging]);
 
     const handleAddTag = () => {
         const cleanTag = newTagInput.trim().toLowerCase().replace(/#/g, '');
@@ -71,7 +103,7 @@ export default function WrapUpModal({ open, onClose, onSave }: WrapUpModalProps)
 
         let label: MoodData['label'] = 'Calm / Clear-Headed';
         if (x === 0 && y === 0) {
-            label = 'Calm / Clear-Headed'; // Balanced/Neutral starting state defaults to Calm
+            label = 'Calm / Clear-Headed'; // Default center to Calm/Clear-Headed instead of Flow
         } else if (energy === 'high' && tone === 'positive') {
             label = 'Flow / Inspired';
         } else if (energy === 'high' && tone === 'negative') {
@@ -116,6 +148,7 @@ export default function WrapUpModal({ open, onClose, onSave }: WrapUpModalProps)
     // Track mouse/touch inputs and map to -1 -> 1 range
     const handlePointerEvent = (e: React.PointerEvent<HTMLDivElement>) => {
         if (!gridRef.current) return;
+        hasManuallyMoved.current = true; // Mark that user has manually interacted with the matrix
         const rect = gridRef.current.getBoundingClientRect();
         
         // Calculate raw relative coordinates inside the grid [0 to rect.width]
@@ -169,20 +202,6 @@ export default function WrapUpModal({ open, onClose, onSave }: WrapUpModalProps)
         } else {
             // Append to text
             setJournalText(prev => prev.trim() ? `${prev} ${hashtag}` : hashtag);
-            // Snap coordinates to corresponding quadrant centers for emotional tags
-            if (tag === 'calm') {
-                setX(0.5);
-                setY(-0.5);
-            } else if (tag === 'flow') {
-                setX(0.5);
-                setY(0.5);
-            } else if (tag === 'anxious') {
-                setX(-0.5);
-                setY(0.5);
-            } else if (tag === 'drained') {
-                setX(-0.5);
-                setY(-0.5);
-            }
         }
     };
 
