@@ -1,16 +1,42 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { TodoHistoryEntry, formatTime, WrapUpData } from '@/lib/storage';
+import { TodoHistoryEntry, formatTime, WrapUpData, DailyChat } from '@/lib/storage';
 import { NavigationBar } from '@/components/NavigationBar';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { useData } from '@/lib/DataContext';
 import { useAuthContext } from '@/lib/AuthContext';
 import Image from 'next/image';
+import WrapUpModal from '@/components/WrapUpModal';
+import { cloudStorage } from '@/lib/cloudStorage';
 
 export default function AnalyticsPage() {
-    const { allChats, preferences } = useData();
-    const { signOut } = useAuthContext();
+    const { allChats, preferences, setLocalChat } = useData();
+    const { signOut, user } = useAuthContext();
+
+    const [editingDate, setEditingDate] = useState<string | null>(null);
+    const [wrapUpOpen, setWrapUpOpen] = useState(false);
+
+    const handleEditWrapUpClick = (date: string) => {
+        setEditingDate(date);
+        setWrapUpOpen(true);
+    };
+
+    const handleSaveWrapUp = async (wrapUpData: WrapUpData) => {
+        if (!editingDate) return;
+        const currentChat = allChats[editingDate];
+        if (!currentChat) return;
+
+        const updatedChat: DailyChat = {
+            ...currentChat,
+            wrapUp: wrapUpData
+        };
+
+        await cloudStorage.saveChat(editingDate, updatedChat, user?.id || undefined, true);
+        setLocalChat(editingDate, updatedChat);
+        setWrapUpOpen(false);
+        setEditingDate(null);
+    };
     
     // TAB NAVIGATION
     const [activeTab, setActiveTab] = useState<'overview' | 'history' | 'wrapup'>('overview');
@@ -1347,6 +1373,32 @@ export default function AnalyticsPage() {
                                                                 }}>
                                                                     {label.toUpperCase()}
                                                                 </span>
+                                                                <button
+                                                                    onClick={() => handleEditWrapUpClick(item.date)}
+                                                                    style={{
+                                                                        background: 'none',
+                                                                        color: '#d4a017',
+                                                                        fontSize: '0.7rem',
+                                                                        fontWeight: '900',
+                                                                        cursor: 'pointer',
+                                                                        padding: '2px 6px',
+                                                                        borderRadius: '4px',
+                                                                        backgroundColor: 'rgba(212, 160, 23, 0.05)',
+                                                                        border: '1px solid rgba(212, 160, 23, 0.15)',
+                                                                        display: 'inline-flex',
+                                                                        alignItems: 'center',
+                                                                        gap: '4px',
+                                                                        transition: 'all 0.2s'
+                                                                    }}
+                                                                    onMouseEnter={(e) => {
+                                                                        e.currentTarget.style.backgroundColor = 'rgba(212, 160, 23, 0.15)';
+                                                                    }}
+                                                                    onMouseLeave={(e) => {
+                                                                        e.currentTarget.style.backgroundColor = 'rgba(212, 160, 23, 0.05)';
+                                                                    }}
+                                                                >
+                                                                    ✏️ EDIT
+                                                                </button>
                                                             </div>
                                                             <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)' }}>
                                                                 Tone: {item.wrapUp.mood?.x >= 0 ? '+' : ''}{item.wrapUp.mood?.x} | Energy: {item.wrapUp.mood?.y >= 0 ? '+' : ''}{item.wrapUp.mood?.y}
@@ -1576,6 +1628,16 @@ export default function AnalyticsPage() {
                     box-shadow: 0 4px 20px rgba(255,255,255,0.01);
                 }
             `}</style>
+
+            <WrapUpModal
+                open={wrapUpOpen}
+                onClose={() => {
+                    setWrapUpOpen(false);
+                    setEditingDate(null);
+                }}
+                onSave={handleSaveWrapUp}
+                initialData={editingDate ? allChats[editingDate]?.wrapUp : undefined}
+            />
         </main>
     );
 }
