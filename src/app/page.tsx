@@ -1111,7 +1111,7 @@ OPERATIONAL TAGS:
 
           <div className="header-controls" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              {chatStatus === 'OPEN' && (
+              {(chatStatus === 'OPEN' || (activeDay && allChats[activeDay]?.wrapUp)) && (
                 <button
                   onClick={() => setWrapUpOpen(true)}
                   className="lux-start-btn"
@@ -1124,7 +1124,9 @@ OPERATIONAL TAGS:
                   <span className="lux-start-icon" aria-hidden="true" style={{ fontSize: '10px' }}>
                     📝
                   </span>
-                  <span className="lux-start-label">WRAP UP</span>
+                  <span className="lux-start-label">
+                    {activeDay && allChats[activeDay]?.wrapUp ? 'EDIT WRAP UP' : 'WRAP UP'}
+                  </span>
                 </button>
               )}
               <div className="lux-start-wrap" ref={liveMissionAnchorRef}>
@@ -2262,6 +2264,7 @@ OPERATIONAL TAGS:
           }
         }}
         onSave={saveWrapUp}
+        initialData={activeDay ? allChats[activeDay]?.wrapUp : undefined}
       />
     </div>
   );

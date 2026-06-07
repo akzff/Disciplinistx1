@@ -7,11 +7,12 @@ interface WrapUpModalProps {
     open: boolean;
     onClose: () => void;
     onSave: (data: WrapUpData) => void;
+    initialData?: WrapUpData;
 }
 
 const DEFAULT_SUGGESTED_TAGS = ['focus', 'productivity', 'burnout', 'debug', 'database', 'flow', 'anxious', 'calm', 'distracted'];
 
-export default function WrapUpModal({ open, onClose, onSave }: WrapUpModalProps) {
+export default function WrapUpModal({ open, onClose, onSave, initialData }: WrapUpModalProps) {
     // Custom Suggested Tags state
     const [suggestedTags, setSuggestedTags] = useState<string[]>(() => {
         if (typeof window !== 'undefined') {
@@ -36,6 +37,23 @@ export default function WrapUpModal({ open, onClose, onSave }: WrapUpModalProps)
     const [journalText, setJournalText] = useState('');
     const gridRef = useRef<HTMLDivElement>(null);
     const hasManuallyMoved = useRef(false);
+
+    // Sync initial data if editing
+    useEffect(() => {
+        if (open) {
+            if (initialData) {
+                setX(initialData.mood.x);
+                setY(initialData.mood.y);
+                setJournalText(initialData.journal);
+                hasManuallyMoved.current = true; // Loaded existing coordinates, so don't auto-align
+            } else {
+                setX(0);
+                setY(0);
+                setJournalText('');
+                hasManuallyMoved.current = false;
+            }
+        }
+    }, [open, initialData]);
 
     // Scan journal text for emotional tags/keywords to auto-align the grid dot if the user has not manually interacted with the grid.
     useEffect(() => {
