@@ -1436,8 +1436,8 @@ export default function ActiveTaskPage() {
                                                 flexDirection: 'column',
                                                 gap: '1.25rem'
                                             }}>
-                                                <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: '#d4a017', margin: 0, letterSpacing: '0.08em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                    <span style={{ fontSize: '0.9rem' }}>⏳</span> Timer Configuration
+                                                <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: '#d4a017', margin: 0, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                                                    Timer Configuration
                                                 </h3>
                                                 
                                                 <div>
@@ -1542,17 +1542,17 @@ export default function ActiveTaskPage() {
                                                 flexDirection: 'column',
                                                 gap: '1.25rem'
                                             }}>
-                                                <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: '#d4a017', margin: 0, letterSpacing: '0.08em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                    <span style={{ fontSize: '0.9rem' }}>🎵</span> Audio Experience
+                                                <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: '#d4a017', margin: 0, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                                                    Audio Experience
                                                 </h3>
 
                                                 <div>
                                                     <label style={{ fontSize: '0.6rem', fontWeight: '900', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '6px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Alarm Audio</label>
                                                     <div style={{ display: 'flex', gap: '4px' }}>
                                                         {[
-                                                            { id: 'persona', label: 'AI Mentor ⚡' },
-                                                            { id: 'chime', label: 'Chime 🔔' },
-                                                            { id: 'silent', label: 'Silent 🔇' }
+                                                            { id: 'persona', label: 'AI Mentor' },
+                                                            { id: 'chime', label: 'Chime' },
+                                                            { id: 'silent', label: 'Silent' }
                                                         ].map(t => (
                                                             <button
                                                                 key={t.id}
@@ -1600,12 +1600,12 @@ export default function ActiveTaskPage() {
                                                     <label style={{ fontSize: '0.6rem', fontWeight: '900', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '6px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Focus Background Sound</label>
                                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
                                                         {[
-                                                            { id: 'none', label: '🔇 None' },
-                                                            { id: 'pink_noise', label: '🌊 Pink Noise' },
-                                                            { id: 'binaural_theta', label: '🧠 Theta (6Hz)' },
-                                                            { id: 'binaural_beats', label: '⚡ Alpha (10Hz)' },
-                                                            { id: 'binaural_beta', label: '🔥 Beta (20Hz)' },
-                                                            { id: 'binaural_gamma', label: '✨ Gamma (40Hz)' }
+                                                            { id: 'none', label: 'None' },
+                                                            { id: 'pink_noise', label: 'Pink Noise' },
+                                                            { id: 'binaural_theta', label: 'Theta (6Hz)' },
+                                                            { id: 'binaural_beats', label: 'Alpha (10Hz)' },
+                                                            { id: 'binaural_beta', label: 'Beta (20Hz)' },
+                                                            { id: 'binaural_gamma', label: 'Gamma (40Hz)' }
                                                         ].map(t => (
                                                             <button
                                                                 key={t.id}
@@ -1641,8 +1641,8 @@ export default function ActiveTaskPage() {
                                             flexDirection: 'column',
                                             gap: '0.75rem'
                                         }}>
-                                            <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: '#d4a017', margin: '0 0 4px 0', letterSpacing: '0.08em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                <span style={{ fontSize: '0.9rem' }}>⚙️</span> Automation & Reflection
+                                            <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: '#d4a017', margin: '0 0 4px 0', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                                                Automation & Reflection
                                             </h3>
 
                                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '10px' }}>
@@ -2031,8 +2031,8 @@ export default function ActiveTaskPage() {
                                                     flexDirection: 'column',
                                                     gap: '1.25rem'
                                                 }}>
-                                                    <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: '#d4a017', margin: 0, letterSpacing: '0.08em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                        <span style={{ fontSize: '0.9rem' }}>⏳</span> Timer Configuration
+                                                    <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: '#d4a017', margin: 0, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                                                        Timer Configuration
                                                     </h3>
                                                     
                                                     <div>
@@ -2137,17 +2137,17 @@ export default function ActiveTaskPage() {
                                                     flexDirection: 'column',
                                                     gap: '1.25rem'
                                                 }}>
-                                                    <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: '#d4a017', margin: 0, letterSpacing: '0.08em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                        <span style={{ fontSize: '0.9rem' }}>🎵</span> Audio Experience
+                                                    <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: '#d4a017', margin: 0, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                                                        Audio Experience
                                                     </h3>
 
                                                     <div>
                                                         <label style={{ fontSize: '0.6rem', fontWeight: '900', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '6px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Alarm Audio</label>
                                                         <div style={{ display: 'flex', gap: '4px' }}>
                                                             {[
-                                                                { id: 'persona', label: 'AI Mentor ⚡' },
-                                                                { id: 'chime', label: 'Chime 🔔' },
-                                                                { id: 'silent', label: 'Silent 🔇' }
+                                                                { id: 'persona', label: 'AI Mentor' },
+                                                                { id: 'chime', label: 'Chime' },
+                                                                { id: 'silent', label: 'Silent' }
                                                             ].map(t => (
                                                                 <button
                                                                     key={t.id}
@@ -2195,12 +2195,12 @@ export default function ActiveTaskPage() {
                                                         <label style={{ fontSize: '0.6rem', fontWeight: '900', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '6px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Focus Background Sound</label>
                                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
                                                             {[
-                                                                { id: 'none', label: '🔇 None' },
-                                                                { id: 'pink_noise', label: '🌊 Pink Noise' },
-                                                                { id: 'binaural_theta', label: '🧠 Theta (6Hz)' },
-                                                                { id: 'binaural_beats', label: '⚡ Alpha (10Hz)' },
-                                                                { id: 'binaural_beta', label: '🔥 Beta (20Hz)' },
-                                                                { id: 'binaural_gamma', label: '✨ Gamma (40Hz)' }
+                                                                { id: 'none', label: 'None' },
+                                                                { id: 'pink_noise', label: 'Pink Noise' },
+                                                                { id: 'binaural_theta', label: 'Theta (6Hz)' },
+                                                                { id: 'binaural_beats', label: 'Alpha (10Hz)' },
+                                                                { id: 'binaural_beta', label: 'Beta (20Hz)' },
+                                                                { id: 'binaural_gamma', label: 'Gamma (40Hz)' }
                                                             ].map(t => (
                                                                 <button
                                                                     key={t.id}
@@ -2236,8 +2236,8 @@ export default function ActiveTaskPage() {
                                                 flexDirection: 'column',
                                                 gap: '0.75rem'
                                             }}>
-                                                <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: '#d4a017', margin: '0 0 4px 0', letterSpacing: '0.08em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                    <span style={{ fontSize: '0.9rem' }}>⚙️</span> Automation & Reflection
+                                                <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: '#d4a017', margin: '0 0 4px 0', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                                                    Automation & Reflection
                                                 </h3>
 
                                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '10px' }}>
