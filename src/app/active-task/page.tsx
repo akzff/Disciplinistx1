@@ -221,6 +221,45 @@ const sendBrowserNotification = (title: string, body: string) => {
     }
 };
 
+// Reusable premium toggle switch
+const ToggleSwitch = ({ checked, onChange }: { checked: boolean; onChange: (checked: boolean) => void }) => {
+    return (
+        <button
+            type="button"
+            onClick={() => onChange(!checked)}
+            style={{
+                width: '38px',
+                height: '20px',
+                borderRadius: '100px',
+                background: checked ? '#d4a017' : 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                position: 'relative',
+                cursor: 'pointer',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '0',
+                outline: 'none',
+                flexShrink: 0
+            }}
+        >
+            <span 
+                style={{
+                    width: '14.5px',
+                    height: '14.5px',
+                    borderRadius: '50%',
+                    background: checked ? 'black' : 'rgba(255, 255, 255, 0.7)',
+                    position: 'absolute',
+                    top: '2px',
+                    left: checked ? '20px' : '2.5px',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.4)'
+                }}
+            />
+        </button>
+    );
+};
+
 const DEFAULT_POMODORO_SETTINGS = {
     focusMins: 25,
     shortBreakMins: 5,
@@ -1371,218 +1410,282 @@ export default function ActiveTaskPage() {
 
                                 {showSettingsPanel && (
                                     <div style={{
-                                        background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
-                                        borderRadius: '20px', padding: '1.5rem', marginBottom: '2.5rem',
-                                        display: 'flex', flexDirection: 'column', gap: '1.25rem'
+                                        background: 'rgba(10, 12, 18, 0.95)',
+                                        backdropFilter: 'blur(20px)',
+                                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                                        borderRadius: '24px',
+                                        padding: '1.75rem',
+                                        marginBottom: '2.5rem',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '1.5rem',
+                                        boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
                                     }}>
-                                        <div>
-                                            <h3 style={{ fontSize: '0.8rem', fontWeight: '900', color: 'white', marginBottom: '10px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Focus Blueprint</h3>
-                                            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
-                                                {[
-                                                    { id: 'classic', label: '⏳ Classic Pomo (25m)', desc: '25m Focus / 5m Break' },
-                                                    { id: 'monk', label: '🧘 Monk Sprint (50m)', desc: '50m Focus / 10m Break' },
-                                                    { id: 'ultra', label: '⚡ Ultra-Focus (90m)', desc: '90m Focus / 15m Break' },
-                                                    { id: 'custom', label: '⚙️ Custom', desc: 'Personalized times' }
-                                                ].map(bp => {
-                                                    const active = pomoSettings.activeBlueprint === bp.id;
-                                                    return (
-                                                        <button
-                                                            key={bp.id}
-                                                            type="button"
-                                                            onClick={() => {
-                                                                let focus = pomoSettings.focusMins;
-                                                                let short = pomoSettings.shortBreakMins;
-                                                                let long = pomoSettings.longBreakMins;
-                                                                if (bp.id === 'classic') { focus = 25; short = 5; long = 15; }
-                                                                else if (bp.id === 'monk') { focus = 50; short = 10; long = 20; }
-                                                                else if (bp.id === 'ultra') { focus = 90; short = 15; long = 30; }
-                                                                
-                                                                updatePreferences({
-                                                                    pomodoroSettings: {
-                                                                        ...pomoSettings,
-                                                                        activeBlueprint: bp.id as 'classic' | 'monk' | 'ultra' | 'custom',
-                                                                        focusMins: focus,
-                                                                        shortBreakMins: short,
-                                                                        longBreakMins: long
-                                                                    }
-                                                                });
-                                                            }}
-                                                            style={{
-                                                                flex: '1 1 180px', padding: '10px 12px', borderRadius: '12px', textAlign: 'left',
-                                                                border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer',
-                                                                background: active ? '#d4a017' : 'rgba(255,255,255,0.03)',
-                                                                color: active ? 'black' : 'rgba(255,255,255,0.7)',
-                                                                transition: '0.2s ease'
-                                                            }}
-                                                        >
-                                                            <div style={{ fontWeight: '900', fontSize: '0.7rem', marginBottom: '2px' }}>{bp.label}</div>
-                                                            <div style={{ fontSize: '0.6rem', opacity: active ? 0.8 : 0.5 }}>{bp.desc}</div>
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px' }}>
-                                            <div>
-                                                <label style={{ fontSize: '0.6rem', fontWeight: '900', color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: '4px', letterSpacing: '0.05em' }}>FOCUS MINS</label>
-                                                <input
-                                                    type="number"
-                                                    min="1" max="480"
-                                                    value={pomoSettings.focusMins}
-                                                    onChange={(e) => {
-                                                        const val = parseInt(e.target.value) || 25;
-                                                        updatePreferences({
-                                                            pomodoroSettings: { ...pomoSettings, focusMins: val, activeBlueprint: 'custom' }
-                                                        });
-                                                    }}
-                                                    style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', padding: '8px 10px', borderRadius: '10px', color: 'white', fontSize: '0.75rem', fontWeight: 'bold' }}
-                                                />
-                                            </div>
-                                            <div>
-                                                <label style={{ fontSize: '0.6rem', fontWeight: '900', color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: '4px', letterSpacing: '0.05em' }}>SHORT BREAK</label>
-                                                <input
-                                                    type="number"
-                                                    min="1" max="120"
-                                                    value={pomoSettings.shortBreakMins}
-                                                    onChange={(e) => {
-                                                        const val = parseInt(e.target.value) || 5;
-                                                        updatePreferences({
-                                                            pomodoroSettings: { ...pomoSettings, shortBreakMins: val, activeBlueprint: 'custom' }
-                                                        });
-                                                    }}
-                                                    style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', padding: '8px 10px', borderRadius: '10px', color: 'white', fontSize: '0.75rem', fontWeight: 'bold' }}
-                                                />
-                                            </div>
-                                            <div>
-                                                <label style={{ fontSize: '0.6rem', fontWeight: '900', color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: '4px', letterSpacing: '0.05em' }}>LONG BREAK</label>
-                                                <input
-                                                    type="number"
-                                                    min="1" max="240"
-                                                    value={pomoSettings.longBreakMins}
-                                                    onChange={(e) => {
-                                                        const val = parseInt(e.target.value) || 15;
-                                                        updatePreferences({
-                                                            pomodoroSettings: { ...pomoSettings, longBreakMins: val, activeBlueprint: 'custom' }
-                                                        });
-                                                    }}
-                                                    style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', padding: '8px 10px', borderRadius: '10px', color: 'white', fontSize: '0.75rem', fontWeight: 'bold' }}
-                                                />
-                                            </div>
-                                            <div>
-                                                <label style={{ fontSize: '0.6rem', fontWeight: '900', color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: '4px', letterSpacing: '0.05em' }}>LONG INTERVAL</label>
-                                                <input
-                                                    type="number"
-                                                    min="1" max="20"
-                                                    value={pomoSettings.longBreakInterval}
-                                                    onChange={(e) => {
-                                                        const val = parseInt(e.target.value) || 4;
-                                                        updatePreferences({
-                                                            pomodoroSettings: { ...pomoSettings, longBreakInterval: val }
-                                                        });
-                                                    }}
-                                                    style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', padding: '8px 10px', borderRadius: '10px', color: 'white', fontSize: '0.75rem', fontWeight: 'bold' }}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '12px' }}>
-                                            <div>
-                                                <h4 style={{ fontSize: '0.7rem', fontWeight: '900', color: 'white', marginBottom: '6px', letterSpacing: '0.05em' }}>ALARM AUDIO</h4>
-                                                <div style={{ display: 'flex', gap: '4px' }}>
-                                                    {[
-                                                        { id: 'persona', label: 'AI Mentor ⚡' },
-                                                        { id: 'chime', label: 'Chime' },
-                                                        { id: 'silent', label: 'Silent' }
-                                                    ].map(t => (
-                                                        <button
-                                                            key={t.id}
-                                                            type="button"
-                                                            onClick={() => updatePreferences({ pomodoroSettings: { ...pomoSettings, soundType: t.id as 'persona' | 'chime' | 'silent' } })}
-                                                            style={{
-                                                                flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)',
-                                                                background: pomoSettings.soundType === t.id ? '#d4a017' : 'rgba(255,255,255,0.03)',
-                                                                color: pomoSettings.soundType === t.id ? 'black' : 'rgba(255,255,255,0.6)',
-                                                                fontWeight: 'bold', fontSize: '0.65rem', cursor: 'pointer', transition: '0.2s'
-                                                            }}
-                                                        >
-                                                            {t.label}
-                                                        </button>
-                                                    ))}
-                                                </div>
-
-                                                <div style={{ marginTop: '10px' }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6rem', fontWeight: 'bold', color: 'rgba(255,255,255,0.5)', marginBottom: '4px' }}>
-                                                        <span>VOLUME</span>
-                                                        <span>{pomoSettings.soundVolume}%</span>
+                                        <div style={{
+                                            display: 'grid',
+                                            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                                            gap: '1.5rem'
+                                        }}>
+                                            {/* Card A: Timer Config */}
+                                            <div style={{
+                                                background: 'rgba(255, 255, 255, 0.015)',
+                                                border: '1px solid rgba(255, 255, 255, 0.03)',
+                                                borderRadius: '16px',
+                                                padding: '1.25rem',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: '1.25rem'
+                                            }}>
+                                                <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: '#d4a017', margin: 0, letterSpacing: '0.08em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    <span style={{ fontSize: '0.9rem' }}>⏳</span> Timer Configuration
+                                                </h3>
+                                                
+                                                <div>
+                                                    <label style={{ fontSize: '0.6rem', fontWeight: '900', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '6px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Focus Blueprint</label>
+                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                                        {[
+                                                            { id: 'classic', label: 'Classic Pomo', desc: '25m Focus / 5m Break' },
+                                                            { id: 'monk', label: 'Monk Sprint', desc: '50m Focus / 10m Break' },
+                                                            { id: 'ultra', label: 'Ultra-Focus', desc: '90m Focus / 15m Break' },
+                                                            { id: 'custom', label: 'Custom', desc: 'Personalized times' }
+                                                        ].map(bp => {
+                                                            const active = pomoSettings.activeBlueprint === bp.id;
+                                                            return (
+                                                                <button
+                                                                    key={bp.id}
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        let focus = pomoSettings.focusMins;
+                                                                        let short = pomoSettings.shortBreakMins;
+                                                                        let long = pomoSettings.longBreakMins;
+                                                                        if (bp.id === 'classic') { focus = 25; short = 5; long = 15; }
+                                                                        else if (bp.id === 'monk') { focus = 50; short = 10; long = 20; }
+                                                                        else if (bp.id === 'ultra') { focus = 90; short = 15; long = 30; }
+                                                                        
+                                                                        updatePreferences({
+                                                                            pomodoroSettings: {
+                                                                                ...pomoSettings,
+                                                                                activeBlueprint: bp.id as 'classic' | 'monk' | 'ultra' | 'custom',
+                                                                                focusMins: focus,
+                                                                                shortBreakMins: short,
+                                                                                longBreakMins: long
+                                                                            }
+                                                                        });
+                                                                    }}
+                                                                    style={{
+                                                                        padding: '8px 10px',
+                                                                        borderRadius: '10px',
+                                                                        textAlign: 'left',
+                                                                        border: '1px solid',
+                                                                        borderColor: active ? '#d4a017' : 'rgba(255,255,255,0.06)',
+                                                                        cursor: 'pointer',
+                                                                        background: active ? '#d4a017' : 'rgba(255,255,255,0.02)',
+                                                                        color: active ? 'black' : 'rgba(255,255,255,0.7)',
+                                                                        transition: 'all 0.2s ease'
+                                                                    }}
+                                                                >
+                                                                    <div style={{ fontWeight: '900', fontSize: '0.65rem', marginBottom: '1px' }}>{bp.label}</div>
+                                                                    <div style={{ fontSize: '0.55rem', opacity: active ? 0.8 : 0.5 }}>{bp.desc}</div>
+                                                                </button>
+                                                            );
+                                                        })}
                                                     </div>
-                                                    <input
-                                                        type="range" min="0" max="100"
-                                                        value={pomoSettings.soundVolume}
-                                                        onChange={(e) => updatePreferences({ pomodoroSettings: { ...pomoSettings, soundVolume: parseInt(e.target.value) || 50 } })}
-                                                        style={{ width: '100%', accentColor: '#d4a017', cursor: 'pointer' }}
-                                                    />
+                                                </div>
+
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                                    {[
+                                                        { label: 'FOCUS MINS', key: 'focusMins', min: 1, max: 480, customBlueprint: true },
+                                                        { label: 'SHORT BREAK', key: 'shortBreakMins', min: 1, max: 120, customBlueprint: true },
+                                                        { label: 'LONG BREAK', key: 'longBreakMins', min: 1, max: 240, customBlueprint: true },
+                                                        { label: 'LONG INTERVAL', key: 'longBreakInterval', min: 1, max: 20, customBlueprint: false }
+                                                    ].map(field => (
+                                                        <div key={field.key}>
+                                                            <label style={{ fontSize: '0.6rem', fontWeight: '900', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '4px', letterSpacing: '0.05em' }}>{field.label}</label>
+                                                            <input
+                                                                type="number"
+                                                                min={field.min}
+                                                                max={field.max}
+                                                                value={pomoSettings[field.key as keyof typeof pomoSettings] as number}
+                                                                onChange={(e) => {
+                                                                    const val = parseInt(e.target.value) || field.min;
+                                                                    const nextSettings = { ...pomoSettings, [field.key]: val };
+                                                                    if (field.customBlueprint) {
+                                                                        nextSettings.activeBlueprint = 'custom';
+                                                                    }
+                                                                    updatePreferences({ pomodoroSettings: nextSettings });
+                                                                }}
+                                                                style={{
+                                                                    width: '100%',
+                                                                    background: 'rgba(255,255,255,0.03)',
+                                                                    border: '1px solid rgba(255,255,255,0.08)',
+                                                                    padding: '8px 10px',
+                                                                    borderRadius: '10px',
+                                                                    color: 'white',
+                                                                    fontSize: '0.75rem',
+                                                                    fontWeight: 'bold',
+                                                                    outline: 'none',
+                                                                    transition: 'all 0.2s ease'
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             </div>
 
-                                            <div>
-                                                <h4 style={{ fontSize: '0.7rem', fontWeight: '900', color: 'white', marginBottom: '6px', letterSpacing: '0.05em' }}>FOCUS BACKGROUND SOUND</h4>
-                                                <div style={{ display: 'flex', gap: '4px', flexDirection: 'column' }}>
-                                                    {[
-                                                        { id: 'none', label: 'None' },
-                                                        { id: 'pink_noise', label: 'Pink Noise' },
-                                                        { id: 'binaural_theta', label: 'Binaural Beats (Theta 6Hz)' },
-                                                        { id: 'binaural_beats', label: 'Binaural Beats (Alpha 10Hz)' },
-                                                        { id: 'binaural_beta', label: 'Binaural Beats (Beta 20Hz)' },
-                                                        { id: 'binaural_gamma', label: 'Binaural Beats (Gamma 40Hz)' }
-                                                    ].map(t => (
-                                                        <button
-                                                            key={t.id}
-                                                            type="button"
-                                                            onClick={() => updatePreferences({ pomodoroSettings: { ...pomoSettings, ambientSound: t.id as 'none' | 'pink_noise' | 'binaural_beats' | 'binaural_beta' | 'binaural_gamma' | 'binaural_theta' } })}
+                                            {/* Card B: Audio Experience */}
+                                            <div style={{
+                                                background: 'rgba(255, 255, 255, 0.015)',
+                                                border: '1px solid rgba(255, 255, 255, 0.03)',
+                                                borderRadius: '16px',
+                                                padding: '1.25rem',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: '1.25rem'
+                                            }}>
+                                                <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: '#d4a017', margin: 0, letterSpacing: '0.08em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    <span style={{ fontSize: '0.9rem' }}>🎵</span> Audio Experience
+                                                </h3>
+
+                                                <div>
+                                                    <label style={{ fontSize: '0.6rem', fontWeight: '900', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '6px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Alarm Audio</label>
+                                                    <div style={{ display: 'flex', gap: '4px' }}>
+                                                        {[
+                                                            { id: 'persona', label: 'AI Mentor ⚡' },
+                                                            { id: 'chime', label: 'Chime 🔔' },
+                                                            { id: 'silent', label: 'Silent 🔇' }
+                                                        ].map(t => (
+                                                            <button
+                                                                key={t.id}
+                                                                type="button"
+                                                                onClick={() => updatePreferences({ pomodoroSettings: { ...pomoSettings, soundType: t.id as 'persona' | 'chime' | 'silent' } })}
+                                                                style={{
+                                                                    flex: 1,
+                                                                    padding: '8px',
+                                                                    borderRadius: '8px',
+                                                                    border: '1px solid',
+                                                                    borderColor: pomoSettings.soundType === t.id ? '#d4a017' : 'rgba(255,255,255,0.06)',
+                                                                    background: pomoSettings.soundType === t.id ? '#d4a017' : 'rgba(255,255,255,0.02)',
+                                                                    color: pomoSettings.soundType === t.id ? 'black' : 'rgba(255,255,255,0.6)',
+                                                                    fontWeight: 'bold',
+                                                                    fontSize: '0.65rem',
+                                                                    cursor: 'pointer',
+                                                                    transition: 'all 0.2s ease'
+                                                                }}
+                                                            >
+                                                                {t.label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+
+                                                    <div style={{ marginTop: '10px' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6rem', fontWeight: 'bold', color: 'rgba(255,255,255,0.4)', marginBottom: '4px' }}>
+                                                            <span>VOLUME</span>
+                                                            <span>{pomoSettings.soundVolume}%</span>
+                                                        </div>
+                                                        <input
+                                                            type="range"
+                                                            min="0"
+                                                            max="100"
+                                                            value={pomoSettings.soundVolume}
+                                                            onChange={(e) => updatePreferences({ pomodoroSettings: { ...pomoSettings, soundVolume: parseInt(e.target.value) || 50 } })}
+                                                            className="premium-range"
                                                             style={{
-                                                                padding: '8px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', textAlign: 'left',
-                                                                background: pomoSettings.ambientSound === t.id ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.03)',
-                                                                color: pomoSettings.ambientSound === t.id ? '#10b981' : 'rgba(255,255,255,0.6)',
-                                                                borderColor: pomoSettings.ambientSound === t.id ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.08)',
-                                                                fontWeight: 'bold', fontSize: '0.65rem', cursor: 'pointer', transition: '0.2s'
+                                                                background: `linear-gradient(to right, #d4a017 0%, #d4a017 ${pomoSettings.soundVolume}%, rgba(255,255,255,0.1) ${pomoSettings.soundVolume}%, rgba(255,255,255,0.1) 100%)`
                                                             }}
-                                                        >
-                                                            {t.label}
-                                                        </button>
-                                                    ))}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <label style={{ fontSize: '0.6rem', fontWeight: '900', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '6px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Focus Background Sound</label>
+                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                                                        {[
+                                                            { id: 'none', label: '🔇 None' },
+                                                            { id: 'pink_noise', label: '🌊 Pink Noise' },
+                                                            { id: 'binaural_theta', label: '🧠 Theta (6Hz)' },
+                                                            { id: 'binaural_beats', label: '⚡ Alpha (10Hz)' },
+                                                            { id: 'binaural_beta', label: '🔥 Beta (20Hz)' },
+                                                            { id: 'binaural_gamma', label: '✨ Gamma (40Hz)' }
+                                                        ].map(t => (
+                                                            <button
+                                                                key={t.id}
+                                                                type="button"
+                                                                onClick={() => updatePreferences({ pomodoroSettings: { ...pomoSettings, ambientSound: t.id as 'none' | 'pink_noise' | 'binaural_beats' | 'binaural_beta' | 'binaural_gamma' | 'binaural_theta' } })}
+                                                                style={{
+                                                                    padding: '8px 10px',
+                                                                    borderRadius: '8px',
+                                                                    border: '1px solid',
+                                                                    textAlign: 'center',
+                                                                    background: pomoSettings.ambientSound === t.id ? 'rgba(212, 160, 23, 0.12)' : 'rgba(255,255,255,0.02)',
+                                                                    color: pomoSettings.ambientSound === t.id ? '#d4a017' : 'rgba(255,255,255,0.6)',
+                                                                    borderColor: pomoSettings.ambientSound === t.id ? '#d4a017' : 'rgba(255,255,255,0.06)',
+                                                                    fontWeight: 'bold',
+                                                                    fontSize: '0.65rem',
+                                                                    cursor: 'pointer',
+                                                                    transition: 'all 0.2s ease'
+                                                                }}
+                                                            >
+                                                                {t.label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '12px' }}>
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 'bold', color: 'rgba(255,255,255,0.7)' }}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={pomoSettings.autoStartBreaks}
-                                                    onChange={(e) => updatePreferences({ pomodoroSettings: { ...pomoSettings, autoStartBreaks: e.target.checked } })}
-                                                    style={{ accentColor: '#d4a017', width: '14px', height: '14px' }}
-                                                />
-                                                AUTO-START BREAKS
-                                            </label>
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 'bold', color: 'rgba(255,255,255,0.7)' }}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={pomoSettings.autoStartFocus}
-                                                    onChange={(e) => updatePreferences({ pomodoroSettings: { ...pomoSettings, autoStartFocus: e.target.checked } })}
-                                                    style={{ accentColor: '#d4a017', width: '14px', height: '14px' }}
-                                                />
-                                                AUTO-START NEXT FOCUS CYCLE
-                                            </label>
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 'bold', color: 'rgba(255,255,255,0.7)' }}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={pomoSettings.useReflectionPrompts}
-                                                    onChange={(e) => updatePreferences({ pomodoroSettings: { ...pomoSettings, useReflectionPrompts: e.target.checked } })}
-                                                    style={{ accentColor: '#d4a017', width: '14px', height: '14px' }}
-                                                />
-                                                ENABLE PERSONA REFLECTION PROMPTS
-                                            </label>
+                                        {/* Card C: Flow & Automation */}
+                                        <div style={{
+                                            borderTop: '1px solid rgba(255,255,255,0.06)',
+                                            paddingTop: '1.25rem',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: '0.75rem'
+                                        }}>
+                                            <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: '#d4a017', margin: '0 0 4px 0', letterSpacing: '0.08em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                <span style={{ fontSize: '0.9rem' }}>⚙️</span> Automation & Reflection
+                                            </h3>
+
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '10px' }}>
+                                                {[
+                                                    {
+                                                        key: 'autoStartBreaks',
+                                                        label: 'Auto-Start Breaks',
+                                                        desc: 'Start breaks automatically when work sessions end'
+                                                    },
+                                                    {
+                                                        key: 'autoStartFocus',
+                                                        label: 'Auto-Start Focus Cycles',
+                                                        desc: 'Start work sessions automatically when break sessions end'
+                                                    },
+                                                    {
+                                                        key: 'useReflectionPrompts',
+                                                        label: 'Persona Reflections',
+                                                        desc: 'Prompt active mental checks after focus cycles'
+                                                    }
+                                                ].map(item => (
+                                                    <div
+                                                        key={item.key}
+                                                        style={{
+                                                            display: 'flex',
+                                                            justifyContent: 'space-between',
+                                                            alignItems: 'center',
+                                                            background: 'rgba(255, 255, 255, 0.01)',
+                                                            border: '1px solid rgba(255, 255, 255, 0.03)',
+                                                            padding: '10px 14px',
+                                                            borderRadius: '12px'
+                                                        }}
+                                                    >
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingRight: '8px' }}>
+                                                            <span style={{ fontSize: '0.7rem', fontWeight: '800', color: 'white', letterSpacing: '0.02em' }}>{item.label}</span>
+                                                            <span style={{ fontSize: '0.58rem', color: 'rgba(255, 255, 255, 0.4)', lineHeight: '1.2' }}>{item.desc}</span>
+                                                        </div>
+                                                        <ToggleSwitch
+                                                            checked={pomoSettings[item.key as keyof typeof pomoSettings] as boolean}
+                                                            onChange={(val) => updatePreferences({ pomodoroSettings: { ...pomoSettings, [item.key]: val } })}
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -1888,13 +1991,13 @@ export default function ActiveTaskPage() {
                                         left: 0,
                                         right: 0,
                                         bottom: 0,
-                                        background: 'rgba(10, 12, 18, 0.95)',
+                                        background: 'rgba(10, 12, 18, 0.96)',
                                         backdropFilter: 'blur(20px)',
                                         zIndex: 300,
                                         display: 'flex',
                                         flexDirection: 'column',
                                         borderRadius: '35px',
-                                        padding: '2rem',
+                                        padding: '1.75rem',
                                         border: '1px solid rgba(255, 255, 255, 0.08)',
                                         boxShadow: '0 30px 80px rgba(0,0,0,0.8)',
                                         overflowY: 'auto'
@@ -1904,221 +2007,280 @@ export default function ActiveTaskPage() {
                                             <button 
                                                 type="button" 
                                                 onClick={() => setShowRunningSettings(false)}
-                                                style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: '6px 12px', borderRadius: '100px', fontSize: '0.7rem', fontWeight: '800' }}
+                                                style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: '6px 12px', borderRadius: '100px', fontSize: '0.7rem', fontWeight: '800', transition: 'all 0.2s ease' }}
+                                                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; }}
+                                                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; }}
                                             >
                                                 CLOSE
                                             </button>
                                         </div>
 
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                                            <div>
-                                                <h3 style={{ fontSize: '0.8rem', fontWeight: '900', color: 'white', marginBottom: '10px', letterSpacing: '0.05em' }}>FOCUS BLUEPRINT</h3>
-                                                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
-                                                    {[
-                                                        { id: 'classic', label: '⏳ Classic Pomo (25m)', desc: '25m Focus / 5m Break' },
-                                                        { id: 'monk', label: '🧘 Monk Sprint (50m)', desc: '50m Focus / 10m Break' },
-                                                        { id: 'ultra', label: '⚡ Ultra-Focus (90m)', desc: '90m Focus / 15m Break' },
-                                                        { id: 'custom', label: '⚙️ Custom', desc: 'Personalized times' }
-                                                    ].map(bp => {
-                                                        const active = pomoSettings.activeBlueprint === bp.id;
-                                                        return (
-                                                            <button
-                                                                key={bp.id}
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    let focus = pomoSettings.focusMins;
-                                                                    let short = pomoSettings.shortBreakMins;
-                                                                    let long = pomoSettings.longBreakMins;
-                                                                    if (bp.id === 'classic') { focus = 25; short = 5; long = 15; }
-                                                                    else if (bp.id === 'monk') { focus = 50; short = 10; long = 20; }
-                                                                    else if (bp.id === 'ultra') { focus = 90; short = 15; long = 30; }
-                                                                    
-                                                                    updatePreferences({
-                                                                        pomodoroSettings: {
-                                                                            ...pomoSettings,
-                                                                            activeBlueprint: bp.id as 'classic' | 'monk' | 'ultra' | 'custom',
-                                                                            focusMins: focus,
-                                                                            shortBreakMins: short,
-                                                                            longBreakMins: long
-                                                                        }
-                                                                    });
-                                                                }}
-                                                                style={{
-                                                                    flex: '1 1 180px', padding: '10px 12px', borderRadius: '12px', textAlign: 'left',
-                                                                    border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer',
-                                                                    background: active ? '#d4a017' : 'rgba(255,255,255,0.03)',
-                                                                    color: active ? 'black' : 'rgba(255,255,255,0.7)',
-                                                                    transition: '0.2s ease'
-                                                                }}
-                                                            >
-                                                                <div style={{ fontWeight: '900', fontSize: '0.7rem', marginBottom: '2px' }}>{bp.label}</div>
-                                                                <div style={{ fontSize: '0.6rem', opacity: active ? 0.8 : 0.5 }}>{bp.desc}</div>
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-
-                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px' }}>
-                                                <div>
-                                                    <label style={{ fontSize: '0.6rem', fontWeight: '900', color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: '4px', letterSpacing: '0.05em' }}>FOCUS MINS</label>
-                                                    <input
-                                                        type="number"
-                                                        min="1" max="480"
-                                                        value={pomoSettings.focusMins}
-                                                        onChange={(e) => {
-                                                            const val = parseInt(e.target.value) || 25;
-                                                            updatePreferences({
-                                                                pomodoroSettings: { ...pomoSettings, focusMins: val, activeBlueprint: 'custom' }
-                                                            });
-                                                        }}
-                                                        style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', padding: '8px 10px', borderRadius: '10px', color: 'white', fontSize: '0.75rem', fontWeight: 'bold' }}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label style={{ fontSize: '0.6rem', fontWeight: '900', color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: '4px', letterSpacing: '0.05em' }}>SHORT BREAK</label>
-                                                    <input
-                                                        type="number"
-                                                        min="1" max="120"
-                                                        value={pomoSettings.shortBreakMins}
-                                                        onChange={(e) => {
-                                                            const val = parseInt(e.target.value) || 5;
-                                                            updatePreferences({
-                                                                pomodoroSettings: { ...pomoSettings, shortBreakMins: val, activeBlueprint: 'custom' }
-                                                            });
-                                                        }}
-                                                        style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', padding: '8px 10px', borderRadius: '10px', color: 'white', fontSize: '0.75rem', fontWeight: 'bold' }}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label style={{ fontSize: '0.6rem', fontWeight: '900', color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: '4px', letterSpacing: '0.05em' }}>LONG BREAK</label>
-                                                    <input
-                                                        type="number"
-                                                        min="1" max="240"
-                                                        value={pomoSettings.longBreakMins}
-                                                        onChange={(e) => {
-                                                            const val = parseInt(e.target.value) || 15;
-                                                            updatePreferences({
-                                                                pomodoroSettings: { ...pomoSettings, longBreakMins: val, activeBlueprint: 'custom' }
-                                                            });
-                                                        }}
-                                                        style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', padding: '8px 10px', borderRadius: '10px', color: 'white', fontSize: '0.75rem', fontWeight: 'bold' }}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label style={{ fontSize: '0.6rem', fontWeight: '900', color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: '4px', letterSpacing: '0.05em' }}>LONG INTERVAL</label>
-                                                    <input
-                                                        type="number"
-                                                        min="1" max="20"
-                                                        value={pomoSettings.longBreakInterval}
-                                                        onChange={(e) => {
-                                                            const val = parseInt(e.target.value) || 4;
-                                                            updatePreferences({
-                                                                pomodoroSettings: { ...pomoSettings, longBreakInterval: val }
-                                                            });
-                                                        }}
-                                                        style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', padding: '8px 10px', borderRadius: '10px', color: 'white', fontSize: '0.75rem', fontWeight: 'bold' }}
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '12px' }}>
-                                                <div>
-                                                    <h4 style={{ fontSize: '0.7rem', fontWeight: '900', color: 'white', marginBottom: '6px', letterSpacing: '0.05em' }}>ALARM AUDIO</h4>
-                                                    <div style={{ display: 'flex', gap: '4px' }}>
-                                                        {[
-                                                            { id: 'persona', label: 'AI Mentor ⚡' },
-                                                            { id: 'chime', label: 'Chime' },
-                                                            { id: 'silent', label: 'Silent' }
-                                                        ].map(t => (
-                                                            <button
-                                                                key={t.id}
-                                                                type="button"
-                                                                onClick={() => updatePreferences({ pomodoroSettings: { ...pomoSettings, soundType: t.id as 'persona' | 'chime' | 'silent' } })}
-                                                                style={{
-                                                                    flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)',
-                                                                    background: pomoSettings.soundType === t.id ? '#d4a017' : 'rgba(255,255,255,0.03)',
-                                                                    color: pomoSettings.soundType === t.id ? 'black' : 'rgba(255,255,255,0.6)',
-                                                                    fontWeight: 'bold', fontSize: '0.65rem', cursor: 'pointer', transition: '0.2s'
-                                                                }}
-                                                            >
-                                                                {t.label}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-
-                                                    <div style={{ marginTop: '10px' }}>
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6rem', fontWeight: 'bold', color: 'rgba(255,255,255,0.5)', marginBottom: '4px' }}>
-                                                            <span>VOLUME</span>
-                                                            <span>{pomoSettings.soundVolume}%</span>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                            <div style={{
+                                                display: 'grid',
+                                                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                                                gap: '1.5rem'
+                                            }}>
+                                                {/* Card A: Timer Config */}
+                                                <div style={{
+                                                    background: 'rgba(255, 255, 255, 0.015)',
+                                                    border: '1px solid rgba(255, 255, 255, 0.03)',
+                                                    borderRadius: '16px',
+                                                    padding: '1.25rem',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    gap: '1.25rem'
+                                                }}>
+                                                    <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: '#d4a017', margin: 0, letterSpacing: '0.08em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                        <span style={{ fontSize: '0.9rem' }}>⏳</span> Timer Configuration
+                                                    </h3>
+                                                    
+                                                    <div>
+                                                        <label style={{ fontSize: '0.6rem', fontWeight: '900', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '6px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Focus Blueprint</label>
+                                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                                            {[
+                                                                { id: 'classic', label: 'Classic Pomo', desc: '25m Focus / 5m Break' },
+                                                                { id: 'monk', label: 'Monk Sprint', desc: '50m Focus / 10m Break' },
+                                                                { id: 'ultra', label: 'Ultra-Focus', desc: '90m Focus / 15m Break' },
+                                                                { id: 'custom', label: 'Custom', desc: 'Personalized times' }
+                                                            ].map(bp => {
+                                                                const active = pomoSettings.activeBlueprint === bp.id;
+                                                                return (
+                                                                    <button
+                                                                        key={bp.id}
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            let focus = pomoSettings.focusMins;
+                                                                            let short = pomoSettings.shortBreakMins;
+                                                                            let long = pomoSettings.longBreakMins;
+                                                                            if (bp.id === 'classic') { focus = 25; short = 5; long = 15; }
+                                                                            else if (bp.id === 'monk') { focus = 50; short = 10; long = 20; }
+                                                                            else if (bp.id === 'ultra') { focus = 90; short = 15; long = 30; }
+                                                                            
+                                                                            updatePreferences({
+                                                                                pomodoroSettings: {
+                                                                                    ...pomoSettings,
+                                                                                    activeBlueprint: bp.id as 'classic' | 'monk' | 'ultra' | 'custom',
+                                                                                    focusMins: focus,
+                                                                                    shortBreakMins: short,
+                                                                                    longBreakMins: long
+                                                                                }
+                                                                            });
+                                                                        }}
+                                                                        style={{
+                                                                            padding: '8px 10px',
+                                                                            borderRadius: '10px',
+                                                                            textAlign: 'left',
+                                                                            border: '1px solid',
+                                                                            borderColor: active ? '#d4a017' : 'rgba(255,255,255,0.06)',
+                                                                            cursor: 'pointer',
+                                                                            background: active ? '#d4a017' : 'rgba(255,255,255,0.02)',
+                                                                            color: active ? 'black' : 'rgba(255,255,255,0.7)',
+                                                                            transition: 'all 0.2s ease'
+                                                                        }}
+                                                                    >
+                                                                        <div style={{ fontWeight: '900', fontSize: '0.65rem', marginBottom: '1px' }}>{bp.label}</div>
+                                                                        <div style={{ fontSize: '0.55rem', opacity: active ? 0.8 : 0.5 }}>{bp.desc}</div>
+                                                                    </button>
+                                                                );
+                                                            })}
                                                         </div>
-                                                        <input
-                                                            type="range" min="0" max="100"
-                                                            value={pomoSettings.soundVolume}
-                                                            onChange={(e) => updatePreferences({ pomodoroSettings: { ...pomoSettings, soundVolume: parseInt(e.target.value) || 50 } })}
-                                                            style={{ width: '100%', accentColor: '#d4a017', cursor: 'pointer' }}
-                                                        />
+                                                    </div>
+
+                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                                        {[
+                                                            { label: 'FOCUS MINS', key: 'focusMins', min: 1, max: 480, customBlueprint: true },
+                                                            { label: 'SHORT BREAK', key: 'shortBreakMins', min: 1, max: 120, customBlueprint: true },
+                                                            { label: 'LONG BREAK', key: 'longBreakMins', min: 1, max: 240, customBlueprint: true },
+                                                            { label: 'LONG INTERVAL', key: 'longBreakInterval', min: 1, max: 20, customBlueprint: false }
+                                                        ].map(field => (
+                                                            <div key={field.key}>
+                                                                <label style={{ fontSize: '0.6rem', fontWeight: '900', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '4px', letterSpacing: '0.05em' }}>{field.label}</label>
+                                                                <input
+                                                                    type="number"
+                                                                    min={field.min}
+                                                                    max={field.max}
+                                                                    value={pomoSettings[field.key as keyof typeof pomoSettings] as number}
+                                                                    onChange={(e) => {
+                                                                        const val = parseInt(e.target.value) || field.min;
+                                                                        const nextSettings = { ...pomoSettings, [field.key]: val };
+                                                                        if (field.customBlueprint) {
+                                                                            nextSettings.activeBlueprint = 'custom';
+                                                                        }
+                                                                        updatePreferences({ pomodoroSettings: nextSettings });
+                                                                    }}
+                                                                    style={{
+                                                                        width: '100%',
+                                                                        background: 'rgba(255,255,255,0.03)',
+                                                                        border: '1px solid rgba(255,255,255,0.08)',
+                                                                        padding: '8px 10px',
+                                                                        borderRadius: '10px',
+                                                                        color: 'white',
+                                                                        fontSize: '0.75rem',
+                                                                        fontWeight: 'bold',
+                                                                        outline: 'none',
+                                                                        transition: 'all 0.2s ease'
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        ))}
                                                     </div>
                                                 </div>
 
-                                                <div>
-                                                    <h4 style={{ fontSize: '0.7rem', fontWeight: '900', color: 'white', marginBottom: '6px', letterSpacing: '0.05em' }}>FOCUS BACKGROUND SOUND</h4>
-                                                    <div style={{ display: 'flex', gap: '4px', flexDirection: 'column' }}>
-                                                        {[
-                                                            { id: 'none', label: 'None' },
-                                                            { id: 'pink_noise', label: 'Pink Noise' },
-                                                            { id: 'binaural_theta', label: 'Binaural Beats (Theta 6Hz)' },
-                                                            { id: 'binaural_beats', label: 'Binaural Beats (Alpha 10Hz)' },
-                                                            { id: 'binaural_beta', label: 'Binaural Beats (Beta 20Hz)' },
-                                                            { id: 'binaural_gamma', label: 'Binaural Beats (Gamma 40Hz)' }
-                                                        ].map(t => (
-                                                            <button
-                                                                key={t.id}
-                                                                type="button"
-                                                                onClick={() => updatePreferences({ pomodoroSettings: { ...pomoSettings, ambientSound: t.id as 'none' | 'pink_noise' | 'binaural_beats' | 'binaural_beta' | 'binaural_gamma' | 'binaural_theta' } })}
+                                                {/* Card B: Audio Experience */}
+                                                <div style={{
+                                                    background: 'rgba(255, 255, 255, 0.015)',
+                                                    border: '1px solid rgba(255, 255, 255, 0.03)',
+                                                    borderRadius: '16px',
+                                                    padding: '1.25rem',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    gap: '1.25rem'
+                                                }}>
+                                                    <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: '#d4a017', margin: 0, letterSpacing: '0.08em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                        <span style={{ fontSize: '0.9rem' }}>🎵</span> Audio Experience
+                                                    </h3>
+
+                                                    <div>
+                                                        <label style={{ fontSize: '0.6rem', fontWeight: '900', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '6px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Alarm Audio</label>
+                                                        <div style={{ display: 'flex', gap: '4px' }}>
+                                                            {[
+                                                                { id: 'persona', label: 'AI Mentor ⚡' },
+                                                                { id: 'chime', label: 'Chime 🔔' },
+                                                                { id: 'silent', label: 'Silent 🔇' }
+                                                            ].map(t => (
+                                                                <button
+                                                                    key={t.id}
+                                                                    type="button"
+                                                                    onClick={() => updatePreferences({ pomodoroSettings: { ...pomoSettings, soundType: t.id as 'persona' | 'chime' | 'silent' } })}
+                                                                    style={{
+                                                                        flex: 1,
+                                                                        padding: '8px',
+                                                                        borderRadius: '8px',
+                                                                        border: '1px solid',
+                                                                        borderColor: pomoSettings.soundType === t.id ? '#d4a017' : 'rgba(255,255,255,0.06)',
+                                                                        background: pomoSettings.soundType === t.id ? '#d4a017' : 'rgba(255,255,255,0.02)',
+                                                                        color: pomoSettings.soundType === t.id ? 'black' : 'rgba(255,255,255,0.6)',
+                                                                        fontWeight: 'bold',
+                                                                        fontSize: '0.65rem',
+                                                                        cursor: 'pointer',
+                                                                        transition: 'all 0.2s ease'
+                                                                    }}
+                                                                >
+                                                                    {t.label}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+
+                                                        <div style={{ marginTop: '10px' }}>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6rem', fontWeight: 'bold', color: 'rgba(255,255,255,0.4)', marginBottom: '4px' }}>
+                                                                <span>VOLUME</span>
+                                                                <span>{pomoSettings.soundVolume}%</span>
+                                                            </div>
+                                                            <input
+                                                                type="range"
+                                                                min="0"
+                                                                max="100"
+                                                                value={pomoSettings.soundVolume}
+                                                                onChange={(e) => updatePreferences({ pomodoroSettings: { ...pomoSettings, soundVolume: parseInt(e.target.value) || 50 } })}
+                                                                className="premium-range"
                                                                 style={{
-                                                                    padding: '8px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', textAlign: 'left',
-                                                                    background: pomoSettings.ambientSound === t.id ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.03)',
-                                                                    color: pomoSettings.ambientSound === t.id ? '#10b981' : 'rgba(255,255,255,0.6)',
-                                                                    borderColor: pomoSettings.ambientSound === t.id ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.08)',
-                                                                    fontWeight: 'bold', fontSize: '0.65rem', cursor: 'pointer', transition: '0.2s'
+                                                                    background: `linear-gradient(to right, #d4a017 0%, #d4a017 ${pomoSettings.soundVolume}%, rgba(255,255,255,0.1) ${pomoSettings.soundVolume}%, rgba(255,255,255,0.1) 100%)`
                                                                 }}
-                                                            >
-                                                                {t.label}
-                                                            </button>
-                                                        ))}
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    <div>
+                                                        <label style={{ fontSize: '0.6rem', fontWeight: '900', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '6px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Focus Background Sound</label>
+                                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                                                            {[
+                                                                { id: 'none', label: '🔇 None' },
+                                                                { id: 'pink_noise', label: '🌊 Pink Noise' },
+                                                                { id: 'binaural_theta', label: '🧠 Theta (6Hz)' },
+                                                                { id: 'binaural_beats', label: '⚡ Alpha (10Hz)' },
+                                                                { id: 'binaural_beta', label: '🔥 Beta (20Hz)' },
+                                                                { id: 'binaural_gamma', label: '✨ Gamma (40Hz)' }
+                                                            ].map(t => (
+                                                                <button
+                                                                    key={t.id}
+                                                                    type="button"
+                                                                    onClick={() => updatePreferences({ pomodoroSettings: { ...pomoSettings, ambientSound: t.id as 'none' | 'pink_noise' | 'binaural_beats' | 'binaural_beta' | 'binaural_gamma' | 'binaural_theta' } })}
+                                                                    style={{
+                                                                        padding: '8px 10px',
+                                                                        borderRadius: '8px',
+                                                                        border: '1px solid',
+                                                                        textAlign: 'center',
+                                                                        background: pomoSettings.ambientSound === t.id ? 'rgba(212, 160, 23, 0.12)' : 'rgba(255,255,255,0.02)',
+                                                                        color: pomoSettings.ambientSound === t.id ? '#d4a017' : 'rgba(255,255,255,0.6)',
+                                                                        borderColor: pomoSettings.ambientSound === t.id ? '#d4a017' : 'rgba(255,255,255,0.06)',
+                                                                        fontWeight: 'bold',
+                                                                        fontSize: '0.65rem',
+                                                                        cursor: 'pointer',
+                                                                        transition: 'all 0.2s ease'
+                                                                    }}
+                                                                >
+                                                                    {t.label}
+                                                                </button>
+                                                            ))}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '12px' }}>
-                                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 'bold', color: 'rgba(255,255,255,0.7)' }}>
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={pomoSettings.autoStartBreaks}
-                                                        onChange={(e) => updatePreferences({ pomodoroSettings: { ...pomoSettings, autoStartBreaks: e.target.checked } })}
-                                                        style={{ accentColor: '#d4a017', width: '14px', height: '14px' }}
-                                                    />
-                                                    AUTO-START BREAKS
-                                                </label>
-                                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 'bold', color: 'rgba(255,255,255,0.7)' }}>
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={pomoSettings.autoStartFocus}
-                                                        onChange={(e) => updatePreferences({ pomodoroSettings: { ...pomoSettings, autoStartFocus: e.target.checked } })}
-                                                        style={{ accentColor: '#d4a017', width: '14px', height: '14px' }}
-                                                    />
-                                                    AUTO-START NEXT FOCUS CYCLE
-                                                </label>
-                                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 'bold', color: 'rgba(255,255,255,0.7)' }}>
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={pomoSettings.useReflectionPrompts}
-                                                        onChange={(e) => updatePreferences({ pomodoroSettings: { ...pomoSettings, useReflectionPrompts: e.target.checked } })}
-                                                        style={{ accentColor: '#d4a017', width: '14px', height: '14px' }}
-                                                    />
-                                                    ENABLE PERSONA REFLECTION PROMPTS
-                                                </label>
+                                            {/* Card C: Flow & Automation */}
+                                            <div style={{
+                                                borderTop: '1px solid rgba(255,255,255,0.06)',
+                                                paddingTop: '1.25rem',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: '0.75rem'
+                                            }}>
+                                                <h3 style={{ fontSize: '0.75rem', fontWeight: '900', color: '#d4a017', margin: '0 0 4px 0', letterSpacing: '0.08em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    <span style={{ fontSize: '0.9rem' }}>⚙️</span> Automation & Reflection
+                                                </h3>
+
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '10px' }}>
+                                                    {[
+                                                        {
+                                                            key: 'autoStartBreaks',
+                                                            label: 'Auto-Start Breaks',
+                                                            desc: 'Start breaks automatically when work sessions end'
+                                                        },
+                                                        {
+                                                            key: 'autoStartFocus',
+                                                            label: 'Auto-Start Focus Cycles',
+                                                            desc: 'Start work sessions automatically when break sessions end'
+                                                        },
+                                                        {
+                                                            key: 'useReflectionPrompts',
+                                                            label: 'Persona Reflections',
+                                                            desc: 'Prompt active mental checks after focus cycles'
+                                                        }
+                                                    ].map(item => (
+                                                        <div
+                                                            key={item.key}
+                                                            style={{
+                                                                display: 'flex',
+                                                                justifyContent: 'space-between',
+                                                                alignItems: 'center',
+                                                                background: 'rgba(255, 255, 255, 0.01)',
+                                                                border: '1px solid rgba(255, 255, 255, 0.03)',
+                                                                padding: '10px 14px',
+                                                                borderRadius: '12px'
+                                                            }}
+                                                        >
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingRight: '8px' }}>
+                                                                <span style={{ fontSize: '0.7rem', fontWeight: '800', color: 'white', letterSpacing: '0.02em' }}>{item.label}</span>
+                                                                <span style={{ fontSize: '0.58rem', color: 'rgba(255, 255, 255, 0.4)', lineHeight: '1.2' }}>{item.desc}</span>
+                                                            </div>
+                                                            <ToggleSwitch
+                                                                checked={pomoSettings[item.key as keyof typeof pomoSettings] as boolean}
+                                                                onChange={(val) => updatePreferences({ pomodoroSettings: { ...pomoSettings, [item.key]: val } })}
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
