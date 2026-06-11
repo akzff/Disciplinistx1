@@ -53,6 +53,9 @@ export default function AnalyticsPage() {
         return () => clearInterval(interval);
     }, []);
 
+    // EXPANDED GOALS FOR SUBTASK BREAKDOWN
+    const [expandedGoals, setExpandedGoals] = useState<Record<string, boolean>>({});
+
     // CHART VISIBILITY FILTER
     const [chartFilters, setChartFilters] = useState({
         dailies: true,
@@ -189,7 +192,12 @@ export default function AnalyticsPage() {
 
     // DETAILED ACTIVE TASK DATA ANALYSIS
     const activeTasksAnalysis = useMemo(() => {
-        const goalFocusMap: Record<string, { totalActive: number; totalPaused: number; sessions: number }> = {};
+        const goalFocusMap: Record<string, { 
+            totalActive: number; 
+            totalPaused: number; 
+            sessions: number;
+            subtasks: Record<string, { totalActive: number; totalPaused: number; sessions: number }>
+        }> = {};
         let grandTotalActive = 0;
         let grandTotalPaused = 0;
         let totalCycles = 0;
@@ -210,17 +218,25 @@ export default function AnalyticsPage() {
                         const name = entry.text || 'Unknown';
                         const parts = name.split(' - ');
                         const goal = parts[0]?.trim() || 'General';
+                        const subtask = parts.length > 1 ? parts.slice(1).join(' - ')?.trim() : 'General';
                         
                         const active = entry.activeTime || 0;
                         const paused = entry.pausedTime || 0;
                         const cycles = entry.completedCycles || 0;
 
                         if (!goalFocusMap[goal]) {
-                            goalFocusMap[goal] = { totalActive: 0, totalPaused: 0, sessions: 0 };
+                            goalFocusMap[goal] = { totalActive: 0, totalPaused: 0, sessions: 0, subtasks: {} };
                         }
                         goalFocusMap[goal].totalActive += active;
                         goalFocusMap[goal].totalPaused += paused;
                         goalFocusMap[goal].sessions += 1;
+
+                        if (!goalFocusMap[goal].subtasks[subtask]) {
+                            goalFocusMap[goal].subtasks[subtask] = { totalActive: 0, totalPaused: 0, sessions: 0 };
+                        }
+                        goalFocusMap[goal].subtasks[subtask].totalActive += active;
+                        goalFocusMap[goal].subtasks[subtask].totalPaused += paused;
+                        goalFocusMap[goal].subtasks[subtask].sessions += 1;
 
                         grandTotalActive += active;
                         grandTotalPaused += paused;
@@ -245,13 +261,21 @@ export default function AnalyticsPage() {
                     if (taskActive > 0 || taskPaused > 0) {
                         const parts = task.name.split(' - ');
                         const goal = parts[0]?.trim() || 'General';
+                        const subtask = parts.length > 1 ? parts.slice(1).join(' - ')?.trim() : 'General';
 
                         if (!goalFocusMap[goal]) {
-                            goalFocusMap[goal] = { totalActive: 0, totalPaused: 0, sessions: 0 };
+                            goalFocusMap[goal] = { totalActive: 0, totalPaused: 0, sessions: 0, subtasks: {} };
                         }
                         goalFocusMap[goal].totalActive += taskActive;
                         goalFocusMap[goal].totalPaused += taskPaused;
                         goalFocusMap[goal].sessions += 1;
+
+                        if (!goalFocusMap[goal].subtasks[subtask]) {
+                            goalFocusMap[goal].subtasks[subtask] = { totalActive: 0, totalPaused: 0, sessions: 0 };
+                        }
+                        goalFocusMap[goal].subtasks[subtask].totalActive += taskActive;
+                        goalFocusMap[goal].subtasks[subtask].totalPaused += taskPaused;
+                        goalFocusMap[goal].subtasks[subtask].sessions += 1;
 
                         grandTotalActive += taskActive;
                         grandTotalPaused += taskPaused;
@@ -265,7 +289,12 @@ export default function AnalyticsPage() {
         const goalStats = Object.entries(goalFocusMap).map(([goal, stats]) => ({
             goal,
             ...stats,
-            percentage: grandTotalActive > 0 ? Math.round((stats.totalActive / grandTotalActive) * 100) : 0
+            percentage: grandTotalActive > 0 ? Math.round((stats.totalActive / grandTotalActive) * 100) : 0,
+            subtaskStats: Object.entries(stats.subtasks).map(([subtask, subStats]) => ({
+                subtask,
+                ...subStats,
+                percentage: stats.totalActive > 0 ? Math.round((subStats.totalActive / stats.totalActive) * 100) : 0
+            })).sort((a, b) => b.totalActive - a.totalActive)
         })).sort((a, b) => b.totalActive - a.totalActive);
 
         const activePercentage = (grandTotalActive + grandTotalPaused) > 0 
@@ -759,7 +788,7 @@ export default function AnalyticsPage() {
                                     <div className="block-card" style={{ padding: '2rem 2.5rem', background: 'rgba(255,255,255,0.02)' }}>
                                         <div style={{ marginBottom: '1.5rem' }}>
                                             <span style={{ fontSize: '0.65rem', fontWeight: '900', letterSpacing: '0.15em', opacity: 0.3 }}>GOAL DISTRIBUTION</span>
-                                            <h3 style={{ fontSize: '1.1rem', fontWeight: '900', margin: '4px 0 0 0', letterSpacing: '0.02em' }}>Focus Time by Strategy Core</h3>
+                                            <h3 style={{ fontSize: '1.1rem', fontWeight: '900', margin: '4px 0 0 0', letterSpacing: '0.02em' }}>Focus Time by Goal</h3>
                                         </div>
                                         {activeTasksAnalysis.goalStats.length === 0 ? (
                                             <div style={{ padding: '2rem 0', textAlign: 'center', opacity: 0.3, border: '1px dashed rgba(255,255,255,0.08)', borderRadius: '16px', fontSize: '0.75rem' }}>
@@ -770,17 +799,55 @@ export default function AnalyticsPage() {
                                                 {activeTasksAnalysis.goalStats.map((item, index) => {
                                                     const colors = ['#d4a017', '#10b981', '#8b5cf6', '#3b82f6', '#ec4899'];
                                                     const barColor = colors[index % colors.length];
+                                                    const isExpanded = !!expandedGoals[item.goal];
                                                     return (
                                                         <div key={item.goal} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                <span style={{ fontSize: '0.8rem', fontWeight: '850', color: 'rgba(255,255,255,0.85)' }}>{item.goal}</span>
+                                                            <div 
+                                                                onClick={() => setExpandedGoals(prev => ({ ...prev, [item.goal]: !prev[item.goal] }))}
+                                                                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}
+                                                            >
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                    <span style={{ fontSize: '0.65rem', opacity: 0.5, transition: 'transform 0.2s', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
+                                                                    <span style={{ fontSize: '0.8rem', fontWeight: '850', color: 'rgba(255,255,255,0.85)' }}>{item.goal}</span>
+                                                                </div>
                                                                 <span style={{ fontSize: '0.75rem', fontWeight: '900', color: barColor }}>
                                                                     {formatTime(item.totalActive, false)} ({item.percentage}%)
                                                                 </span>
                                                             </div>
-                                                            <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.03)', borderRadius: '100px', overflow: 'hidden' }}>
+                                                            <div 
+                                                                onClick={() => setExpandedGoals(prev => ({ ...prev, [item.goal]: !prev[item.goal] }))}
+                                                                style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.03)', borderRadius: '100px', overflow: 'hidden', cursor: 'pointer' }}
+                                                            >
                                                                 <div style={{ width: `${item.percentage}%`, height: '100%', background: barColor, borderRadius: '100px' }} />
                                                             </div>
+
+                                                            {/* Nested Subtasks Breakdown */}
+                                                            {isExpanded && (
+                                                                <div style={{ 
+                                                                    display: 'flex', 
+                                                                    flexDirection: 'column', 
+                                                                    gap: '8px', 
+                                                                    marginLeft: '14px', 
+                                                                    paddingLeft: '10px', 
+                                                                    borderLeft: '1px solid rgba(255,255,255,0.08)',
+                                                                    marginTop: '4px',
+                                                                    marginBottom: '8px'
+                                                                }}>
+                                                                    {item.subtaskStats.map((sub) => (
+                                                                        <div key={sub.subtask} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                                <span style={{ fontSize: '0.75rem', opacity: 0.65 }}>{sub.subtask}</span>
+                                                                                <span style={{ fontSize: '0.7rem', fontWeight: '700', opacity: 0.85 }}>
+                                                                                    {formatTime(sub.totalActive, false)} ({sub.percentage}%)
+                                                                                </span>
+                                                                            </div>
+                                                                            <div style={{ width: '100%', height: '3px', background: 'rgba(255,255,255,0.02)', borderRadius: '100px', overflow: 'hidden' }}>
+                                                                                <div style={{ width: `${sub.percentage}%`, height: '100%', background: barColor, opacity: 0.7, borderRadius: '100px' }} />
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     );
                                                 })}
@@ -1447,7 +1514,7 @@ export default function AnalyticsPage() {
                             <div className="block-card" style={{ padding: '3rem', marginTop: '1rem' }}>
                                 <div style={{ marginBottom: '2.5rem' }}>
                                     <h3 style={{ fontSize: '1rem', fontWeight: '900', letterSpacing: '0.1em' }}>MISSION LOG (HISTORY)</h3>
-                                    <p style={{ fontSize: '0.75rem', opacity: 0.4, marginTop: '2px' }}>Detailed unique execution history across all strategy cores</p>
+                                    <p style={{ fontSize: '0.75rem', opacity: 0.4, marginTop: '2px' }}>Detailed unique execution history across all goals</p>
                                 </div>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
