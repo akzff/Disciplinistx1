@@ -290,7 +290,12 @@ export default function ActiveTaskPage() {
             volumeNode.gain.setValueAtTime((pomoSettings.soundVolume / 100) * 0.08, ctx.currentTime);
             volumeNode.connect(ctx.destination);
             
-            if (ambientType === 'binaural_beats') {
+            if (ambientType === 'binaural_beats' || ambientType === 'binaural_beta' || ambientType === 'binaural_gamma' || ambientType === 'binaural_theta') {
+                let diff = 10; // default alpha
+                if (ambientType === 'binaural_beta') diff = 20;
+                else if (ambientType === 'binaural_gamma') diff = 40;
+                else if (ambientType === 'binaural_theta') diff = 6;
+
                 const oscL = ctx.createOscillator();
                 oscL.type = 'sine';
                 oscL.frequency.setValueAtTime(200, ctx.currentTime);
@@ -306,7 +311,7 @@ export default function ActiveTaskPage() {
                 
                 const oscR = ctx.createOscillator();
                 oscR.type = 'sine';
-                oscR.frequency.setValueAtTime(210, ctx.currentTime);
+                oscR.frequency.setValueAtTime(200 + diff, ctx.currentTime);
                 
                 const panR = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
                 if (panR) {
@@ -1526,12 +1531,15 @@ export default function ActiveTaskPage() {
                                                     {[
                                                         { id: 'none', label: 'None' },
                                                         { id: 'pink_noise', label: 'Pink Noise' },
-                                                        { id: 'binaural_beats', label: 'Binaural Beats (Alpha 10Hz)' }
+                                                        { id: 'binaural_theta', label: 'Binaural Beats (Theta 6Hz)' },
+                                                        { id: 'binaural_beats', label: 'Binaural Beats (Alpha 10Hz)' },
+                                                        { id: 'binaural_beta', label: 'Binaural Beats (Beta 20Hz)' },
+                                                        { id: 'binaural_gamma', label: 'Binaural Beats (Gamma 40Hz)' }
                                                     ].map(t => (
                                                         <button
                                                             key={t.id}
                                                             type="button"
-                                                            onClick={() => updatePreferences({ pomodoroSettings: { ...pomoSettings, ambientSound: t.id as 'none' | 'pink_noise' | 'binaural_beats' } })}
+                                                            onClick={() => updatePreferences({ pomodoroSettings: { ...pomoSettings, ambientSound: t.id as 'none' | 'pink_noise' | 'binaural_beats' | 'binaural_beta' | 'binaural_gamma' | 'binaural_theta' } })}
                                                             style={{
                                                                 padding: '8px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', textAlign: 'left',
                                                                 background: pomoSettings.ambientSound === t.id ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.03)',
@@ -2059,12 +2067,15 @@ export default function ActiveTaskPage() {
                                                         {[
                                                             { id: 'none', label: 'None' },
                                                             { id: 'pink_noise', label: 'Pink Noise' },
-                                                            { id: 'binaural_beats', label: 'Binaural Beats (Alpha 10Hz)' }
+                                                            { id: 'binaural_theta', label: 'Binaural Beats (Theta 6Hz)' },
+                                                            { id: 'binaural_beats', label: 'Binaural Beats (Alpha 10Hz)' },
+                                                            { id: 'binaural_beta', label: 'Binaural Beats (Beta 20Hz)' },
+                                                            { id: 'binaural_gamma', label: 'Binaural Beats (Gamma 40Hz)' }
                                                         ].map(t => (
                                                             <button
                                                                 key={t.id}
                                                                 type="button"
-                                                                onClick={() => updatePreferences({ pomodoroSettings: { ...pomoSettings, ambientSound: t.id as 'none' | 'pink_noise' | 'binaural_beats' } })}
+                                                                onClick={() => updatePreferences({ pomodoroSettings: { ...pomoSettings, ambientSound: t.id as 'none' | 'pink_noise' | 'binaural_beats' | 'binaural_beta' | 'binaural_gamma' | 'binaural_theta' } })}
                                                                 style={{
                                                                     padding: '8px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', textAlign: 'left',
                                                                     background: pomoSettings.ambientSound === t.id ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.03)',

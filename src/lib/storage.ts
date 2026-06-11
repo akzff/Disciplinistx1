@@ -180,7 +180,7 @@ export interface PomodoroSettings {
     autoStartFocus: boolean;
     soundVolume: number; // 0 to 100
     soundType: 'persona' | 'chime' | 'silent';
-    ambientSound: 'none' | 'pink_noise' | 'binaural_beats';
+    ambientSound: 'none' | 'pink_noise' | 'binaural_beats' | 'binaural_beta' | 'binaural_gamma' | 'binaural_theta';
     useReflectionPrompts: boolean;
     activeBlueprint: 'classic' | 'monk' | 'ultra' | 'custom';
 }
