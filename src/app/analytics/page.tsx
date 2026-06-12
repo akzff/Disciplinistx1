@@ -44,6 +44,24 @@ export default function AnalyticsPage() {
     // DATE RANGE SELECTION
     const [dateRange, setDateRange] = useState<'7' | '14' | '30' | 'all'>('14');
 
+    // Load preference from localStorage on mount
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const savedRange = localStorage.getItem('disciplinist_analytics_date_range');
+            if (savedRange && ['7', '14', '30', 'all'].includes(savedRange)) {
+                setDateRange(savedRange as '7' | '14' | '30' | 'all');
+            }
+        }
+    }, []);
+
+    // Save preference to localStorage when dateRange changes
+    const handleSetDateRange = (range: '7' | '14' | '30' | 'all') => {
+        setDateRange(range);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('disciplinist_analytics_date_range', range);
+        }
+    };
+
     // Real-time clock to sync live active tasks
     const [now, setNow] = useState(Date.now());
     useEffect(() => {
@@ -624,7 +642,7 @@ export default function AnalyticsPage() {
                                 ].map(r => (
                                     <button
                                         key={r.id}
-                                        onClick={() => setDateRange(r.id as '7' | '14' | '30' | 'all')}
+                                        onClick={() => handleSetDateRange(r.id as '7' | '14' | '30' | 'all')}
                                         style={{
                                             padding: '6px 12px',
                                             borderRadius: '8px',
