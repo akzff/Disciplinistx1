@@ -112,6 +112,7 @@ export default function AnalyticsPage() {
 
         filteredDates.forEach(date => {
             const chat = allChats[date];
+            let dailyFocusMs = 0;
             if (chat) {
                 if (chat.dailies) {
                     totalDailiesAssigned += chat.dailies.length;
@@ -123,24 +124,27 @@ export default function AnalyticsPage() {
                             totalTodosCompleted++;
                         } else if (entry.type === 'active') {
                             totalActiveMissions++;
-                            totalFocusTimeMs += entry.activeTime || 0;
+                            dailyFocusMs += entry.activeTime || 0;
                         }
                     });
                 }
                 // Include active task in progress time
                 if (chat.activeTasks && Array.isArray(chat.activeTasks)) {
+                    const todayStr = new Date(now).toISOString().split('T')[0];
                     chat.activeTasks.forEach(task => {
                         let taskActive = (task.accumulatedActiveTime || 0) + (task.totalActiveTime || 0);
-                        if (task.status === 'RUNNING') {
+                        if (date === todayStr && task.status === 'RUNNING') {
                             taskActive += Math.max(0, now - (task.lastStartedAt || task.startTime || now));
                         }
                         if (taskActive > 0) {
-                            totalFocusTimeMs += taskActive;
+                            dailyFocusMs += taskActive;
                             totalActiveMissions++;
                         }
                     });
                 }
             }
+            // Cap daily focus time at 24 hours
+            totalFocusTimeMs += Math.min(24 * 3600000, dailyFocusMs);
         });
 
         const dailySuccessRate = totalDailiesAssigned > 0 ? Math.round((totalDailiesCompleted / totalDailiesAssigned) * 100) : 0;
@@ -167,6 +171,7 @@ export default function AnalyticsPage() {
 
     // DAY-BY-DAY DATASET FOR INTERACTIVE CHART
     const chartData = useMemo(() => {
+        const todayStr = new Date(now).toISOString().split('T')[0];
         return filteredDates.map(date => {
             const chat = allChats[date];
             let dailiesCompleted = 0;
@@ -190,7 +195,7 @@ export default function AnalyticsPage() {
                 if (chat.activeTasks && Array.isArray(chat.activeTasks)) {
                     chat.activeTasks.forEach(task => {
                         let taskActive = (task.accumulatedActiveTime || 0) + (task.totalActiveTime || 0);
-                        if (task.status === 'RUNNING') {
+                        if (date === todayStr && task.status === 'RUNNING') {
                             taskActive += Math.max(0, now - (task.lastStartedAt || task.startTime || now));
                         }
                         focusHours += taskActive / 3600000;
@@ -203,7 +208,7 @@ export default function AnalyticsPage() {
                 displayDate: date.split('-').slice(1).join('/'), // MM/DD
                 dailies: dailiesCompleted,
                 todos: todosCompleted,
-                focusHours: parseFloat(focusHours.toFixed(1))
+                focusHours: Math.min(24.0, parseFloat(focusHours.toFixed(1)))
             };
         });
     }, [allChats, filteredDates, now]);
@@ -270,10 +275,12 @@ export default function AnalyticsPage() {
                     let taskActive = (task.accumulatedActiveTime || 0) + (task.totalActiveTime || 0);
                     let taskPaused = (task.accumulatedPausedTime || 0) + (task.totalPausedTime || 0);
                     
-                    if (task.status === 'RUNNING') {
-                        taskActive += Math.max(0, now - (task.lastStartedAt || task.startTime || now));
-                    } else if (task.status === 'PAUSED') {
-                        taskPaused += Math.max(0, now - (task.lastPausedAt || task.startTime || now));
+                    if (date === todayStr) {
+                        if (task.status === 'RUNNING') {
+                            taskActive += Math.max(0, now - (task.lastStartedAt || task.startTime || now));
+                        } else if (task.status === 'PAUSED') {
+                            taskPaused += Math.max(0, now - (task.lastPausedAt || task.startTime || now));
+                        }
                     }
 
                     if (taskActive > 0 || taskPaused > 0) {

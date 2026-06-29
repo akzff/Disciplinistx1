@@ -413,6 +413,7 @@ export default function ActiveTaskPage() {
     // Layout and navigation states
     const [expandGoals, setExpandGoals] = useState(false);
     const [expandTasks, setExpandTasks] = useState(false);
+    const [liveAnalysisExpanded, setLiveAnalysisExpanded] = useState(false);
     
     // Break timer states
     const [breakActive, setBreakActive] = useState(false);
@@ -1144,6 +1145,144 @@ export default function ActiveTaskPage() {
         };
     }, [currentActiveTask, now]);
 
+    const todayStats = useMemo(() => {
+        const completed = todayChat?.completedTasks || [];
+        const activeTasks = todayChat?.activeTasks || [];
+        
+        let totalFocusMs = 0;
+        let totalPausedMs = 0;
+        let completedCyclesCount = 0;
+        const goalSplitMap: Record<string, number> = {};
+        const sessionsList: Array<{
+            id: string;
+            name: string;
+            goal: string;
+            task: string;
+            activeTime: number;
+            pausedTime: number;
+            completedCycles: number;
+            status: string;
+            timestamp: number;
+        }> = [];
+
+        // Process completed tasks
+        completed.forEach((t, index) => {
+            const parts = t.name.split(' - ');
+            const goal = parts[0]?.trim() || 'General';
+            const task = parts.slice(1).join(' - ')?.trim() || t.name;
+            
+            totalFocusMs += t.activeTime || 0;
+            totalPausedMs += t.pausedTime || 0;
+            completedCyclesCount += t.completedCycles || 0;
+            goalSplitMap[goal] = (goalSplitMap[goal] || 0) + (t.activeTime || 0);
+
+            sessionsList.push({
+                id: `completed-${index}-${t.finishedAt}`,
+                name: t.name,
+                goal,
+                task,
+                activeTime: t.activeTime || 0,
+                pausedTime: t.pausedTime || 0,
+                completedCycles: t.completedCycles || 0,
+                status: 'COMPLETED',
+                timestamp: t.finishedAt
+            });
+        });
+
+        // Process active tasks (if any, running or paused)
+        activeTasks.forEach((t) => {
+            let taskActive = (t.accumulatedActiveTime || 0) + (t.totalActiveTime || 0);
+            let taskPaused = (t.accumulatedPausedTime || 0) + (t.totalPausedTime || 0);
+            
+            if (t.status === 'RUNNING') {
+                taskActive += Math.max(0, now - (t.lastStartedAt || t.startTime || now));
+            } else if (t.status === 'PAUSED') {
+                taskPaused += Math.max(0, now - (t.lastPausedAt || t.startTime || now));
+            }
+
+            const parts = t.name.split(' - ');
+            const goal = parts[0]?.trim() || 'General';
+            const task = parts.slice(1).join(' - ')?.trim() || t.name;
+
+            totalFocusMs += taskActive;
+            totalPausedMs += taskPaused;
+            completedCyclesCount += t.completedCycles || 0;
+            goalSplitMap[goal] = (goalSplitMap[goal] || 0) + taskActive;
+
+            sessionsList.push({
+                id: t.id,
+                name: t.name,
+                goal,
+                task,
+                activeTime: taskActive,
+                pausedTime: taskPaused,
+                completedCycles: t.completedCycles || 0,
+                status: t.status,
+                timestamp: t.startTime
+            });
+        });
+
+        // Sort sessions by timestamp descending
+        sessionsList.sort((a, b) => b.timestamp - a.timestamp);
+
+        // Convert goal split to array
+        const grandTotal = Object.values(goalSplitMap).reduce((a, b) => a + b, 0);
+        const goalSplit = Object.entries(goalSplitMap).map(([goal, activeTime]) => ({
+            goal,
+            activeTime,
+            percentage: grandTotal > 0 ? Math.round((activeTime / grandTotal) * 100) : 0
+        })).sort((a, b) => b.activeTime - a.activeTime);
+
+        // Intention Alignment Index:
+        // Percentage of focus time spent on goals that match pre-registered suggestions (planned work)
+        let alignedFocusMs = 0;
+        completed.forEach(t => {
+            const parts = t.name.split(' - ');
+            const goal = parts[0]?.trim() || 'General';
+            const task = parts.slice(1).join(' - ')?.trim() || t.name;
+            const isAligned = suggestions.some(s => 
+                s.goal.toLowerCase() === goal.toLowerCase() && 
+                s.task.toLowerCase() === task.toLowerCase()
+            );
+            if (isAligned) {
+                alignedFocusMs += t.activeTime || 0;
+            }
+        });
+        activeTasks.forEach(t => {
+            let taskActive = (t.accumulatedActiveTime || 0) + (t.totalActiveTime || 0);
+            if (t.status === 'RUNNING') {
+                taskActive += Math.max(0, now - (t.lastStartedAt || t.startTime || now));
+            }
+            const parts = t.name.split(' - ');
+            const goal = parts[0]?.trim() || 'General';
+            const task = parts.slice(1).join(' - ')?.trim() || t.name;
+            const isAligned = suggestions.some(s => 
+                s.goal.toLowerCase() === goal.toLowerCase() && 
+                s.task.toLowerCase() === task.toLowerCase()
+            );
+            if (isAligned) {
+                alignedFocusMs += taskActive;
+            }
+        });
+        const alignmentIndex = totalFocusMs > 0 ? Math.round((alignedFocusMs / totalFocusMs) * 100) : 100;
+        const normalizedAlignment = Math.min(100, alignmentIndex);
+
+        // Focus Consistency score:
+        const focusConsistency = (totalFocusMs + totalPausedMs) > 0 
+            ? Math.round((totalFocusMs / (totalFocusMs + totalPausedMs)) * 100) 
+            : 100;
+
+        return {
+            totalFocusMs,
+            totalPausedMs,
+            completedCyclesCount,
+            goalSplit,
+            sessionsList,
+            alignmentIndex: normalizedAlignment,
+            focusConsistency
+        };
+    }, [todayChat?.completedTasks, todayChat?.activeTasks, now, suggestions]);
+
     // Dynamically update document title to show focus or break timer in browser tab
     useEffect(() => {
         if (typeof document === 'undefined') return;
@@ -1385,8 +1524,9 @@ export default function ActiveTaskPage() {
                                 </div>
                             </div>
                         ) : !currentActiveTask ? (
-                            /* Setup Form View */
-                             <form onSubmit={(e) => { e.preventDefault(); handleStartTask(); }} className="active-task-setup-card">
+                            /* Setup Form Grid View with Analysis Dashboard */
+                            <div className="active-task-setup-grid">
+                                 <form onSubmit={(e) => { e.preventDefault(); handleStartTask(); }} className="active-task-setup-card" style={{ margin: 0 }}>
                                 <h2 style={{ fontSize: '1.5rem', fontWeight: '900', marginBottom: '1.5rem', letterSpacing: '0.05em', textAlign: 'center', color: 'white' }}>LAUNCH ACTIVE MISSION</h2>
                                 
                                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-0.5rem', marginBottom: '1.5rem' }}>
@@ -1946,7 +2086,137 @@ export default function ActiveTaskPage() {
                                                                     Start Session
                                                                 </button>
                             </form>
-                        ) : (
+
+                             {/* New Mission Alignment & Insights Panel */}
+                             <div className="active-task-analysis-card">
+                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                     <h3 className="analysis-card-title">Today&apos;s Alignment & Insights</h3>
+                                     <span style={{ fontSize: '0.65rem', fontWeight: '850', color: '#d4a017', background: 'rgba(212, 160, 23, 0.12)', padding: '2px 8px', borderRadius: '100px', border: '1px solid rgba(212, 160, 23, 0.2)' }}>
+                                         LIVE ANALYSIS
+                                     </span>
+                                 </div>
+
+                                 {/* Stat Dials */}
+                                 <div className="analysis-metric-ring-container">
+                                     {/* Circle Alignment Dial */}
+                                     <div style={{ width: '80px', height: '80px', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                         <svg width="100%" height="100%" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
+                                             <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="8" />
+                                             <circle 
+                                                 cx="50" 
+                                                 cy="50" 
+                                                 r="42" 
+                                                 fill="none" 
+                                                 stroke="url(#alignmentGoldGradient)" 
+                                                 strokeWidth="8" 
+                                                 strokeDasharray="264"
+                                                 strokeDashoffset={264 - (264 * todayStats.alignmentIndex) / 100}
+                                                 strokeLinecap="round"
+                                                 style={{ transition: 'stroke-dashoffset 0.8s ease-out' }}
+                                             />
+                                             <defs>
+                                                 <linearGradient id="alignmentGoldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                     <stop offset="0%" stopColor="#d4a017" />
+                                                     <stop offset="100%" stopColor="#10b981" />
+                                                 </linearGradient>
+                                             </defs>
+                                         </svg>
+                                         <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                             <span style={{ fontSize: '1.2rem', fontWeight: '950', color: 'white', lineHeight: 1 }}>{todayStats.alignmentIndex}%</span>
+                                         </div>
+                                     </div>
+
+                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                         <span style={{ fontSize: '0.65rem', fontWeight: '900', color: '#d4a017', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Intention Alignment</span>
+                                         <p style={{ margin: 0, fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', lineHeight: '1.3' }}>
+                                             {todayStats.alignmentIndex >= 90 
+                                                 ? "Highly Aligned: Today&apos;s focus is dedicated strictly to your pre-registered mission goals." 
+                                                 : todayStats.alignmentIndex >= 60 
+                                                 ? "Moderately Aligned: You are taking on some ad-hoc tasks outside your planned goal set." 
+                                                 : "Low Alignment: Focus is fragmented on ad-hoc categories. Banish distractions to align."}
+                                         </p>
+                                     </div>
+                                 </div>
+
+                                 {/* Other quick metrics */}
+                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                     <div style={{ background: 'rgba(255, 255, 255, 0.015)', border: '1px solid rgba(255, 255, 255, 0.03)', padding: '12px', borderRadius: '16px' }}>
+                                         <span style={{ fontSize: '0.55rem', fontWeight: '900', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '4px', letterSpacing: '0.05em' }}>TOTAL FOCUS TIME</span>
+                                         <span style={{ fontSize: '1.1rem', fontWeight: '900', color: 'white' }}>{formatTime(todayStats.totalFocusMs, false)}</span>
+                                     </div>
+                                     <div style={{ background: 'rgba(255, 255, 255, 0.015)', border: '1px solid rgba(255, 255, 255, 0.03)', padding: '12px', borderRadius: '16px' }}>
+                                         <span style={{ fontSize: '0.55rem', fontWeight: '900', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '4px', letterSpacing: '0.05em' }}>FOCUS INTENSITY</span>
+                                         <span style={{ fontSize: '1.1rem', fontWeight: '900', color: '#10b981' }}>{todayStats.focusConsistency}%</span>
+                                     </div>
+                                 </div>
+
+                                 {/* Goal Focus Split */}
+                                 <div>
+                                     <h4 className="analysis-section-title">Focus Split by Category</h4>
+                                     {todayStats.goalSplit.length === 0 ? (
+                                         <div style={{ padding: '1.5rem', textAlign: 'center', opacity: 0.3, border: '1px dashed rgba(255,255,255,0.08)', borderRadius: '16px', fontSize: '0.7rem' }}>
+                                             No focus sessions logged today yet.
+                                         </div>
+                                     ) : (
+                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                                             {todayStats.goalSplit.map((item, index) => {
+                                                 const colors = ['#d4a017', '#10b981', '#8b5cf6', '#3b82f6', '#ec4899'];
+                                                 const barColor = colors[index % colors.length];
+                                                 return (
+                                                     <div key={item.goal} className="analysis-mini-bar-row">
+                                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', fontWeight: '800' }}>
+                                                             <span style={{ color: 'rgba(255,255,255,0.85)' }}>{item.goal}</span>
+                                                             <span style={{ color: barColor }}>{formatTime(item.activeTime, false)} ({item.percentage}%)</span>
+                                                         </div>
+                                                         <div style={{ width: '100%', height: '5px', background: 'rgba(255,255,255,0.03)', borderRadius: '100px', overflow: 'hidden' }}>
+                                                             <div style={{ width: `${item.percentage}%`, height: '100%', background: barColor, borderRadius: '100px' }} />
+                                                         </div>
+                                                     </div>
+                                                 );
+                                             })}
+                                         </div>
+                                     )}
+                                 </div>
+
+                                 {/* Today's Focus Feed */}
+                                 <div>
+                                     <h4 className="analysis-section-title">Today&apos;s Focus Log</h4>
+                                     {todayStats.sessionsList.length === 0 ? (
+                                         <div style={{ padding: '1.5rem', textAlign: 'center', opacity: 0.3, border: '1px dashed rgba(255,255,255,0.08)', borderRadius: '16px', fontSize: '0.7rem' }}>
+                                             No focus sessions logged today.
+                                         </div>
+                                     ) : (
+                                         <div className="analysis-history-feed">
+                                             {todayStats.sessionsList.map(session => (
+                                                 <div key={session.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: '12px', background: 'rgba(255,255,255,0.015)', border: '1px solid rgba(255,255,255,0.03)' }}>
+                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
+                                                         <span style={{ fontSize: '0.75rem', fontWeight: '800', color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                             {session.name}
+                                                         </span>
+                                                         <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+                                                             {session.status === 'RUNNING' && '⚡ LIVE FOCUS'}
+                                                             {session.status === 'PAUSED' && '⏱️ PAUSED'}
+                                                             {session.status === 'COMPLETED' && `✓ COMPLETED • ${new Date(session.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                                                         </span>
+                                                     </div>
+                                                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                                         <span style={{ fontSize: '0.72rem', fontWeight: '900', color: session.status === 'RUNNING' ? '#10b981' : 'white' }}>
+                                                             {formatTime(session.activeTime, true)}
+                                                         </span>
+                                                         {session.completedCycles > 0 && (
+                                                             <span style={{ display: 'block', fontSize: '0.55rem', color: '#d4a017', fontWeight: '800' }}>
+                                                                 {session.completedCycles} Cycle{session.completedCycles !== 1 ? 's' : ''}
+                                                             </span>
+                                                         )}
+                                                     </div>
+                                                 </div>
+                                             ))}
+                                         </div>
+                                     )}
+                                 </div>
+                             </div>
+                        </div>
+                    ) : (
                             /* Active Session dashboard View */
                             <div className="active-running-dashboard" style={{ position: 'relative', width: '100%' }}>
                                 <button
@@ -2412,8 +2682,90 @@ export default function ActiveTaskPage() {
                                             </svg>
                                             FINISH
                                         </button>
-                                    </div>
-                                </div>
+                                     </div>
+
+                                     {/* Collapsible Live Focus Accordion */}
+                                     <div className="live-analysis-accordion">
+                                         <button 
+                                             type="button" 
+                                             className="live-analysis-accordion__trigger"
+                                             onClick={() => setLiveAnalysisExpanded(!liveAnalysisExpanded)}
+                                         >
+                                             <span>Live Focus Insights & Alignment</span>
+                                             <span style={{ transition: 'transform 0.2s', transform: liveAnalysisExpanded ? 'rotate(90deg)' : 'none' }}>▶</span>
+                                         </button>
+                                         {liveAnalysisExpanded && (
+                                             <div className="live-analysis-accordion__content">
+                                                 {/* Alignment & Intensity row */}
+                                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1.25rem', width: '100%' }}>
+                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '14px' }}>
+                                                         <div style={{ width: '40px', height: '40px', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                             <svg width="100%" height="100%" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
+                                                                 <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="8" />
+                                                                 <circle 
+                                                                     cx="50" 
+                                                                     cy="50" 
+                                                                     r="42" 
+                                                                     fill="none" 
+                                                                     stroke="url(#accordionGoldGradient)" 
+                                                                     strokeWidth="8" 
+                                                                     strokeDasharray="264"
+                                                                     strokeDashoffset={264 - (264 * todayStats.alignmentIndex) / 100}
+                                                                     strokeLinecap="round"
+                                                                 />
+                                                                 <defs>
+                                                                     <linearGradient id="accordionGoldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                                         <stop offset="0%" stopColor="#d4a017" />
+                                                                         <stop offset="100%" stopColor="#10b981" />
+                                                                     </linearGradient>
+                                                                 </defs>
+                                                             </svg>
+                                                             <span style={{ position: 'absolute', fontSize: '0.65rem', fontWeight: '950', color: 'white' }}>{todayStats.alignmentIndex}%</span>
+                                                         </div>
+                                                         <div>
+                                                             <span style={{ fontSize: '0.55rem', fontWeight: '900', color: '#d4a017', display: 'block', letterSpacing: '0.05em' }}>ALIGNMENT</span>
+                                                             <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)' }}>
+                                                                 {todayStats.alignmentIndex >= 90 ? 'Perfect Goal Match' : 'Ad-hoc Focus Split'}
+                                                             </span>
+                                                         </div>
+                                                     </div>
+
+                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '14px' }}>
+                                                         <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid #10b981', flexShrink: 0 }}>
+                                                             <span style={{ fontSize: '0.65rem', fontWeight: '950', color: '#10b981' }}>{todayStats.focusConsistency}%</span>
+                                                         </div>
+                                                         <div>
+                                                             <span style={{ fontSize: '0.55rem', fontWeight: '900', color: '#10b981', display: 'block', letterSpacing: '0.05em' }}>INTENSITY</span>
+                                                             <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)' }}>Active/Pause Ratio</span>
+                                                         </div>
+                                                     </div>
+                                                 </div>
+
+                                                 {/* Category Split progress bars */}
+                                                 <div style={{ width: '100%' }}>
+                                                     <span style={{ fontSize: '0.6rem', fontWeight: '900', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '8px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Focus split by goal category</span>
+                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                                         {todayStats.goalSplit.map((item, index) => {
+                                                             const colors = ['#d4a017', '#10b981', '#8b5cf6', '#3b82f6', '#ec4899'];
+                                                             const barColor = colors[index % colors.length];
+                                                             return (
+                                                                 <div key={item.goal} className="analysis-mini-bar-row">
+                                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.68rem', fontWeight: '800' }}>
+                                                                         <span style={{ color: 'rgba(255,255,255,0.85)' }}>{item.goal}</span>
+                                                                         <span style={{ color: barColor }}>{formatTime(item.activeTime, false)} ({item.percentage}%)</span>
+                                                                     </div>
+                                                                     <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.03)', borderRadius: '100px', overflow: 'hidden' }}>
+                                                                         <div style={{ width: `${item.percentage}%`, height: '100%', background: barColor, borderRadius: '100px' }} />
+                                                                     </div>
+                                                                 </div>
+                                                             );
+                                                         })}
+                                                     </div>
+                                                 </div>
+                                             </div>
+                                         )}
+                                     </div>
+                                 </div>
 
                                 {showFinishedOptions && (
                                     <div className="session-complete-overlay" style={{

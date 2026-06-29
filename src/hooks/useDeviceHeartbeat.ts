@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseUrl, supabaseKey } from '@/lib/supabase';
 import { getDeviceId, getDeviceInfo } from '@/utils/deviceFingerprint';
 
 export function useDeviceHeartbeat(userId: string | undefined) {
@@ -32,14 +32,24 @@ export function useDeviceHeartbeat(userId: string | undefined) {
         };
 
         const markOffline = () => {
-            // Use sendBeacon for reliability on page close
-            const url = `https://txqcuqhauipyzckefkqp.supabase.co/rest/v1/device_sessions?user_id=eq.${userId}&device_id=eq.${deviceId}`;
+            const url = `${supabaseUrl}/rest/v1/device_sessions?user_id=eq.${userId}&device_id=eq.${deviceId}`;
             const payload = JSON.stringify({ is_online: false });
-            if (navigator.sendBeacon) {
-                const blob = new Blob([payload], { type: 'application/json' });
-                navigator.sendBeacon(url, blob);
+
+            if (typeof navigator !== 'undefined') {
+                fetch(url, {
+                    method: 'PATCH',
+                    keepalive: true,
+                    headers: {
+                        'apikey': supabaseKey,
+                        'Authorization': `Bearer ${supabaseKey}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: payload
+                }).catch(err => console.error('Failed to mark offline on unload:', err));
             }
-            // Also fire async update (may not complete on page close, but fine as fallback)
+
+            // Also fire async update using supabase client as fallback
             supabase
                 .from('device_sessions')
                 .update({ is_online: false })

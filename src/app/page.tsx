@@ -1063,16 +1063,16 @@ OPERATIONAL TAGS:
     setLiveMissionOpen(prev => !prev);
   };
 
-  // Global verification function for testing (accessible from browser console)
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      (window as { verifySupabaseData?: () => Promise<{ status: 'ok' | 'error', details: { user?: string; totalChats?: number; todayDataExists?: boolean; todayTodos?: number; todayDailies?: number; allTodos?: number; allDailies?: number; datesWithData?: string[]; error?: string; } }> }).verifySupabaseData = async () => {
-        const result = await cloudStorage.verifyDataIntegrity();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).verifySupabaseData = async () => {
+        const result = await cloudStorage.verifyDataIntegrity(user?.id || undefined);
         console.table(result.details);
         return result;
       };
     }
-  }, []);
+  }, [user?.id]);
 
 
 

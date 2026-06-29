@@ -152,6 +152,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
             storage.saveChat(date, chatData, userId || undefined);
             return updated;
         });
+
+        if (userId) {
+            cloudStorage.saveChat(date, chatData, userId, true).catch(err => {
+                console.error('Auto cloud sync failed:', err);
+            });
+        }
     }, [userId]);
 
     return (

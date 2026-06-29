@@ -530,7 +530,7 @@ export default function RecordsPage() {
                 // Legacy fallback
                 const fallbackSummary = result.content || '';
                 setLocalChat(selectedDate, { aiSummary: fallbackSummary });
-                cloudStorage.saveChat(selectedDate, { aiSummary: fallbackSummary }, user.id);
+                cloudStorage.saveChat(selectedDate, { aiSummary: fallbackSummary }, user?.id || undefined, true);
                 setChat(prev => prev ? { ...prev, aiSummary: fallbackSummary } : null);
             }
         } catch (error) {

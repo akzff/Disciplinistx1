@@ -25,7 +25,7 @@ function cleanBotMessage(text: string): string {
 
 export default function ExpensesPage() {
     const { allChats, setLocalChat, preferences } = useData();
-    const { signOut } = useAuthContext();
+    const { user, signOut } = useAuthContext();
     const displayName = preferences?.name || 'User';
     const currentPfp = preferences?.pfp;
     const [selectedDate, setSelectedDate] = useState('');
@@ -73,7 +73,7 @@ export default function ExpensesPage() {
         ];
 
         setLocalChat(selectedDate, { expenses: updatedExpenses });
-        cloudStorage.saveChat(selectedDate, { expenses: updatedExpenses });
+        cloudStorage.saveChat(selectedDate, { expenses: updatedExpenses }, user?.id || undefined, true);
 
         setExpenseAmount('');
         setExpenseDesc('');
@@ -84,7 +84,7 @@ export default function ExpensesPage() {
         if (activeChat && activeChat.expenses) {
             const updated = activeChat.expenses.filter(e => e.id !== id);
             setLocalChat(selectedDate, { expenses: updated });
-            cloudStorage.saveChat(selectedDate, { expenses: updated });
+            cloudStorage.saveChat(selectedDate, { expenses: updated }, user?.id || undefined, true);
         }
     };
 
@@ -104,7 +104,7 @@ export default function ExpensesPage() {
                 e.id === editingId ? { ...e, amount, text: editDesc } : e
             );
             setLocalChat(selectedDate, { expenses: updated });
-            cloudStorage.saveChat(selectedDate, { expenses: updated });
+            cloudStorage.saveChat(selectedDate, { expenses: updated }, user?.id || undefined, true);
         }
         setEditingId(null);
         setEditAmount('');
@@ -175,7 +175,7 @@ export default function ExpensesPage() {
                 ];
 
                 setLocalChat(selectedDate, { expenses: updatedExpenses });
-                cloudStorage.saveChat(selectedDate, { expenses: updatedExpenses });
+                cloudStorage.saveChat(selectedDate, { expenses: updatedExpenses }, user?.id || undefined, true);
                 alert(`Successfully imported ${data.expenses.length} transactions from GPay statement.`);
             } else {
                 alert('No expenses found in the statement.');
@@ -227,7 +227,7 @@ export default function ExpensesPage() {
             const audit = data.choices[0].message.content;
 
             setLocalChat(selectedDate, { financialAudit: audit });
-            cloudStorage.saveChat(selectedDate, { financialAudit: audit });
+            cloudStorage.saveChat(selectedDate, { financialAudit: audit }, user?.id || undefined, true);
         } catch (error) {
             console.error(error);
             alert('Financial audit failed.');
