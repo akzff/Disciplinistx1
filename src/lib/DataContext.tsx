@@ -6,6 +6,7 @@ import { cloudStorage } from '@/lib/cloudStorage';
 import { useAuth as useClerkAuth } from '@clerk/nextjs';
 import { useUser } from '@clerk/nextjs';
 import { useDeviceHeartbeat } from '@/hooks/useDeviceHeartbeat';
+import { usePomodoroNotifier } from '@/hooks/usePomodoroNotifier';
 
 interface DataContextType {
     allChats: Record<string, DailyChat>;
@@ -33,6 +34,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     // Run device heartbeat on every page automatically
     useDeviceHeartbeat(user?.id);
+
+    // Global Pomodoro timer watcher — fires browser notifications on any page
+    usePomodoroNotifier(allChats, preferences);
 
     const normalizePrefs = (prefs: UserPreferences): UserPreferences => {
         const normalized = { ...prefs };

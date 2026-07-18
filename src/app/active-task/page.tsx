@@ -1011,8 +1011,12 @@ export default function ActiveTaskPage() {
             return t;
         });
         
-        setLocalChat(activeDay, { activeTasks: nextActiveTasks });
-        cloudStorage.saveChat(activeDay, { activeTasks: nextActiveTasks }, user?.id || undefined, true).catch(err => {
+        // Write breakEndsAt so the global notifier fires even when off this page
+        const breakEndsAt = Date.now() + mins * 60 * 1000;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setLocalChat(activeDay, { activeTasks: nextActiveTasks, breakEndsAt } as any);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        cloudStorage.saveChat(activeDay, { activeTasks: nextActiveTasks, breakEndsAt } as any, user?.id || undefined, true).catch(err => {
             console.warn('Background cloud save failed:', err);
         });
 
