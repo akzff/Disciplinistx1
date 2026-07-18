@@ -1,19 +1,29 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { WrapUpData, MoodData } from '@/lib/storage';
+import { WrapUpData, MoodData, SleepData, PhysicalData } from '@/lib/storage';
 
 interface WrapUpModalProps {
     open: boolean;
     onClose: () => void;
-    onSave: (data: WrapUpData) => void;
+    onSave: (data: WrapUpData, sleep?: SleepData, physical?: PhysicalData) => void;
     initialData?: WrapUpData;
     dateLabel?: string;
+    initialSleep?: SleepData;
+    initialPhysical?: PhysicalData;
 }
 
 const DEFAULT_SUGGESTED_TAGS = ['focus', 'productivity', 'burnout', 'debug', 'database', 'flow', 'anxious', 'calm', 'distracted'];
 
-export default function WrapUpModal({ open, onClose, onSave, initialData, dateLabel }: WrapUpModalProps) {
+export default function WrapUpModal({ 
+    open, 
+    onClose, 
+    onSave, 
+    initialData, 
+    dateLabel,
+    initialSleep,
+    initialPhysical
+}: WrapUpModalProps) {
     // Custom Suggested Tags state
     const [suggestedTags, setSuggestedTags] = useState<string[]>(() => {
         if (typeof window !== 'undefined') {
@@ -31,7 +41,7 @@ export default function WrapUpModal({ open, onClose, onSave, initialData, dateLa
     const [newTagInput, setNewTagInput] = useState('');
     const [isAddingTag, setIsAddingTag] = useState(false);
 
-    // Coordinate values range from -1 to 1
+    // Mental Wrap Up states
     const [x, setX] = useState<number>(0); // Tone
     const [y, setY] = useState<number>(0); // Energy
     const [isDragging, setIsDragging] = useState(false);
@@ -39,22 +49,55 @@ export default function WrapUpModal({ open, onClose, onSave, initialData, dateLa
     const gridRef = useRef<HTMLDivElement>(null);
     const hasManuallyMoved = useRef(false);
 
-    // Sync initial data if editing
+    // Sleep states
+    const [sleepHours, setSleepHours] = useState<number>(7);
+    const [sleepRating, setSleepRating] = useState<number>(3);
+    const [sleepNotes, setSleepNotes] = useState<string>('');
+
+    // Physical Health states
+    const [physicalEnergy, setPhysicalEnergy] = useState<number>(3);
+    const [physicalWorkout, setPhysicalWorkout] = useState<boolean>(false);
+    const [physicalPain, setPhysicalPain] = useState<number>(0);
+    const [physicalNotes, setPhysicalNotes] = useState<string>('');
+
+    // Sync initial data if editing or loading a specific day
     useEffect(() => {
         if (open) {
             if (initialData) {
                 setX(initialData.mood.x);
                 setY(initialData.mood.y);
                 setJournalText(initialData.journal);
-                hasManuallyMoved.current = true; // Loaded existing coordinates, so don't auto-align
+                hasManuallyMoved.current = true;
             } else {
                 setX(0);
                 setY(0);
                 setJournalText('');
                 hasManuallyMoved.current = false;
             }
+
+            if (initialSleep) {
+                setSleepHours(initialSleep.hours);
+                setSleepRating(initialSleep.rating);
+                setSleepNotes(initialSleep.notes || '');
+            } else {
+                setSleepHours(7);
+                setSleepRating(3);
+                setSleepNotes('');
+            }
+
+            if (initialPhysical) {
+                setPhysicalEnergy(initialPhysical.energy);
+                setPhysicalWorkout(initialPhysical.workout);
+                setPhysicalPain(initialPhysical.pain);
+                setPhysicalNotes(initialPhysical.notes || '');
+            } else {
+                setPhysicalEnergy(3);
+                setPhysicalWorkout(false);
+                setPhysicalPain(0);
+                setPhysicalNotes('');
+            }
         }
-    }, [open, initialData]);
+    }, [open, initialData, initialSleep, initialPhysical]);
 
     // Scan journal text for emotional tags/keywords to auto-align the grid dot if the user has not manually interacted with the grid.
     useEffect(() => {
@@ -122,7 +165,7 @@ export default function WrapUpModal({ open, onClose, onSave, initialData, dateLa
 
         let label: MoodData['label'] = 'Calm / Clear-Headed';
         if (x === 0 && y === 0) {
-            label = 'Calm / Clear-Headed'; // Default center to Calm/Clear-Headed instead of Flow
+            label = 'Calm / Clear-Headed'; // Default center to Calm/Clear-Headed
         } else if (energy === 'high' && tone === 'positive') {
             label = 'Flow / Inspired';
         } else if (energy === 'high' && tone === 'negative') {
@@ -225,12 +268,27 @@ export default function WrapUpModal({ open, onClose, onSave, initialData, dateLa
     };
 
     const handleSubmit = () => {
-        onSave({
+        const wrapUpData: WrapUpData = {
             mood: moodInfo,
             journal: journalText,
             tags: autoTags,
             completedAt: Date.now()
-        });
+        };
+
+        const sleepData: SleepData = {
+            hours: sleepHours,
+            rating: sleepRating,
+            notes: sleepNotes.trim() || undefined
+        };
+
+        const physicalData: PhysicalData = {
+            energy: physicalEnergy,
+            workout: physicalWorkout,
+            pain: physicalPain,
+            notes: physicalNotes.trim() || undefined
+        };
+
+        onSave(wrapUpData, sleepData, physicalData);
         onClose();
     };
 
@@ -254,18 +312,20 @@ export default function WrapUpModal({ open, onClose, onSave, initialData, dateLa
         }}>
             <div style={{
                 width: '100%',
-                maxWidth: '480px',
+                maxWidth: '960px',
                 background: 'rgba(10, 10, 12, 0.95)',
                 border: '1px solid rgba(255, 255, 255, 0.05)',
                 borderRadius: '24px',
                 boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 50px 0 rgba(212, 160, 23, 0.03)',
-                padding: '2.5rem',
+                padding: '2rem 2.5rem',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '1.75rem',
+                gap: '1.5rem',
                 boxSizing: 'border-box',
                 position: 'relative',
-                animation: 'scaleUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
+                animation: 'scaleUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                maxHeight: '90vh',
+                overflow: 'hidden'
             }}>
                 {/* Close Button */}
                 <button 
@@ -281,7 +341,8 @@ export default function WrapUpModal({ open, onClose, onSave, initialData, dateLa
                         cursor: 'pointer',
                         padding: '4px 8px',
                         borderRadius: '8px',
-                        transition: 'all 0.2s'
+                        transition: 'all 0.2s',
+                        zIndex: 10
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.color = 'white'}
                     onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255, 255, 255, 0.3)'}
@@ -291,213 +352,445 @@ export default function WrapUpModal({ open, onClose, onSave, initialData, dateLa
 
                 {/* Header */}
                 <div>
-                    <span style={{ fontSize: '0.65rem', fontWeight: 900, color: '#d4a017', letterSpacing: '0.2em' }}>END-OF-DAY WRAP-UP {dateLabel ? `• ${dateLabel}` : ''}</span>
-                    <h2 style={{ fontSize: '1.5rem', fontWeight: 850, color: 'white', margin: '6px 0 0 0', letterSpacing: '-0.02em' }}>How was today?</h2>
-                    <p style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.4)', margin: '4px 0 0 0' }}>Log your energy, tone, and a quick micro-journal entry.</p>
+                    <span style={{ fontSize: '0.65rem', fontWeight: 900, color: '#d4a017', letterSpacing: '0.2em' }}>DAILY WRAP-UP {dateLabel ? `• ${dateLabel}` : ''}</span>
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: 850, color: 'white', margin: '6px 0 0 0', letterSpacing: '-0.02em' }}>End-Of-Day Check-in</h2>
+                    <p style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.4)', margin: '4px 0 0 0' }}>Log your mood, sleep stats, and physical condition to close your cycle.</p>
                 </div>
 
-                {/* 2D Mood Grid */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-                    <div 
-                        ref={gridRef}
-                        onPointerDown={handlePointerDown}
-                        onPointerMove={handlePointerMove}
-                        onPointerUp={handlePointerUp}
-                        style={{
-                            width: '280px',
-                            height: '280px',
-                            background: '#040406',
-                            border: '1px solid rgba(255, 255, 255, 0.05)',
-                            borderRadius: '16px',
-                            position: 'relative',
-                            cursor: 'crosshair',
-                            touchAction: 'none',
-                            overflow: 'hidden'
-                        }}
-                    >
-                        {/* Grid Axes */}
-                        <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: '1px', background: 'rgba(255, 255, 255, 0.03)' }} />
-                        <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: '1px', background: 'rgba(255, 255, 255, 0.03)' }} />
+                {/* Scrollable Container */}
+                <div style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    gap: '2.5rem',
+                    overflowY: 'auto',
+                    flex: 1,
+                    paddingRight: '6px',
+                    boxSizing: 'border-box'
+                }} className="modal-scroll-container">
+                    
+                    {/* Left Column: Mood & Journal */}
+                    <div style={{ flex: 1.1, display: 'flex', flexDirection: 'column', gap: '1.5rem', minWidth: '280px' }}>
+                        {/* 2D Mood Grid */}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                            <div 
+                                ref={gridRef}
+                                onPointerDown={handlePointerDown}
+                                onPointerMove={handlePointerMove}
+                                onPointerUp={handlePointerUp}
+                                style={{
+                                    width: '280px',
+                                    height: '280px',
+                                    background: '#040406',
+                                    border: '1px solid rgba(255, 255, 255, 0.05)',
+                                    borderRadius: '16px',
+                                    position: 'relative',
+                                    cursor: 'crosshair',
+                                    touchAction: 'none',
+                                    overflow: 'hidden'
+                                }}
+                            >
+                                {/* Grid Axes */}
+                                <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: '1px', background: 'rgba(255, 255, 255, 0.03)' }} />
+                                <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: '1px', background: 'rgba(255, 255, 255, 0.03)' }} />
 
-                        {/* Quadrant Labels inside the grid */}
-                        <div style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '9px', fontWeight: 700, color: 'rgba(6, 182, 212, 0.25)', pointerEvents: 'none' }}>FLOW</div>
-                        <div style={{ position: 'absolute', top: '10px', left: '10px', fontSize: '9px', fontWeight: 700, color: 'rgba(249, 115, 22, 0.25)', pointerEvents: 'none' }}>ANXIOUS</div>
-                        <div style={{ position: 'absolute', bottom: '10px', right: '10px', fontSize: '9px', fontWeight: 700, color: 'rgba(59, 130, 246, 0.25)', pointerEvents: 'none' }}>CALM</div>
-                        <div style={{ position: 'absolute', bottom: '10px', left: '10px', fontSize: '9px', fontWeight: 700, color: 'rgba(156, 163, 175, 0.25)', pointerEvents: 'none' }}>DRAINED</div>
+                                {/* Quadrant Labels inside the grid */}
+                                <div style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '9px', fontWeight: 700, color: 'rgba(6, 182, 212, 0.25)', pointerEvents: 'none' }}>FLOW</div>
+                                <div style={{ position: 'absolute', top: '10px', left: '10px', fontSize: '9px', fontWeight: 700, color: 'rgba(249, 115, 22, 0.25)', pointerEvents: 'none' }}>ANXIOUS</div>
+                                <div style={{ position: 'absolute', bottom: '10px', right: '10px', fontSize: '9px', fontWeight: 700, color: 'rgba(59, 130, 246, 0.25)', pointerEvents: 'none' }}>CALM</div>
+                                <div style={{ position: 'absolute', bottom: '10px', left: '10px', fontSize: '9px', fontWeight: 700, color: 'rgba(156, 163, 175, 0.25)', pointerEvents: 'none' }}>DRAINED</div>
 
-                        {/* Liquid Mercury Dot */}
-                        <div 
-                            style={{
-                                position: 'absolute',
-                                width: '22px',
-                                height: '22px',
-                                borderRadius: '50%',
-                                pointerEvents: 'none',
-                                left: `calc(${(x + 1) * 50}% - 11px)`,
-                                top: `calc(${(1 - y) * 50}% - 11px)`,
-                                transition: isDragging ? 'none' : 'all 0.15s cubic-bezier(0.25, 1, 0.5, 1)',
-                                ...dotStyle
-                            }}
-                        />
-                    </div>
+                                {/* Liquid Mercury Dot */}
+                                <div 
+                                    style={{
+                                        position: 'absolute',
+                                        width: '22px',
+                                        height: '22px',
+                                        borderRadius: '50%',
+                                        pointerEvents: 'none',
+                                        left: `calc(${(x + 1) * 50}% - 11px)`,
+                                        top: `calc(${(1 - y) * 50}% - 11px)`,
+                                        transition: isDragging ? 'none' : 'all 0.15s cubic-bezier(0.25, 1, 0.5, 1)',
+                                        ...dotStyle
+                                    }}
+                                />
+                            </div>
 
-                    {/* Mood Label Display */}
-                    <div style={{
-                        width: '100%',
-                        padding: '10px 14px',
-                        background: 'rgba(255, 255, 255, 0.01)',
-                        border: '1px solid rgba(255, 255, 255, 0.03)',
-                        borderRadius: '12px',
-                        textAlign: 'center',
-                        boxSizing: 'border-box'
-                    }}>
-                        <span style={{
-                            fontSize: '0.85rem',
-                            fontWeight: 900,
-                            letterSpacing: '0.05em',
-                            color: 
-                                moodInfo.label === 'Flow / Inspired' ? '#06b6d4' :
-                                moodInfo.label === 'Anxious / Frustrated' ? '#f97316' :
-                                moodInfo.label === 'Calm / Clear-Headed' ? '#3b82f6' : '#9ca3af'
-                        }}>
-                            {moodInfo.label.toUpperCase()}
-                        </span>
-                        <div style={{ fontSize: '0.65rem', color: 'rgba(255, 255, 255, 0.35)', marginTop: '2px' }}>
-                            Tone: {x >= 0 ? '+' : ''}{x} | Energy: {y >= 0 ? '+' : ''}{y}
+                            {/* Mood Label Display */}
+                            <div style={{
+                                width: '100%',
+                                padding: '10px 14px',
+                                background: 'rgba(255, 255, 255, 0.01)',
+                                border: '1px solid rgba(255, 255, 255, 0.03)',
+                                borderRadius: '12px',
+                                textAlign: 'center',
+                                boxSizing: 'border-box'
+                            }}>
+                                <span style={{
+                                    fontSize: '0.85rem',
+                                    fontWeight: 900,
+                                    letterSpacing: '0.05em',
+                                    color: 
+                                        moodInfo.label === 'Flow / Inspired' ? '#06b6d4' :
+                                        moodInfo.label === 'Anxious / Frustrated' ? '#f97316' :
+                                        moodInfo.label === 'Calm / Clear-Headed' ? '#3b82f6' : '#9ca3af'
+                                }}>
+                                    {moodInfo.label.toUpperCase()}
+                                </span>
+                                <div style={{ fontSize: '0.65rem', color: 'rgba(255, 255, 255, 0.35)', marginTop: '2px' }}>
+                                    Tone: {x >= 0 ? '+' : ''}{x} | Energy: {y >= 0 ? '+' : ''}{y}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Journal & Tagging */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <label style={{ fontSize: '0.65rem', fontWeight: 900, color: 'rgba(255, 255, 255, 0.4)', letterSpacing: '0.1em' }}>MICRO-JOURNAL</label>
+                            <textarea 
+                                value={journalText}
+                                onChange={(e) => setJournalText(e.target.value)}
+                                placeholder="Write a quick reflection... (Use #hashtags to tag your day)"
+                                style={{
+                                    width: '100%',
+                                    height: '80px',
+                                    background: '#040406',
+                                    border: '1px solid rgba(255, 255, 255, 0.05)',
+                                    borderRadius: '12px',
+                                    color: 'rgba(255, 255, 255, 0.85)',
+                                    padding: '12px',
+                                    fontSize: '0.8rem',
+                                    fontFamily: 'inherit',
+                                    resize: 'none',
+                                    outline: 'none',
+                                    boxSizing: 'border-box'
+                                }}
+                            />
+
+                            {/* Tag Suggestions and Active Tags */}
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '4px', alignItems: 'center' }}>
+                                {suggestedTags.map(tag => {
+                                    const active = autoTags.includes(tag);
+                                    return (
+                                        <button
+                                            key={tag}
+                                            onClick={() => handleTagToggle(tag)}
+                                            className="customizable-tag"
+                                            style={{
+                                                padding: '4px 10px',
+                                                borderRadius: '100px',
+                                                fontSize: '0.65rem',
+                                                fontWeight: 800,
+                                                border: active ? '1px solid transparent' : '1px solid rgba(255, 255, 255, 0.06)',
+                                                background: active ? '#d4a01720' : 'transparent',
+                                                color: active ? '#d4a017' : 'rgba(255, 255, 255, 0.4)',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s',
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: '4px'
+                                            }}
+                                        >
+                                            <span>#{tag}</span>
+                                            <span 
+                                                onClick={(e) => handleRemoveSuggestedTag(e, tag)}
+                                                className="delete-tag-btn"
+                                                style={{
+                                                    opacity: 0.4,
+                                                    marginLeft: '2px',
+                                                    fontSize: '11px',
+                                                    fontWeight: 900,
+                                                    transition: 'opacity 0.2s'
+                                                }}
+                                                title="Remove from suggestions"
+                                            >
+                                                ×
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+
+                                {isAddingTag ? (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <input
+                                            type="text"
+                                            value={newTagInput}
+                                            onChange={(e) => setNewTagInput(e.target.value)}
+                                            placeholder="new tag..."
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') handleAddTag();
+                                                if (e.key === 'Escape') setIsAddingTag(false);
+                                            }}
+                                            autoFocus
+                                            style={{
+                                                background: '#040406',
+                                                border: '1px solid rgba(212, 160, 23, 0.3)',
+                                                borderRadius: '100px',
+                                                padding: '4px 10px',
+                                                fontSize: '0.65rem',
+                                                color: 'white',
+                                                outline: 'none',
+                                                width: '80px',
+                                                boxSizing: 'border-box'
+                                            }}
+                                        />
+                                        <button 
+                                            onClick={handleAddTag}
+                                            style={{ background: 'transparent', border: 'none', color: '#d4a017', fontSize: '0.85rem', cursor: 'pointer', padding: '2px' }}
+                                        >
+                                            ✓
+                                        </button>
+                                        <button 
+                                            onClick={() => setIsAddingTag(false)}
+                                            style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', cursor: 'pointer', padding: '2px' }}
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={() => setIsAddingTag(true)}
+                                        style={{
+                                            padding: '4px 10px',
+                                            borderRadius: '100px',
+                                            fontSize: '0.65rem',
+                                            fontWeight: 800,
+                                            border: '1px dashed rgba(255, 255, 255, 0.15)',
+                                            background: 'transparent',
+                                            color: 'rgba(255, 255, 255, 0.35)',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.borderColor = '#d4a017';
+                                            e.currentTarget.style.color = '#d4a017';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+                                            e.currentTarget.style.color = 'rgba(255, 255, 255, 0.35)';
+                                        }}
+                                    >
+                                        + ADD SUGGESTION
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Journal & Tagging */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <label style={{ fontSize: '0.65rem', fontWeight: 900, color: 'rgba(255, 255, 255, 0.4)', letterSpacing: '0.1em' }}>MICRO-JOURNAL</label>
-                    <textarea 
-                        value={journalText}
-                        onChange={(e) => setJournalText(e.target.value)}
-                        placeholder="Write a quick reflection... (Use #hashtags to tag your day)"
-                        style={{
-                            width: '100%',
-                            height: '75px',
-                            background: '#040406',
-                            border: '1px solid rgba(255, 255, 255, 0.05)',
-                            borderRadius: '12px',
-                            color: 'rgba(255, 255, 255, 0.85)',
-                            padding: '12px',
-                            fontSize: '0.8rem',
-                            fontFamily: 'inherit',
-                            resize: 'none',
-                            outline: 'none',
-                            boxSizing: 'border-box'
-                        }}
-                    />
+                    {/* Right Column: Sleep & Physical Health */}
+                    <div className="modal-col-right" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2rem', minWidth: '300px' }}>
+                        
+                        {/* SLEEP SECTION */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+                            <div style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '6px' }}>
+                                <span style={{ fontSize: '0.7rem', fontWeight: 900, color: '#06b6d4', letterSpacing: '0.2em' }}>SLEEP QUALITY</span>
+                            </div>
 
-                    {/* Tag Suggestions and Active Tags */}
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '4px', alignItems: 'center' }}>
-                        {suggestedTags.map(tag => {
-                            const active = autoTags.includes(tag);
-                            return (
-                                <button
-                                    key={tag}
-                                    onClick={() => handleTagToggle(tag)}
-                                    className="customizable-tag"
+                            {/* Hours Slider */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <label style={{ fontSize: '0.6rem', fontWeight: 900, color: 'rgba(255, 255, 255, 0.4)', letterSpacing: '0.08em' }}>DURATION</label>
+                                    <span style={{ fontSize: '0.95rem', fontWeight: 900, color: '#06b6d4' }}>{sleepHours} hrs</span>
+                                </div>
+                                <input 
+                                    type="range"
+                                    min="0"
+                                    max="24"
+                                    step="0.5"
+                                    value={sleepHours}
+                                    onChange={(e) => setSleepHours(parseFloat(e.target.value))}
                                     style={{
-                                        padding: '4px 10px',
-                                        borderRadius: '100px',
-                                        fontSize: '0.65rem',
-                                        fontWeight: 800,
-                                        border: active ? '1px solid transparent' : '1px solid rgba(255, 255, 255, 0.06)',
-                                        background: active ? '#d4a01720' : 'transparent',
-                                        color: active ? '#d4a017' : 'rgba(255, 255, 255, 0.4)',
+                                        width: '100%',
+                                        accentColor: '#06b6d4',
                                         cursor: 'pointer',
-                                        transition: 'all 0.2s',
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        gap: '4px'
+                                        background: 'rgba(255,255,255,0.05)',
+                                        height: '6px',
+                                        borderRadius: '3px'
                                     }}
-                                >
-                                    <span>#{tag}</span>
-                                    <span 
-                                        onClick={(e) => handleRemoveSuggestedTag(e, tag)}
-                                        className="delete-tag-btn"
-                                        style={{
-                                            opacity: 0.4,
-                                            marginLeft: '2px',
-                                            fontSize: '11px',
-                                            fontWeight: 900,
-                                            transition: 'opacity 0.2s'
-                                        }}
-                                        title="Remove from suggestions"
-                                    >
-                                        ×
-                                    </span>
-                                </button>
-                            );
-                        })}
+                                />
+                            </div>
 
-                        {/* Inline custom tag adder */}
-                        {isAddingTag ? (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <input
-                                    type="text"
-                                    value={newTagInput}
-                                    onChange={(e) => setNewTagInput(e.target.value)}
-                                    placeholder="new tag..."
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') handleAddTag();
-                                        if (e.key === 'Escape') setIsAddingTag(false);
-                                    }}
-                                    autoFocus
+                            {/* Stars Rating */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                    {[1, 2, 3, 4, 5].map(star => {
+                                        const active = sleepRating >= star;
+                                        return (
+                                            <button
+                                                key={star}
+                                                type="button"
+                                                onClick={() => setSleepRating(star)}
+                                                style={{
+                                                    background: 'none',
+                                                    border: 'none',
+                                                    cursor: 'pointer',
+                                                    fontSize: '1.6rem',
+                                                    color: active ? '#06b6d4' : 'rgba(255, 255, 255, 0.1)',
+                                                    textShadow: active ? '0 0 10px rgba(6, 182, 212, 0.4)' : 'none',
+                                                    transition: 'all 0.2s'
+                                                }}
+                                            >
+                                                ★
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#06b6d4', opacity: 0.8 }}>
+                                    {sleepRating === 1 ? 'Poor (Restless)' :
+                                     sleepRating === 2 ? 'Fair (Interrupted)' :
+                                     sleepRating === 3 ? 'Good (Average)' :
+                                     sleepRating === 4 ? 'Very Good (Refreshed)' : 'Excellent (Deep)'}
+                                </span>
+                            </div>
+
+                            {/* Sleep Notes */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <textarea 
+                                    value={sleepNotes}
+                                    onChange={(e) => setSleepNotes(e.target.value)}
+                                    placeholder="Sleep notes (dreams, disruptions...)"
                                     style={{
+                                        width: '100%',
+                                        height: '50px',
                                         background: '#040406',
-                                        border: '1px solid rgba(212, 160, 23, 0.3)',
-                                        borderRadius: '100px',
-                                        padding: '4px 10px',
-                                        fontSize: '0.65rem',
-                                        color: 'white',
+                                        border: '1px solid rgba(255, 255, 255, 0.05)',
+                                        borderRadius: '10px',
+                                        color: 'rgba(255, 255, 255, 0.8)',
+                                        padding: '8px 12px',
+                                        fontSize: '0.75rem',
+                                        fontFamily: 'inherit',
+                                        resize: 'none',
                                         outline: 'none',
-                                        width: '80px',
                                         boxSizing: 'border-box'
                                     }}
                                 />
-                                <button 
-                                    onClick={handleAddTag}
-                                    style={{ background: 'transparent', border: 'none', color: '#d4a017', fontSize: '0.85rem', cursor: 'pointer', padding: '2px' }}
-                                >
-                                    ✓
-                                </button>
-                                <button 
-                                    onClick={() => setIsAddingTag(false)}
-                                    style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', cursor: 'pointer', padding: '2px' }}
-                                >
-                                    ✕
-                                </button>
                             </div>
-                        ) : (
-                            <button
-                                onClick={() => setIsAddingTag(true)}
-                                style={{
-                                    padding: '4px 10px',
-                                    borderRadius: '100px',
-                                    fontSize: '0.65rem',
-                                    fontWeight: 800,
-                                    border: '1px dashed rgba(255, 255, 255, 0.15)',
-                                    background: 'transparent',
-                                    color: 'rgba(255, 255, 255, 0.35)',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s'
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.borderColor = '#d4a017';
-                                    e.currentTarget.style.color = '#d4a017';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
-                                    e.currentTarget.style.color = 'rgba(255, 255, 255, 0.35)';
-                                }}
-                            >
-                                + ADD SUGGESTION
-                            </button>
-                        )}
+                        </div>
+
+                        {/* PHYSICAL HEALTH SECTION */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+                            <div style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '6px' }}>
+                                <span style={{ fontSize: '0.7rem', fontWeight: 900, color: '#10b981', letterSpacing: '0.2em' }}>PHYSICAL HEALTH</span>
+                            </div>
+
+                            {/* Energy Indicators */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ fontSize: '0.6rem', fontWeight: 900, color: 'rgba(255, 255, 255, 0.4)', letterSpacing: '0.08em' }}>PHYSICAL ENERGY</label>
+                                <div style={{ display: 'flex', gap: '4px' }}>
+                                    {[1, 2, 3, 4, 5].map(level => {
+                                        const active = physicalEnergy === level;
+                                        const colors = ['#f87171', '#f59e0b', '#fbbf24', '#34d399', '#10b981'];
+                                        const levelColor = colors[level - 1];
+                                        return (
+                                            <button
+                                                key={level}
+                                                type="button"
+                                                onClick={() => setPhysicalEnergy(level)}
+                                                style={{
+                                                    flex: 1,
+                                                    padding: '6px 0',
+                                                    background: active ? `${levelColor}15` : 'rgba(255,255,255,0.02)',
+                                                    border: active ? `1px solid ${levelColor}` : '1px solid rgba(255,255,255,0.06)',
+                                                    borderRadius: '8px',
+                                                    color: active ? levelColor : 'rgba(255,255,255,0.3)',
+                                                    fontWeight: '800',
+                                                    fontSize: '0.6rem',
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.15s'
+                                                }}
+                                            >
+                                                {level === 1 ? '⚡' : level === 2 ? '⚡⚡' : level === 3 ? '⚡⚡⚡' : level === 4 ? '⚡⚡⚡⚡' : '⚡⚡⚡⚡⚡'}
+                                                <div style={{ fontSize: '0.45rem', opacity: 0.8, marginTop: '2px', textTransform: 'uppercase' }}>
+                                                    {level === 1 ? 'Low' : level === 5 ? 'Peak' : ''}
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Workout & Pain Row */}
+                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                                {/* Workout completion */}
+                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '130px' }}>
+                                    <label style={{ fontSize: '0.6rem', fontWeight: 900, color: 'rgba(255, 255, 255, 0.4)', letterSpacing: '0.08em' }}>WORKOUT</label>
+                                    <div style={{ display: 'flex', gap: '4px' }}>
+                                        {[true, false].map(val => {
+                                            const active = physicalWorkout === val;
+                                            return (
+                                                <button
+                                                    key={val ? 'yes' : 'no'}
+                                                    type="button"
+                                                    onClick={() => setPhysicalWorkout(val)}
+                                                    style={{
+                                                        flex: 1,
+                                                        padding: '8px',
+                                                        background: active ? (val ? '#10b98120' : '#f8717120') : 'transparent',
+                                                        border: active ? (val ? '1px solid #10b981' : '1px solid #f87171') : '1px solid rgba(255,255,255,0.08)',
+                                                        color: active ? (val ? '#10b981' : '#f87171') : 'rgba(255,255,255,0.4)',
+                                                        borderRadius: '8px',
+                                                        fontWeight: '800',
+                                                        fontSize: '0.65rem',
+                                                        cursor: 'pointer',
+                                                        transition: 'all 0.15s'
+                                                    }}
+                                                >
+                                                    {val ? 'YES' : 'NO'}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Pain rating */}
+                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '130px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <label style={{ fontSize: '0.6rem', fontWeight: 900, color: 'rgba(255, 255, 255, 0.4)', letterSpacing: '0.08em' }}>PAIN INDEX</label>
+                                        <span style={{ fontSize: '0.75rem', fontWeight: 900, color: physicalPain > 0 ? '#f87171' : '#10b981' }}>
+                                            {physicalPain === 0 ? 'None' : `${physicalPain}/5`}
+                                        </span>
+                                    </div>
+                                    <input 
+                                        type="range"
+                                        min="0"
+                                        max="5"
+                                        step="1"
+                                        value={physicalPain}
+                                        onChange={(e) => setPhysicalPain(parseInt(e.target.value))}
+                                        style={{
+                                            width: '100%',
+                                            accentColor: physicalPain > 0 ? '#f87171' : '#10b981',
+                                            cursor: 'pointer',
+                                            background: 'rgba(255,255,255,0.05)',
+                                            height: '6px',
+                                            borderRadius: '3px'
+                                        }}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Physical notes */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <textarea 
+                                    value={physicalNotes}
+                                    onChange={(e) => setPhysicalNotes(e.target.value)}
+                                    placeholder="Physical notes (symptoms, workout stats...)"
+                                    style={{
+                                        width: '100%',
+                                        height: '50px',
+                                        background: '#040406',
+                                        border: '1px solid rgba(255, 255, 255, 0.05)',
+                                        borderRadius: '10px',
+                                        color: 'rgba(255, 255, 255, 0.8)',
+                                        padding: '8px 12px',
+                                        fontSize: '0.75rem',
+                                        fontFamily: 'inherit',
+                                        resize: 'none',
+                                        outline: 'none',
+                                        boxSizing: 'border-box'
+                                    }}
+                                />
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 
@@ -515,7 +808,8 @@ export default function WrapUpModal({ open, onClose, onSave, initialData, dateLa
                         letterSpacing: '0.05em',
                         cursor: 'pointer',
                         boxShadow: '0 8px 20px rgba(212, 160, 23, 0.15)',
-                        transition: 'all 0.3s'
+                        transition: 'all 0.3s',
+                        marginTop: '0.5rem'
                     }}
                     onMouseEnter={(e) => {
                         e.currentTarget.style.transform = 'translateY(-1px)';
@@ -530,7 +824,7 @@ export default function WrapUpModal({ open, onClose, onSave, initialData, dateLa
                 </button>
             </div>
 
-            {/* Custom Animations in CSS */}
+            {/* Custom Animations & Split Style in CSS */}
             <style jsx global>{`
                 @keyframes pulse-teal {
                     0% { transform: scale(1); opacity: 0.95; }
@@ -566,6 +860,36 @@ export default function WrapUpModal({ open, onClose, onSave, initialData, dateLa
                 .delete-tag-btn:hover {
                     color: #ef4444;
                     opacity: 1 !important;
+                }
+                .modal-scroll-container {
+                    scrollbar-width: thin;
+                    scrollbar-color: rgba(255,255,255,0.1) transparent;
+                }
+                .modal-scroll-container::-webkit-scrollbar {
+                    width: 6px;
+                }
+                .modal-scroll-container::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .modal-scroll-container::-webkit-scrollbar-thumb {
+                    background-color: rgba(255,255,255,0.1);
+                    border-radius: 3px;
+                }
+                .modal-col-right {
+                    border-left: 1px solid rgba(255, 255, 255, 0.05);
+                    padding-left: 2.5rem;
+                }
+                @media (max-width: 768px) {
+                    .modal-scroll-container {
+                        flex-direction: column !important;
+                        gap: 1.5rem !important;
+                    }
+                    .modal-col-right {
+                        border-left: none !important;
+                        padding-left: 0 !important;
+                        border-top: 1px solid rgba(255, 255, 255, 0.05);
+                        padding-top: 1.5rem !important;
+                    }
                 }
             `}</style>
         </div>

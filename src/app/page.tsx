@@ -20,8 +20,6 @@ import GroupChat from '@/components/GroupChat';
 import SettingsSidebar from '@/components/SettingsSidebar';
 import PresetTaskSelector from '@/components/PresetTaskSelector';
 import WrapUpModal from '@/components/WrapUpModal';
-import SleepModal from '@/components/SleepModal';
-import PhysicalHealthModal from '@/components/PhysicalHealthModal';
 import { filterTasksForToday, getNextSeasonalDate } from '@/utils/taskVisibility';
 import { format } from 'date-fns';
 
@@ -399,14 +397,8 @@ export default function ChatPage() {
 
   const startTrackingFlow = (date: string) => {
     setTrackingDate(date);
-    const chat = allChats[date];
-    if (!chat?.sleep) {
-      setTrackingStep('sleep');
-    } else if (!chat?.physical) {
-      setTrackingStep('physical');
-    } else {
-      setTrackingStep('mental');
-    }
+    // Open the unified wrap-up modal directly (contains sleep + physical + mental sections)
+    setTrackingStep('mental');
   };
 
   const persistChatSnapshotForDate = (date: string, overrides: Partial<DailyChat>) => {
@@ -415,50 +407,23 @@ export default function ChatPage() {
     setLocalChat(date, updatePayload);
   };
 
-  const handleSaveSleep = (sleepData: SleepData) => {
+  const handleSaveMental = (wrapUpData: WrapUpData, sleepData?: SleepData, physicalData?: PhysicalData) => {
     if (!trackingDate) return;
+
     if (trackingDate === activeDay) {
-      setSleep(sleepData);
-    }
-    persistChatSnapshotForDate(trackingDate, { sleep: sleepData });
-
-    const chat = allChats[trackingDate];
-    if (!chat?.physical) {
-      setTrackingStep('physical');
-    } else if (!chat?.wrapUp) {
-      setTrackingStep('mental');
-    } else {
-      setTrackingStep(null);
-      setTrackingDate(null);
-    }
-  };
-
-  const handleSavePhysical = (physicalData: PhysicalData) => {
-    if (!trackingDate) return;
-    if (trackingDate === activeDay) {
-      setPhysical(physicalData);
-    }
-    persistChatSnapshotForDate(trackingDate, { physical: physicalData });
-
-    const chat = allChats[trackingDate];
-    if (!chat?.wrapUp) {
-      setTrackingStep('mental');
-    } else {
-      setTrackingStep(null);
-      setTrackingDate(null);
-    }
-  };
-
-  const handleSaveMental = (wrapUpData: WrapUpData) => {
-    if (!trackingDate) return;
-    if (trackingDate === activeDay) {
+      // Update live-session state slices
+      if (sleepData) setSleep(sleepData);
+      if (physicalData) setPhysical(physicalData);
       saveWrapUp(wrapUpData);
     } else {
+      // Backfill a past day with all three pieces of data
       const currentChat = allChats[trackingDate] || { date: trackingDate };
       const updatedChat: DailyChat = {
         ...currentChat,
         status: 'CLOSED',
-        wrapUp: wrapUpData
+        wrapUp: wrapUpData,
+        ...(sleepData ? { sleep: sleepData } : {}),
+        ...(physicalData ? { physical: physicalData } : {})
       };
       persistChatSnapshotForDate(trackingDate, updatedChat);
     }
@@ -2384,26 +2349,6 @@ OPERATIONAL TAGS:
           onClose={() => setShowPresetTasks(false)}
         />
       )}
-      <SleepModal
-        open={trackingStep === 'sleep'}
-        onClose={() => {
-          setTrackingStep(null);
-          setTrackingDate(null);
-        }}
-        onSave={handleSaveSleep}
-        initialData={trackingDate ? allChats[trackingDate]?.sleep : undefined}
-        dateLabel={trackingDate || undefined}
-      />
-      <PhysicalHealthModal
-        open={trackingStep === 'physical'}
-        onClose={() => {
-          setTrackingStep(null);
-          setTrackingDate(null);
-        }}
-        onSave={handleSavePhysical}
-        initialData={trackingDate ? allChats[trackingDate]?.physical : undefined}
-        dateLabel={trackingDate || undefined}
-      />
       <WrapUpModal
         open={trackingStep === 'mental'}
         onClose={() => {
@@ -2415,6 +2360,8 @@ OPERATIONAL TAGS:
         }}
         onSave={handleSaveMental}
         initialData={trackingDate ? allChats[trackingDate]?.wrapUp : undefined}
+        initialSleep={trackingDate ? allChats[trackingDate]?.sleep : undefined}
+        initialPhysical={trackingDate ? allChats[trackingDate]?.physical : undefined}
         dateLabel={trackingDate || undefined}
       />
     </div>
