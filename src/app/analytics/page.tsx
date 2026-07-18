@@ -776,41 +776,7 @@ export default function AnalyticsPage() {
 
                             {/* CONTROLS */}
                             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                                {/* Date Backfill Button */}
-                                <button
-                                    onClick={() => {
-                                        const dateInput = document.createElement('input');
-                                        dateInput.type = 'date';
-                                        dateInput.max = new Date().toISOString().split('T')[0];
-                                        dateInput.onchange = () => {
-                                            if (dateInput.value) {
-                                                handleEditWrapUpClick(dateInput.value);
-                                            }
-                                        };
-                                        dateInput.style.position = 'fixed';
-                                        dateInput.style.opacity = '0';
-                                        document.body.appendChild(dateInput);
-                                        if (dateInput.showPicker) {
-                                            dateInput.showPicker();
-                                        } else {
-                                            dateInput.click();
-                                        }
-                                        dateInput.onblur = () => setTimeout(() => dateInput.remove(), 100);
-                                    }}
-                                    style={{
-                                        background: 'rgba(255, 255, 255, 0.03)',
-                                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                                        color: 'rgba(255, 255, 255, 0.6)',
-                                        padding: '8px 16px',
-                                        borderRadius: '10px',
-                                        cursor: 'pointer',
-                                        fontSize: '0.65rem',
-                                        fontWeight: '900',
-                                        letterSpacing: '0.05em'
-                                    }}
-                                >
-                                    📅 BACKFILL DAY
-                                </button>
+
 
                                 {/* DATE RANGE SEGMENT CONTROL */}
                                 <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', padding: '4px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>

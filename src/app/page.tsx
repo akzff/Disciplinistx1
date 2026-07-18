@@ -1225,38 +1225,7 @@ OPERATIONAL TAGS:
                   </span>
                 </button>
               )}
-              <button
-                onClick={() => {
-                  const dateInput = document.createElement('input');
-                  dateInput.type = 'date';
-                  dateInput.max = new Date().toISOString().split('T')[0];
-                  dateInput.onchange = () => {
-                    if (dateInput.value) {
-                      startTrackingFlow(dateInput.value);
-                    }
-                  };
-                  dateInput.style.position = 'fixed';
-                  dateInput.style.opacity = '0';
-                  document.body.appendChild(dateInput);
-                  if (dateInput.showPicker) {
-                    dateInput.showPicker();
-                  } else {
-                    dateInput.click();
-                  }
-                  dateInput.onblur = () => setTimeout(() => dateInput.remove(), 100);
-                }}
-                className="lux-start-btn"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.03)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  color: 'rgba(255, 255, 255, 0.6)'
-                }}
-              >
-                <span className="lux-start-icon" aria-hidden="true" style={{ fontSize: '10px' }}>
-                  📅
-                </span>
-                <span className="lux-start-label">BACKFILL DAY</span>
-              </button>
+
               <div className="lux-start-wrap" ref={liveMissionAnchorRef}>
                 <button
                   onClick={triggerStartMission}
