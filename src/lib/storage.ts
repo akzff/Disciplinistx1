@@ -90,6 +90,19 @@ export interface WrapUpData {
     completedAt: number;
 }
 
+export interface SleepData {
+    hours: number;
+    rating: number; // 1-5
+    notes?: string;
+}
+
+export interface PhysicalData {
+    energy: number; // 1-5
+    workout: boolean;
+    pain: number; // 0-5
+    notes?: string;
+}
+
 export interface DailyChat {
     date: string; // YYYY-MM-DD
     messages: Message[];
@@ -99,6 +112,8 @@ export interface DailyChat {
     botMood?: 'NEUTRAL' | 'DISAPPOINTED' | 'HOPEFUL' | 'DOMINATOR';
     clientId?: string;
     wrapUp?: WrapUpData;
+    sleep?: SleepData;
+    physical?: PhysicalData;
     todos: {
         id: string;
         text: string;

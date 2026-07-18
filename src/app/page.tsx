@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, type CSSProperties } from 'react';
-import { storage, Message, DailyChat, ActiveTask, formatTime, TaskNote, PersonaId, TodoHistoryEntry } from '@/lib/storage';
+import { storage, Message, DailyChat, ActiveTask, formatTime, TaskNote, PersonaId, TodoHistoryEntry, SleepData, PhysicalData } from '@/lib/storage';
 import Image from 'next/image';
 import MissionsBoard from '@/components/MissionsBoard';
 import MissionChecklist from '@/components/MissionChecklist';
@@ -20,6 +20,8 @@ import GroupChat from '@/components/GroupChat';
 import SettingsSidebar from '@/components/SettingsSidebar';
 import PresetTaskSelector from '@/components/PresetTaskSelector';
 import WrapUpModal from '@/components/WrapUpModal';
+import SleepModal from '@/components/SleepModal';
+import PhysicalHealthModal from '@/components/PhysicalHealthModal';
 import { filterTasksForToday, getNextSeasonalDate } from '@/utils/taskVisibility';
 import { format } from 'date-fns';
 
@@ -41,6 +43,8 @@ function useRealtimeSync(
     setCompletedTasks: React.Dispatch<React.SetStateAction<DailyChat['completedTasks']>>;
     setTodoHistory: React.Dispatch<React.SetStateAction<DailyChat['todoHistory']>>;
     setExpenses: React.Dispatch<React.SetStateAction<DailyChat['expenses']>>;
+    setSleep: React.Dispatch<React.SetStateAction<SleepData | undefined>>;
+    setPhysical: React.Dispatch<React.SetStateAction<PhysicalData | undefined>>;
     setLocalChat: (date: string, chatData: Partial<DailyChat>) => void;
   },
   myClientId: string
@@ -92,6 +96,8 @@ function useRealtimeSync(
           if (incomingData.completedTasks) s.setCompletedTasks(incomingData.completedTasks);
           if (incomingData.todoHistory) s.setTodoHistory(incomingData.todoHistory);
           if (incomingData.expenses) s.setExpenses(incomingData.expenses);
+          s.setSleep(incomingData.sleep);
+          s.setPhysical(incomingData.physical);
 
           // Update local cache
           s.setLocalChat(currentDate, incomingData);
@@ -195,7 +201,10 @@ export default function ChatPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [liveMissionOpen, setLiveMissionOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [wrapUpOpen, setWrapUpOpen] = useState(false);
+  const [sleep, setSleep] = useState<SleepData | undefined>(undefined);
+  const [physical, setPhysical] = useState<PhysicalData | undefined>(undefined);
+  const [trackingDate, setTrackingDate] = useState<string | null>(null);
+  const [trackingStep, setTrackingStep] = useState<'sleep' | 'physical' | 'mental' | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [showPresetTasks, setShowPresetTasks] = useState(false);
   const [autoGenerating, setAutoGenerating] = useState(false);
@@ -254,6 +263,8 @@ export default function ChatPage() {
     setCompletedTasks,
     setTodoHistory,
     setExpenses,
+    setSleep,
+    setPhysical,
     setLocalChat
   }, myClientId);
 
@@ -296,6 +307,8 @@ export default function ChatPage() {
         setCompletedTasks(prevChat.completedTasks || []);
         setTodoHistory(prevChat.todoHistory || []);
         setExpenses(prevChat.expenses || []);
+        setSleep(prevChat.sleep);
+        setPhysical(prevChat.physical);
       } else {
         setActiveDay(today);
         const defaults = {
@@ -328,6 +341,8 @@ export default function ChatPage() {
         setCompletedTasks((base as typeof todayChat)?.completedTasks || []);
         setTodoHistory((base as typeof todayChat)?.todoHistory || []);
         setExpenses(base.expenses || []);
+        setSleep((base as typeof todayChat)?.sleep);
+        setPhysical((base as typeof todayChat)?.physical);
         if (!todayChat || usedCarryTodos || usedCarryDailies) {
           // Save the carried-over data to cloud immediately so it is not lost on next load
           cloudStorage.saveChat(today, base, user?.id || undefined, true);
@@ -340,7 +355,7 @@ export default function ChatPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [globalPrefs, isCloudSynced, isInitialized]);
 
-  // Exit-Intent wrap-up modal trigger
+  // Exit-Intent check-in flow trigger
   useEffect(() => {
     if (!isInitialized || !activeDay) return;
     const todayChat = allChats[activeDay];
@@ -351,13 +366,105 @@ export default function ChatPage() {
         const hasWrappedUp = todayChat?.wrapUp || false;
         const dismissed = sessionStorage.getItem(`wrapUpDismissed_${activeDay}`);
         if (!hasWrappedUp && !dismissed && chatStatus === 'OPEN') {
-          setWrapUpOpen(true);
+          startTrackingFlow(activeDay);
         }
       }
     };
     document.addEventListener('mouseleave', handleMouseLeave);
     return () => document.removeEventListener('mouseleave', handleMouseLeave);
   }, [isInitialized, allChats, activeDay, chatStatus]);
+
+  // Automatic catch-up trigger for yesterday's missed entry
+  useEffect(() => {
+    if (!isInitialized) return;
+    const today = storage.getCurrentDate();
+    const yesterday = storage.getPreviousDay(today);
+    const yesterdayChat = allChats[yesterday];
+    
+    const hasHistory = Object.keys(allChats).filter(d => d < today).length > 0;
+    if (hasHistory) {
+      const isYesterdayIncomplete = !yesterdayChat || !yesterdayChat.sleep || !yesterdayChat.physical || !yesterdayChat.wrapUp;
+      const promptedKey = `yesterday_catchup_prompted_${yesterday}`;
+      const alreadyPrompted = sessionStorage.getItem(promptedKey);
+
+      if (isYesterdayIncomplete && !alreadyPrompted) {
+        sessionStorage.setItem(promptedKey, 'true');
+        // Delay slightly to prevent initial load visual clutter
+        setTimeout(() => {
+          startTrackingFlow(yesterday);
+        }, 1000);
+      }
+    }
+  }, [isInitialized, allChats]);
+
+  const startTrackingFlow = (date: string) => {
+    setTrackingDate(date);
+    const chat = allChats[date];
+    if (!chat?.sleep) {
+      setTrackingStep('sleep');
+    } else if (!chat?.physical) {
+      setTrackingStep('physical');
+    } else {
+      setTrackingStep('mental');
+    }
+  };
+
+  const persistChatSnapshotForDate = (date: string, overrides: Partial<DailyChat>) => {
+    if (!date || !isInitialized) return;
+    const updatePayload = { clientId: myClientId, ...overrides };
+    setLocalChat(date, updatePayload);
+  };
+
+  const handleSaveSleep = (sleepData: SleepData) => {
+    if (!trackingDate) return;
+    if (trackingDate === activeDay) {
+      setSleep(sleepData);
+    }
+    persistChatSnapshotForDate(trackingDate, { sleep: sleepData });
+
+    const chat = allChats[trackingDate];
+    if (!chat?.physical) {
+      setTrackingStep('physical');
+    } else if (!chat?.wrapUp) {
+      setTrackingStep('mental');
+    } else {
+      setTrackingStep(null);
+      setTrackingDate(null);
+    }
+  };
+
+  const handleSavePhysical = (physicalData: PhysicalData) => {
+    if (!trackingDate) return;
+    if (trackingDate === activeDay) {
+      setPhysical(physicalData);
+    }
+    persistChatSnapshotForDate(trackingDate, { physical: physicalData });
+
+    const chat = allChats[trackingDate];
+    if (!chat?.wrapUp) {
+      setTrackingStep('mental');
+    } else {
+      setTrackingStep(null);
+      setTrackingDate(null);
+    }
+  };
+
+  const handleSaveMental = (wrapUpData: WrapUpData) => {
+    if (!trackingDate) return;
+    if (trackingDate === activeDay) {
+      saveWrapUp(wrapUpData);
+    } else {
+      const currentChat = allChats[trackingDate] || { date: trackingDate };
+      const updatedChat: DailyChat = {
+        ...currentChat,
+        status: 'CLOSED',
+        wrapUp: wrapUpData
+      };
+      persistChatSnapshotForDate(trackingDate, updatedChat);
+    }
+    setTrackingStep(null);
+    setTrackingDate(null);
+  };
 
   const saveWrapUp = (wrapUpData: DailyChat['wrapUp']) => {
     if (!activeDay) return;
@@ -375,10 +482,11 @@ export default function ChatPage() {
       completedTasks, 
       todoHistory, 
       expenses, 
+      sleep,
+      physical,
       wrapUp: wrapUpData,
       clientId: myClientId 
     };
-    cloudStorage.saveChat(activeDay, chatD, user?.id || undefined, true);
     setLocalChat(activeDay, chatD as DailyChat);
     
     // Trigger notification to bot context
@@ -396,13 +504,12 @@ export default function ChatPage() {
     if (!activeDay || !isInitialized) return;
     if (saveDebounce.current) clearTimeout(saveDebounce.current);
     saveDebounce.current = setTimeout(() => {
-      const chatD = { messages, status: chatStatus, activeTasks, distractions, botMood, todos, dailies, completedTasks, todoHistory, expenses, clientId: myClientId };
-      cloudStorage.saveChat(activeDay, chatD, user?.id || undefined, true);
+      const chatD = { messages, status: chatStatus, activeTasks, distractions, botMood, todos, dailies, completedTasks, todoHistory, expenses, sleep, physical, clientId: myClientId };
       setLocalChat(activeDay, chatD as DailyChat);
     }, 2000);
     return () => { if (saveDebounce.current) clearTimeout(saveDebounce.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages, chatStatus, activeDay, activeTasks, distractions, botMood, todos, dailies, completedTasks, todoHistory, expenses, isInitialized]);
+  }, [messages, chatStatus, activeDay, activeTasks, distractions, botMood, todos, dailies, completedTasks, todoHistory, expenses, sleep, physical, isInitialized]);
 
   // Auto-generate yesterday's record when a new day starts (silent background job)
   useEffect(() => {
@@ -536,23 +643,8 @@ export default function ChatPage() {
 
   const persistChatSnapshot = (overrides: Partial<DailyChat>) => {
     if (!activeDay || !isInitialized) return;
-    const chatD: DailyChat = {
-      date: activeDay,
-      messages,
-      status: chatStatus,
-      activeTasks,
-      distractions,
-      botMood,
-      todos,
-      dailies,
-      completedTasks,
-      todoHistory,
-      expenses,
-      clientId: myClientId,
-      ...overrides,
-    };
-    cloudStorage.saveChat(activeDay, chatD, user?.id || undefined, true);
-    setLocalChat(activeDay, chatD as DailyChat);
+    const updatePayload = { clientId: myClientId, ...overrides };
+    setLocalChat(activeDay, updatePayload);
   };
 
   const updateNoteDraft = (taskId: string, value: string) => {
@@ -962,7 +1054,7 @@ OPERATIONAL TAGS:
         }
       }
 
-      return prev.map(t => {
+      const updated = prev.map(t => {
         if (t.id !== id) return t;
         const recType = t.recurrence?.type;
         if (recType && recType !== 'once') {
@@ -982,6 +1074,8 @@ OPERATIONAL TAGS:
         }
         return { ...t, completed: !t.completed };
       });
+      persistChatSnapshot({ todos: updated });
+      return updated;
     });
   };
 
@@ -1003,10 +1097,12 @@ OPERATIONAL TAGS:
         setTodoHistory(prevH => [...(prevH || []), historyEntry]);
       }
 
-      return prev.map(d => {
+      const updated = prev.map(d => {
         if (d.id !== id) return d;
         return { ...d, completed: !d.completed };
       });
+      persistChatSnapshot({ dailies: updated });
+      return updated;
     });
   };
 
@@ -1113,7 +1209,7 @@ OPERATIONAL TAGS:
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               {(chatStatus === 'OPEN' || (activeDay && allChats[activeDay]?.wrapUp)) && (
                 <button
-                  onClick={() => setWrapUpOpen(true)}
+                  onClick={() => activeDay && startTrackingFlow(activeDay)}
                   className="lux-start-btn"
                   style={{
                     background: 'linear-gradient(135deg, rgba(212, 160, 23, 0.1), rgba(168, 85, 247, 0.05))',
@@ -1129,6 +1225,38 @@ OPERATIONAL TAGS:
                   </span>
                 </button>
               )}
+              <button
+                onClick={() => {
+                  const dateInput = document.createElement('input');
+                  dateInput.type = 'date';
+                  dateInput.max = new Date().toISOString().split('T')[0];
+                  dateInput.onchange = () => {
+                    if (dateInput.value) {
+                      startTrackingFlow(dateInput.value);
+                    }
+                  };
+                  dateInput.style.position = 'fixed';
+                  dateInput.style.opacity = '0';
+                  document.body.appendChild(dateInput);
+                  if (dateInput.showPicker) {
+                    dateInput.showPicker();
+                  } else {
+                    dateInput.click();
+                  }
+                  dateInput.onblur = () => setTimeout(() => dateInput.remove(), 100);
+                }}
+                className="lux-start-btn"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  color: 'rgba(255, 255, 255, 0.6)'
+                }}
+              >
+                <span className="lux-start-icon" aria-hidden="true" style={{ fontSize: '10px' }}>
+                  📅
+                </span>
+                <span className="lux-start-label">BACKFILL DAY</span>
+              </button>
               <div className="lux-start-wrap" ref={liveMissionAnchorRef}>
                 <button
                   onClick={triggerStartMission}
@@ -1229,39 +1357,69 @@ OPERATIONAL TAGS:
               onClose={() => setSidebarOpen(false)}
               onToggleTodo={(id: string) => toggleTodoWithRecurrence(id)}
               onToggleDaily={(id: string) => toggleDaily(id)}
-              onReorderTodo={(newTodos: DailyChat['todos']) => setTodos(newTodos)}
-              onReorderDaily={(newDailies: DailyChat['dailies']) => setDailies(newDailies)}
-              onAddDaily={(text) => setDailies(prev => [...prev, {
-                id: Date.now().toString(),
-                text,
-                completed: false,
-                created_at: Date.now(),
-                importance: 0,
-                time_slot: 'anytime',
-                time_slot_time: '',
-                notes: '',
-                tags: []
-              }])}
-              onEditDaily={(id, text) => setDailies(prev => prev.map(d => d.id === id ? { ...d, text } : d))}
-              onDeleteDaily={(id) => setDailies(prev => prev.filter(d => d.id !== id))}
-              onAddTodo={(text) => setTodos(prev => [{
-                id: Date.now().toString(),
-                text,
-                completed: false,
-                created_at: Date.now(),
-                importance: 0,
-                due_date: '',
-                emergency_date: '',
-                due_time: '',
-                recurrence: { type: 'once' },
-                visibility: { type: 'always' },
-                tags: [],
-                notes: '',
-                snoozed_until: '',
-                last_completed: ''
-              }, ...prev])}
-              onEditTodo={(id, text) => setTodos(prev => prev.map(t => t.id === id ? { ...t, text } : t))}
-              onDeleteTodo={(id) => setTodos(prev => prev.filter(t => t.id !== id))}
+              onReorderTodo={(newTodos: DailyChat['todos']) => { setTodos(newTodos); persistChatSnapshot({ todos: newTodos }); }}
+              onReorderDaily={(newDailies: DailyChat['dailies']) => { setDailies(newDailies); persistChatSnapshot({ dailies: newDailies }); }}
+              onAddDaily={(text) => {
+                const newDaily = {
+                  id: Date.now().toString(),
+                  text,
+                  completed: false,
+                  created_at: Date.now(),
+                  importance: 0,
+                  time_slot: 'anytime',
+                  time_slot_time: '',
+                  notes: '',
+                  tags: []
+                } as any;
+                setDailies(prev => {
+                  const updated = [...prev, newDaily];
+                  persistChatSnapshot({ dailies: updated });
+                  return updated;
+                });
+              }}
+              onEditDaily={(id, text) => setDailies(prev => {
+                const updated = prev.map(d => d.id === id ? { ...d, text } : d);
+                persistChatSnapshot({ dailies: updated });
+                return updated;
+              })}
+              onDeleteDaily={(id) => setDailies(prev => {
+                const updated = prev.filter(d => d.id !== id);
+                persistChatSnapshot({ dailies: updated });
+                return updated;
+              })}
+              onAddTodo={(text) => {
+                const newTodo = {
+                  id: Date.now().toString(),
+                  text,
+                  completed: false,
+                  created_at: Date.now(),
+                  importance: 0,
+                  due_date: '',
+                  emergency_date: '',
+                  due_time: '',
+                  recurrence: { type: 'once' },
+                  visibility: { type: 'always' },
+                  tags: [],
+                  notes: '',
+                  snoozed_until: '',
+                  last_completed: ''
+                } as any;
+                setTodos(prev => {
+                  const updated = [newTodo, ...prev];
+                  persistChatSnapshot({ todos: updated });
+                  return updated;
+                });
+              }}
+              onEditTodo={(id, text) => setTodos(prev => {
+                const updated = prev.map(t => t.id === id ? { ...t, text } : t);
+                persistChatSnapshot({ todos: updated });
+                return updated;
+              })}
+              onDeleteTodo={(id) => setTodos(prev => {
+                const updated = prev.filter(t => t.id !== id);
+                persistChatSnapshot({ todos: updated });
+                return updated;
+              })}
             />
 
             <div style={{
@@ -2255,16 +2413,38 @@ OPERATIONAL TAGS:
           onClose={() => setShowPresetTasks(false)}
         />
       )}
-      <WrapUpModal
-        open={wrapUpOpen}
+      <SleepModal
+        open={trackingStep === 'sleep'}
         onClose={() => {
-          setWrapUpOpen(false);
-          if (activeDay) {
-            sessionStorage.setItem(`wrapUpDismissed_${activeDay}`, 'true');
+          setTrackingStep(null);
+          setTrackingDate(null);
+        }}
+        onSave={handleSaveSleep}
+        initialData={trackingDate ? allChats[trackingDate]?.sleep : undefined}
+        dateLabel={trackingDate || undefined}
+      />
+      <PhysicalHealthModal
+        open={trackingStep === 'physical'}
+        onClose={() => {
+          setTrackingStep(null);
+          setTrackingDate(null);
+        }}
+        onSave={handleSavePhysical}
+        initialData={trackingDate ? allChats[trackingDate]?.physical : undefined}
+        dateLabel={trackingDate || undefined}
+      />
+      <WrapUpModal
+        open={trackingStep === 'mental'}
+        onClose={() => {
+          setTrackingStep(null);
+          setTrackingDate(null);
+          if (trackingDate) {
+            sessionStorage.setItem(`wrapUpDismissed_${trackingDate}`, 'true');
           }
         }}
-        onSave={saveWrapUp}
-        initialData={activeDay ? allChats[activeDay]?.wrapUp : undefined}
+        onSave={handleSaveMental}
+        initialData={trackingDate ? allChats[trackingDate]?.wrapUp : undefined}
+        dateLabel={trackingDate || undefined}
       />
     </div>
   );

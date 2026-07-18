@@ -8,11 +8,12 @@ interface WrapUpModalProps {
     onClose: () => void;
     onSave: (data: WrapUpData) => void;
     initialData?: WrapUpData;
+    dateLabel?: string;
 }
 
 const DEFAULT_SUGGESTED_TAGS = ['focus', 'productivity', 'burnout', 'debug', 'database', 'flow', 'anxious', 'calm', 'distracted'];
 
-export default function WrapUpModal({ open, onClose, onSave, initialData }: WrapUpModalProps) {
+export default function WrapUpModal({ open, onClose, onSave, initialData, dateLabel }: WrapUpModalProps) {
     // Custom Suggested Tags state
     const [suggestedTags, setSuggestedTags] = useState<string[]>(() => {
         if (typeof window !== 'undefined') {
@@ -290,7 +291,7 @@ export default function WrapUpModal({ open, onClose, onSave, initialData }: Wrap
 
                 {/* Header */}
                 <div>
-                    <span style={{ fontSize: '0.65rem', fontWeight: 900, color: '#d4a017', letterSpacing: '0.2em' }}>END-OF-DAY WRAP-UP</span>
+                    <span style={{ fontSize: '0.65rem', fontWeight: 900, color: '#d4a017', letterSpacing: '0.2em' }}>END-OF-DAY WRAP-UP {dateLabel ? `• ${dateLabel}` : ''}</span>
                     <h2 style={{ fontSize: '1.5rem', fontWeight: 850, color: 'white', margin: '6px 0 0 0', letterSpacing: '-0.02em' }}>How was today?</h2>
                     <p style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.4)', margin: '4px 0 0 0' }}>Log your energy, tone, and a quick micro-journal entry.</p>
                 </div>

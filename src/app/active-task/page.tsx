@@ -413,7 +413,7 @@ export default function ActiveTaskPage() {
     // Layout and navigation states
     const [expandGoals, setExpandGoals] = useState(false);
     const [expandTasks, setExpandTasks] = useState(false);
-    const [liveAnalysisExpanded, setLiveAnalysisExpanded] = useState(false);
+
     
     // Break timer states
     const [breakActive, setBreakActive] = useState(false);
@@ -2684,87 +2684,7 @@ export default function ActiveTaskPage() {
                                         </button>
                                      </div>
 
-                                     {/* Collapsible Live Focus Accordion */}
-                                     <div className="live-analysis-accordion">
-                                         <button 
-                                             type="button" 
-                                             className="live-analysis-accordion__trigger"
-                                             onClick={() => setLiveAnalysisExpanded(!liveAnalysisExpanded)}
-                                         >
-                                             <span>Live Focus Insights & Alignment</span>
-                                             <span style={{ transition: 'transform 0.2s', transform: liveAnalysisExpanded ? 'rotate(90deg)' : 'none' }}>▶</span>
-                                         </button>
-                                         {liveAnalysisExpanded && (
-                                             <div className="live-analysis-accordion__content">
-                                                 {/* Alignment & Intensity row */}
-                                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1.25rem', width: '100%' }}>
-                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '14px' }}>
-                                                         <div style={{ width: '40px', height: '40px', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                                             <svg width="100%" height="100%" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
-                                                                 <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="8" />
-                                                                 <circle 
-                                                                     cx="50" 
-                                                                     cy="50" 
-                                                                     r="42" 
-                                                                     fill="none" 
-                                                                     stroke="url(#accordionGoldGradient)" 
-                                                                     strokeWidth="8" 
-                                                                     strokeDasharray="264"
-                                                                     strokeDashoffset={264 - (264 * todayStats.alignmentIndex) / 100}
-                                                                     strokeLinecap="round"
-                                                                 />
-                                                                 <defs>
-                                                                     <linearGradient id="accordionGoldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                                                         <stop offset="0%" stopColor="#d4a017" />
-                                                                         <stop offset="100%" stopColor="#10b981" />
-                                                                     </linearGradient>
-                                                                 </defs>
-                                                             </svg>
-                                                             <span style={{ position: 'absolute', fontSize: '0.65rem', fontWeight: '950', color: 'white' }}>{todayStats.alignmentIndex}%</span>
-                                                         </div>
-                                                         <div>
-                                                             <span style={{ fontSize: '0.55rem', fontWeight: '900', color: '#d4a017', display: 'block', letterSpacing: '0.05em' }}>ALIGNMENT</span>
-                                                             <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)' }}>
-                                                                 {todayStats.alignmentIndex >= 90 ? 'Perfect Goal Match' : 'Ad-hoc Focus Split'}
-                                                             </span>
-                                                         </div>
-                                                     </div>
 
-                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '14px' }}>
-                                                         <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid #10b981', flexShrink: 0 }}>
-                                                             <span style={{ fontSize: '0.65rem', fontWeight: '950', color: '#10b981' }}>{todayStats.focusConsistency}%</span>
-                                                         </div>
-                                                         <div>
-                                                             <span style={{ fontSize: '0.55rem', fontWeight: '900', color: '#10b981', display: 'block', letterSpacing: '0.05em' }}>INTENSITY</span>
-                                                             <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)' }}>Active/Pause Ratio</span>
-                                                         </div>
-                                                     </div>
-                                                 </div>
-
-                                                 {/* Category Split progress bars */}
-                                                 <div style={{ width: '100%' }}>
-                                                     <span style={{ fontSize: '0.6rem', fontWeight: '900', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '8px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Focus split by goal category</span>
-                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                                         {todayStats.goalSplit.map((item, index) => {
-                                                             const colors = ['#d4a017', '#10b981', '#8b5cf6', '#3b82f6', '#ec4899'];
-                                                             const barColor = colors[index % colors.length];
-                                                             return (
-                                                                 <div key={item.goal} className="analysis-mini-bar-row">
-                                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.68rem', fontWeight: '800' }}>
-                                                                         <span style={{ color: 'rgba(255,255,255,0.85)' }}>{item.goal}</span>
-                                                                         <span style={{ color: barColor }}>{formatTime(item.activeTime, false)} ({item.percentage}%)</span>
-                                                                     </div>
-                                                                     <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.03)', borderRadius: '100px', overflow: 'hidden' }}>
-                                                                         <div style={{ width: `${item.percentage}%`, height: '100%', background: barColor, borderRadius: '100px' }} />
-                                                                     </div>
-                                                                 </div>
-                                                             );
-                                                         })}
-                                                     </div>
-                                                 </div>
-                                             </div>
-                                         )}
-                                     </div>
                                  </div>
 
                                 {showFinishedOptions && (

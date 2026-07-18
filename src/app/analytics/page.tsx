@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { TodoHistoryEntry, formatTime, WrapUpData, DailyChat } from '@/lib/storage';
+import { TodoHistoryEntry, formatTime, WrapUpData, DailyChat, SleepData, PhysicalData } from '@/lib/storage';
 import { NavigationBar } from '@/components/NavigationBar';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { useData } from '@/lib/DataContext';
 import { useAuthContext } from '@/lib/AuthContext';
 import Image from 'next/image';
 import WrapUpModal from '@/components/WrapUpModal';
+import SleepModal from '@/components/SleepModal';
+import PhysicalHealthModal from '@/components/PhysicalHealthModal';
 import { cloudStorage } from '@/lib/cloudStorage';
 
 export default function AnalyticsPage() {
@@ -15,11 +17,41 @@ export default function AnalyticsPage() {
     const { signOut, user } = useAuthContext();
 
     const [editingDate, setEditingDate] = useState<string | null>(null);
-    const [wrapUpOpen, setWrapUpOpen] = useState(false);
+    const [trackingStep, setTrackingStep] = useState<'sleep' | 'physical' | 'mental' | null>(null);
 
     const handleEditWrapUpClick = (date: string) => {
         setEditingDate(date);
-        setWrapUpOpen(true);
+        setTrackingStep('sleep');
+    };
+
+    const handleSaveSleep = async (sleepData: SleepData) => {
+        if (!editingDate) return;
+        const currentChat = allChats[editingDate];
+        if (!currentChat) return;
+
+        const updatedChat: DailyChat = {
+            ...currentChat,
+            sleep: sleepData
+        };
+
+        await cloudStorage.saveChat(editingDate, updatedChat, user?.id || undefined, true);
+        setLocalChat(editingDate, updatedChat);
+        setTrackingStep('physical');
+    };
+
+    const handleSavePhysical = async (physicalData: PhysicalData) => {
+        if (!editingDate) return;
+        const currentChat = allChats[editingDate];
+        if (!currentChat) return;
+
+        const updatedChat: DailyChat = {
+            ...currentChat,
+            physical: physicalData
+        };
+
+        await cloudStorage.saveChat(editingDate, updatedChat, user?.id || undefined, true);
+        setLocalChat(editingDate, updatedChat);
+        setTrackingStep('mental');
     };
 
     const handleSaveWrapUp = async (wrapUpData: WrapUpData) => {
@@ -29,17 +61,18 @@ export default function AnalyticsPage() {
 
         const updatedChat: DailyChat = {
             ...currentChat,
-            wrapUp: wrapUpData
+            wrapUp: wrapUpData,
+            status: 'CLOSED'
         };
 
         await cloudStorage.saveChat(editingDate, updatedChat, user?.id || undefined, true);
         setLocalChat(editingDate, updatedChat);
-        setWrapUpOpen(false);
+        setTrackingStep(null);
         setEditingDate(null);
     };
     
     // TAB NAVIGATION
-    const [activeTab, setActiveTab] = useState<'overview' | 'history' | 'wrapup'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'history' | 'wrapup' | 'health'>('overview');
 
     // DATE RANGE SELECTION
     const [dateRange, setDateRange] = useState<'7' | '14' | '30' | 'all'>('14');
@@ -211,6 +244,102 @@ export default function AnalyticsPage() {
                 focusHours: Math.min(24.0, parseFloat(focusHours.toFixed(1)))
             };
         });
+    }, [allChats, filteredDates, now]);
+
+    const healthStats = useMemo(() => {
+        let totalSleepHours = 0;
+        let sleepHoursCount = 0;
+        let totalSleepQuality = 0;
+        let sleepQualityCount = 0;
+        let totalEnergy = 0;
+        let energyCount = 0;
+        let totalPain = 0;
+        let painCount = 0;
+        let workoutDays = 0;
+        let daysWithWorkoutLogged = 0;
+
+        let highSleepQualityFocusHrsTotal = 0;
+        let highSleepQualityCount = 0;
+        let lowSleepQualityFocusHrsTotal = 0;
+        let lowSleepQualityCount = 0;
+
+        let highEnergyFocusHrsTotal = 0;
+        let highEnergyCount = 0;
+        let lowEnergyFocusHrsTotal = 0;
+        let lowEnergyCount = 0;
+
+        filteredDates.forEach(date => {
+            const chat = allChats[date];
+            if (!chat) return;
+
+            let dailyFocusHours = 0;
+            if (chat.todoHistory && Array.isArray(chat.todoHistory)) {
+                chat.todoHistory.forEach(entry => {
+                    if (entry.type === 'active') {
+                        dailyFocusHours += (entry.activeTime || 0) / 3600000;
+                    }
+                });
+            }
+            if (chat.activeTasks && Array.isArray(chat.activeTasks)) {
+                chat.activeTasks.forEach(task => {
+                    const todayStr = new Date(now).toISOString().split('T')[0];
+                    let taskActive = (task.accumulatedActiveTime || 0) + (task.totalActiveTime || 0);
+                    if (date === todayStr && task.status === 'RUNNING') {
+                        taskActive += Math.max(0, now - (task.lastStartedAt || task.startTime || now));
+                    }
+                    dailyFocusHours += taskActive / 3600000;
+                });
+            }
+            dailyFocusHours = Math.min(24.0, dailyFocusHours);
+
+            if (chat.sleep) {
+                totalSleepHours += chat.sleep.hours;
+                sleepHoursCount++;
+                totalSleepQuality += chat.sleep.quality;
+                sleepQualityCount++;
+
+                if (chat.sleep.quality >= 4) {
+                    highSleepQualityFocusHrsTotal += dailyFocusHours;
+                    highSleepQualityCount++;
+                } else if (chat.sleep.quality <= 2) {
+                    lowSleepQualityFocusHrsTotal += dailyFocusHours;
+                    lowSleepQualityCount++;
+                }
+            }
+
+            if (chat.physical) {
+                totalEnergy += chat.physical.energy;
+                energyCount++;
+                totalPain += chat.physical.pain;
+                painCount++;
+
+                daysWithWorkoutLogged++;
+                if (chat.physical.workout) {
+                    workoutDays++;
+                }
+
+                if (chat.physical.energy >= 4) {
+                    highEnergyFocusHrsTotal += dailyFocusHours;
+                    highEnergyCount++;
+                } else if (chat.physical.energy <= 2) {
+                    lowEnergyFocusHrsTotal += dailyFocusHours;
+                    lowEnergyCount++;
+                }
+            }
+        });
+
+        return {
+            avgSleepHours: sleepHoursCount > 0 ? parseFloat((totalSleepHours / sleepHoursCount).toFixed(1)) : 0,
+            avgSleepQuality: sleepQualityCount > 0 ? parseFloat((totalSleepQuality / sleepQualityCount).toFixed(1)) : 0,
+            avgEnergy: energyCount > 0 ? parseFloat((totalEnergy / energyCount).toFixed(1)) : 0,
+            avgPain: painCount > 0 ? parseFloat((totalPain / painCount).toFixed(1)) : 0,
+            workoutConsistency: daysWithWorkoutLogged > 0 ? Math.round((workoutDays / daysWithWorkoutLogged) * 100) : 0,
+            
+            highSleepFocus: highSleepQualityCount > 0 ? parseFloat((highSleepQualityFocusHrsTotal / highSleepQualityCount).toFixed(1)) : 0,
+            lowSleepFocus: lowSleepQualityCount > 0 ? parseFloat((lowSleepQualityFocusHrsTotal / lowSleepQualityCount).toFixed(1)) : 0,
+            highEnergyFocus: highEnergyCount > 0 ? parseFloat((highEnergyFocusHrsTotal / highEnergyCount).toFixed(1)) : 0,
+            lowEnergyFocus: lowEnergyCount > 0 ? parseFloat((lowEnergyFocusHrsTotal / lowEnergyCount).toFixed(1)) : 0
+        };
     }, [allChats, filteredDates, now]);
 
     // DETAILED ACTIVE TASK DATA ANALYSIS
@@ -637,35 +766,80 @@ export default function AnalyticsPage() {
                                 >
                                     WRAP-UP ANALYTICS
                                 </button>
+                                <button 
+                                    onClick={() => setActiveTab('health')}
+                                    style={{ padding: '1rem 0', background: 'none', border: 'none', color: activeTab === 'health' ? '#06b6d4' : 'rgba(255,255,255,0.3)', fontWeight: '900', fontSize: '0.8rem', letterSpacing: '0.2em', cursor: 'pointer', borderBottom: activeTab === 'health' ? '2.5px solid #06b6d4' : '2.5px solid transparent', transition: 'all 0.3s' }}
+                                >
+                                    HEALTH & SLEEP
+                                </button>
                             </div>
 
-                            {/* DATE RANGE SEGMENT CONTROL */}
-                            <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', padding: '4px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '10px' }}>
-                                {[
-                                    { id: '7', label: '7 DAYS' },
-                                    { id: '14', label: '14 DAYS' },
-                                    { id: '30', label: '30 DAYS' },
-                                    { id: 'all', label: 'ALL TIME' }
-                                ].map(r => (
-                                    <button
-                                        key={r.id}
-                                        onClick={() => handleSetDateRange(r.id as '7' | '14' | '30' | 'all')}
-                                        style={{
-                                            padding: '6px 12px',
-                                            borderRadius: '8px',
-                                            border: 'none',
-                                            cursor: 'pointer',
-                                            fontWeight: '800',
-                                            fontSize: '0.65rem',
-                                            background: dateRange === r.id ? '#d4a017' : 'transparent',
-                                            color: dateRange === r.id ? 'black' : 'rgba(255,255,255,0.6)',
-                                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                            letterSpacing: '0.05em'
-                                        }}
-                                    >
-                                        {r.label}
-                                    </button>
-                                ))}
+                            {/* CONTROLS */}
+                            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                {/* Date Backfill Button */}
+                                <button
+                                    onClick={() => {
+                                        const dateInput = document.createElement('input');
+                                        dateInput.type = 'date';
+                                        dateInput.max = new Date().toISOString().split('T')[0];
+                                        dateInput.onchange = () => {
+                                            if (dateInput.value) {
+                                                handleEditWrapUpClick(dateInput.value);
+                                            }
+                                        };
+                                        dateInput.style.position = 'fixed';
+                                        dateInput.style.opacity = '0';
+                                        document.body.appendChild(dateInput);
+                                        if (dateInput.showPicker) {
+                                            dateInput.showPicker();
+                                        } else {
+                                            dateInput.click();
+                                        }
+                                        dateInput.onblur = () => setTimeout(() => dateInput.remove(), 100);
+                                    }}
+                                    style={{
+                                        background: 'rgba(255, 255, 255, 0.03)',
+                                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                                        color: 'rgba(255, 255, 255, 0.6)',
+                                        padding: '8px 16px',
+                                        borderRadius: '10px',
+                                        cursor: 'pointer',
+                                        fontSize: '0.65rem',
+                                        fontWeight: '900',
+                                        letterSpacing: '0.05em'
+                                    }}
+                                >
+                                    📅 BACKFILL DAY
+                                </button>
+
+                                {/* DATE RANGE SEGMENT CONTROL */}
+                                <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', padding: '4px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                    {[
+                                        { id: '7', label: '7 DAYS' },
+                                        { id: '14', label: '14 DAYS' },
+                                        { id: '30', label: '30 DAYS' },
+                                        { id: 'all', label: 'ALL TIME' }
+                                    ].map(r => (
+                                        <button
+                                            key={r.id}
+                                            onClick={() => handleSetDateRange(r.id as '7' | '14' | '30' | 'all')}
+                                            style={{
+                                                padding: '6px 12px',
+                                                borderRadius: '8px',
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                fontWeight: '800',
+                                                fontSize: '0.65rem',
+                                                background: dateRange === r.id ? '#d4a017' : 'transparent',
+                                                color: dateRange === r.id ? 'black' : 'rgba(255,255,255,0.6)',
+                                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                letterSpacing: '0.05em'
+                                            }}
+                                        >
+                                            {r.label}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         </div>
 
@@ -1615,6 +1789,221 @@ export default function AnalyticsPage() {
                                         ))
                                     )}
                                 </div>
+                        )}
+
+                        {/* --- TAB 4: HEALTH & SLEEP --- */}
+                        {activeTab === 'health' && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem', marginTop: '1rem' }}>
+                                
+                                {/* HEALTH SUMMARY CARDS */}
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem' }}>
+                                    <div className="block-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '8px', borderLeft: '3px solid #06b6d4' }}>
+                                        <span style={{ fontSize: '0.6rem', fontWeight: '900', letterSpacing: '0.1em', opacity: 0.4 }}>AVERAGE SLEEP</span>
+                                        <h4 style={{ fontSize: '1.8rem', fontWeight: '950', margin: 0, color: 'white' }}>{healthStats.avgSleepHours}h</h4>
+                                        <p style={{ fontSize: '0.7rem', opacity: 0.5, margin: 0 }}>With quality: <strong style={{ color: '#06b6d4' }}>{healthStats.avgSleepQuality} / 5 ★</strong></p>
+                                    </div>
+                                    <div className="block-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '8px', borderLeft: '3px solid #10b981' }}>
+                                        <span style={{ fontSize: '0.6rem', fontWeight: '900', letterSpacing: '0.1em', opacity: 0.4 }}>ENERGY LEVEL</span>
+                                        <h4 style={{ fontSize: '1.8rem', fontWeight: '950', margin: 0, color: 'white' }}>{healthStats.avgEnergy} / 5</h4>
+                                        <p style={{ fontSize: '0.7rem', opacity: 0.5, margin: 0 }}>Average physical vitality score</p>
+                                    </div>
+                                    <div className="block-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '8px', borderLeft: '3px solid #8b5cf6' }}>
+                                        <span style={{ fontSize: '0.6rem', fontWeight: '900', letterSpacing: '0.1em', opacity: 0.4 }}>WORKOUT CONSISTENCY</span>
+                                        <h4 style={{ fontSize: '1.8rem', fontWeight: '950', margin: 0, color: 'white' }}>{healthStats.workoutConsistency}%</h4>
+                                        <p style={{ fontSize: '0.7rem', opacity: 0.5, margin: 0 }}>Of logged days completed</p>
+                                    </div>
+                                    <div className="block-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '8px', borderLeft: '3px solid #ef4444' }}>
+                                        <span style={{ fontSize: '0.6rem', fontWeight: '900', letterSpacing: '0.1em', opacity: 0.4 }}>PAIN & DISCOMFORT</span>
+                                        <h4 style={{ fontSize: '1.8rem', fontWeight: '950', margin: 0, color: 'white' }}>{healthStats.avgPain} / 5</h4>
+                                        <p style={{ fontSize: '0.7rem', opacity: 0.5, margin: 0 }}>Lower is better</p>
+                                    </div>
+                                </div>
+
+                                {/* SLEEP TRENDS & ENERGY PATTERNS CHARTS */}
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(480px, 1fr))', gap: '2rem' }}>
+                                    
+                                    {/* Sleep Hours Trend SVG */}
+                                    <div className="block-card" style={{ padding: '2rem', minHeight: '320px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+                                            <div>
+                                                <h4 style={{ fontSize: '0.85rem', fontWeight: '900', letterSpacing: '0.05em', color: 'white' }}>SLEEP HOURS TREND</h4>
+                                                <p style={{ fontSize: '0.7rem', opacity: 0.4, margin: '2px 0 0' }}>Daily duration & quality rating over time</p>
+                                            </div>
+                                        </div>
+
+                                        <div style={{ position: 'relative', width: '100%', height: '200px' }}>
+                                            <svg viewBox="0 0 500 200" width="100%" height="100%" preserveAspectRatio="none">
+                                                <line x1="0" y1="50" x2="500" y2="50" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
+                                                <line x1="0" y1="100" x2="500" y2="100" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
+                                                <line x1="0" y1="150" x2="500" y2="150" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
+                                                
+                                                {(() => {
+                                                    const dataPoints = filteredDates.map((date, idx) => {
+                                                        const chat = allChats[date];
+                                                        const hrs = chat?.sleep?.hours ?? 0;
+                                                        const x = (idx / Math.max(1, filteredDates.length - 1)) * 500;
+                                                        const y = 200 - (hrs / 12) * 180;
+                                                        return { x, y, logged: !!chat?.sleep };
+                                                    }).filter(p => p.logged);
+
+                                                    if (dataPoints.length < 2) return null;
+                                                    
+                                                    const pathD = `M ${dataPoints[0].x} ${dataPoints[0].y} ` + dataPoints.slice(1).map(p => `L ${p.x} ${p.y}`).join(' ');
+                                                    return (
+                                                        <>
+                                                            <path d={pathD} fill="none" stroke="#06b6d4" strokeWidth="2.5" strokeLinecap="round" />
+                                                            {dataPoints.map((p, i) => (
+                                                                <circle key={i} cx={p.x} cy={p.y} r="4" fill="#0f0f0f" stroke="#06b6d4" strokeWidth="2" />
+                                                            ))}
+                                                        </>
+                                                    );
+                                                })()}
+                                            </svg>
+                                        </div>
+                                    </div>
+
+                                    {/* Physical Vitality & Pain SVG */}
+                                    <div className="block-card" style={{ padding: '2rem', minHeight: '320px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+                                            <div>
+                                                <h4 style={{ fontSize: '0.85rem', fontWeight: '900', letterSpacing: '0.05em', color: 'white' }}>PHYSICAL ENERGY PATTERNS</h4>
+                                                <p style={{ fontSize: '0.7rem', opacity: 0.4, margin: '2px 0 0' }}>Daily physical energy level (1-5)</p>
+                                            </div>
+                                        </div>
+
+                                        <div style={{ position: 'relative', width: '100%', height: '200px' }}>
+                                            <svg viewBox="0 0 500 200" width="100%" height="100%" preserveAspectRatio="none">
+                                                <line x1="0" y1="50" x2="500" y2="50" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
+                                                <line x1="0" y1="100" x2="500" y2="100" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
+                                                <line x1="0" y1="150" x2="500" y2="150" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
+
+                                                {(() => {
+                                                    const count = filteredDates.length;
+                                                    const barWidth = Math.max(2, 500 / count - 6);
+                                                    return filteredDates.map((date, idx) => {
+                                                        const chat = allChats[date];
+                                                        const energy = chat?.physical?.energy ?? 0;
+                                                        const x = (idx / Math.max(1, count - 1)) * 480 + 10;
+                                                        const barHeight = (energy / 5) * 160;
+                                                        const y = 200 - barHeight;
+                                                        
+                                                        if (!chat?.physical) return null;
+                                                        return (
+                                                            <rect
+                                                                key={idx}
+                                                                x={x}
+                                                                y={y}
+                                                                width={barWidth}
+                                                                height={barHeight}
+                                                                fill="url(#energyGrad)"
+                                                                rx="2"
+                                                            />
+                                                        );
+                                                    });
+                                                })()}
+                                                <defs>
+                                                    <linearGradient id="energyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                        <stop offset="0%" stopColor="#10b981" />
+                                                        <stop offset="100%" stopColor="#10b98110" />
+                                                    </linearGradient>
+                                                </defs>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* FOCUS CORRELATIONS PANEL */}
+                                <div className="block-card" style={{ padding: '2rem' }}>
+                                    <h4 style={{ fontSize: '0.85rem', fontWeight: '900', letterSpacing: '0.05em', color: 'white', marginBottom: '1.5rem' }}>HEALTH-TO-FOCUS CORRELATION ANALYTICS</h4>
+                                    
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '2rem' }}>
+                                        {/* Sleep to Focus */}
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                            <span style={{ fontSize: '0.7rem', fontWeight: '800', opacity: 0.5 }}>Sleep Quality vs. Daily Focus Hours</span>
+                                            
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'rgba(255,255,255,0.01)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                                                    <span>On High Quality Sleep Days (★ 4-5)</span>
+                                                    <strong style={{ color: '#06b6d4' }}>{healthStats.highSleepFocus} hrs avg</strong>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                                                    <span>On Low Quality Sleep Days (★ 1-2)</span>
+                                                    <strong style={{ color: 'rgba(255,255,255,0.4)' }}>{healthStats.lowSleepFocus} hrs avg</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Energy to Focus */}
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                            <span style={{ fontSize: '0.7rem', fontWeight: '800', opacity: 0.5 }}>Physical Energy Level vs. Daily Focus Hours</span>
+                                            
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'rgba(255,255,255,0.01)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                                                    <span>On High Energy Days (4-5)</span>
+                                                    <strong style={{ color: '#10b981' }}>{healthStats.highEnergyFocus} hrs avg</strong>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                                                    <span>On Low Energy Days (1-2)</span>
+                                                    <strong style={{ color: 'rgba(255,255,255,0.4)' }}>{healthStats.lowEnergyFocus} hrs avg</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* DAY-BY-DAY LIST FOR METRIC REVIEWS */}
+                                <div className="block-card" style={{ padding: '2rem' }}>
+                                    <h4 style={{ fontSize: '0.85rem', fontWeight: '900', letterSpacing: '0.05em', color: 'white', marginBottom: '1.5rem' }}>DAILY METRICS LOG & REVIEWS</h4>
+                                    
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        {filteredDates.map(date => {
+                                            const chat = allChats[date];
+                                            if (!chat) return null;
+
+                                            return (
+                                                <div key={date} className="history-entry" style={{
+                                                    padding: '1rem',
+                                                    background: 'rgba(255,255,255,0.01)',
+                                                    borderRadius: '12px',
+                                                    border: '1px solid rgba(255,255,255,0.04)',
+                                                    display: 'flex',
+                                                    justifyContent: 'space-between',
+                                                    alignItems: 'center',
+                                                    transition: 'all 0.2s'
+                                                }}>
+                                                    <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+                                                        <span style={{ fontSize: '0.75rem', fontWeight: '900', color: 'white' }}>{date}</span>
+                                                        <span style={{ fontSize: '0.75rem', opacity: 0.5 }}>
+                                                            Sleep: <strong style={{ color: '#06b6d4' }}>{chat.sleep ? `${chat.sleep.hours}h (${chat.sleep.quality}★)` : 'N/A'}</strong>
+                                                        </span>
+                                                        <span style={{ fontSize: '0.75rem', opacity: 0.5 }}>
+                                                            Energy: <strong style={{ color: '#10b981' }}>{chat.physical ? `${chat.physical.energy}/5` : 'N/A'}</strong>
+                                                        </span>
+                                                        <span style={{ fontSize: '0.75rem', opacity: 0.5 }}>
+                                                            Workout: <strong style={{ color: '#8b5cf6' }}>{chat.physical ? (chat.physical.workout ? 'YES' : 'NO') : 'N/A'}</strong>
+                                                        </span>
+                                                    </div>
+
+                                                    <button
+                                                        onClick={() => handleEditWrapUpClick(date)}
+                                                        style={{
+                                                            background: 'rgba(255,255,255,0.04)',
+                                                            border: '1px solid rgba(255,255,255,0.08)',
+                                                            color: 'white',
+                                                            borderRadius: '8px',
+                                                            padding: '6px 14px',
+                                                            fontSize: '0.65rem',
+                                                            fontWeight: '900',
+                                                            cursor: 'pointer'
+                                                        }}
+                                                    >
+                                                        EDIT DATA
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </div>
@@ -1721,14 +2110,35 @@ export default function AnalyticsPage() {
                 }
             `}</style>
 
-            <WrapUpModal
-                open={wrapUpOpen}
+            <SleepModal
+                open={trackingStep === 'sleep'}
                 onClose={() => {
-                    setWrapUpOpen(false);
+                    setTrackingStep(null);
+                    setEditingDate(null);
+                }}
+                onSave={handleSaveSleep}
+                initialData={editingDate ? allChats[editingDate]?.sleep : undefined}
+                dateLabel={editingDate || undefined}
+            />
+            <PhysicalHealthModal
+                open={trackingStep === 'physical'}
+                onClose={() => {
+                    setTrackingStep(null);
+                    setEditingDate(null);
+                }}
+                onSave={handleSavePhysical}
+                initialData={editingDate ? allChats[editingDate]?.physical : undefined}
+                dateLabel={editingDate || undefined}
+            />
+            <WrapUpModal
+                open={trackingStep === 'mental'}
+                onClose={() => {
+                    setTrackingStep(null);
                     setEditingDate(null);
                 }}
                 onSave={handleSaveWrapUp}
                 initialData={editingDate ? allChats[editingDate]?.wrapUp : undefined}
+                dateLabel={editingDate || undefined}
             />
         </main>
     );
