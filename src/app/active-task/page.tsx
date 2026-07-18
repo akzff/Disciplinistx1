@@ -805,7 +805,8 @@ export default function ActiveTaskPage() {
             lastStartedAt: Date.now(),
             duration: targetDurationMs,
             completedCycles: 0,
-            sessionState: 'FOCUS'
+            sessionState: 'FOCUS',
+            sessionType: setupTab
         };
 
         const currentActiveTasks = todayChat?.activeTasks || [];
@@ -924,7 +925,8 @@ export default function ActiveTaskPage() {
             type: 'active' as const,
             activeTime: finalActiveTime,
             pausedTime: finalPausedTime,
-            completedCycles: currentActiveTask.completedCycles || 0
+            completedCycles: currentActiveTask.completedCycles || 0,
+            sessionType: currentActiveTask.sessionType
         };
         const updatedHistory = [...(todayChat?.todoHistory || []), historyEntry];
 

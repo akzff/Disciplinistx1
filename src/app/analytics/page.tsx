@@ -1738,14 +1738,27 @@ export default function AnalyticsPage() {
                                                             fontSize: '0.55rem',
                                                             fontWeight: '900',
                                                             background: 
+                                                                entry.sessionType === 'todo' ? 'rgba(6, 182, 212, 0.15)' :
+                                                                entry.sessionType === 'daily' ? 'rgba(16, 185, 129, 0.15)' :
+                                                                entry.sessionType === 'stopwatch' ? 'rgba(245, 158, 11, 0.15)' :
+                                                                entry.sessionType === 'pomodoro' ? 'rgba(249, 115, 22, 0.15)' :
                                                                 entry.type === 'active' ? '#d4a01720' : 
                                                                 entry.type === 'daily' ? '#10b98120' : '#8b5cf620',
                                                             color: 
+                                                                entry.sessionType === 'todo' ? '#06b6d4' :
+                                                                entry.sessionType === 'daily' ? '#10b981' :
+                                                                entry.sessionType === 'stopwatch' ? '#f59e0b' :
+                                                                entry.sessionType === 'pomodoro' ? '#f97316' :
                                                                 entry.type === 'active' ? '#d4a017' : 
                                                                 entry.type === 'daily' ? '#10b981' : '#8b5cf6',
                                                             letterSpacing: '0.1em'
                                                         }}>
-                                                            {entry.type === 'active' ? 'ACTIVE MISSION' : entry.type === 'daily' ? 'DAILY' : 'ONE-OFF'}
+                                                            {entry.sessionType === 'todo' ? 'TO DO TASK' :
+                                                             entry.sessionType === 'daily' ? 'DAILY HABIT' :
+                                                             entry.sessionType === 'stopwatch' ? 'STOPWATCH' :
+                                                             entry.sessionType === 'pomodoro' ? 'POMODORO' :
+                                                             entry.type === 'active' ? 'ACTIVE MISSION' : 
+                                                             entry.type === 'daily' ? 'DAILY' : 'ONE-OFF'}
                                                         </span>
                                                         <p style={{ margin: 0, fontWeight: '800', fontSize: '1rem', color: 'white' }}>{entry.text}</p>
                                                     </div>

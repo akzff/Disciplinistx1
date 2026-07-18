@@ -38,6 +38,7 @@ export interface ActiveTask {
     sessionState?: 'FOCUS' | 'BREAK';
     accumulatedActiveTime?: number;
     accumulatedPausedTime?: number;
+    sessionType?: 'todo' | 'daily' | 'stopwatch' | 'pomodoro';
 }
 
 export interface TodoHistoryEntry {
@@ -53,6 +54,7 @@ export interface TodoHistoryEntry {
     activeTime?: number;
     pausedTime?: number;
     completedCycles?: number;
+    sessionType?: 'todo' | 'daily' | 'stopwatch' | 'pomodoro';
 }
 
 export interface HabitIssue {
