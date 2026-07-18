@@ -73,6 +73,7 @@ export default function AnalyticsPage() {
     
     // TAB NAVIGATION
     const [activeTab, setActiveTab] = useState<'overview' | 'history' | 'wrapup' | 'health'>('overview');
+    const [historyFilter, setHistoryFilter] = useState<'all' | 'todo' | 'daily' | 'stopwatch' | 'pomodoro'>('all');
 
     // DATE RANGE SELECTION
     const [dateRange, setDateRange] = useState<'7' | '14' | '30' | 'all'>('14');
@@ -497,6 +498,20 @@ export default function AnalyticsPage() {
         return history.sort((a, b) => b.tickedAt - a.tickedAt);
     }, [allChats]);
 
+    // FILTERED MISSION LOG HISTORY
+    const filteredHistory = useMemo(() => {
+        if (historyFilter === 'all') return fullTodoHistory;
+        return fullTodoHistory.filter(entry => {
+            if (historyFilter === 'todo') {
+                return entry.sessionType === 'todo' || (entry.type === 'todo' && !entry.sessionType);
+            }
+            if (historyFilter === 'daily') {
+                return entry.sessionType === 'daily' || (entry.type === 'daily' && !entry.sessionType);
+            }
+            return entry.sessionType === historyFilter;
+        });
+    }, [fullTodoHistory, historyFilter]);
+
     // WRAP-UP CORRELATION ENGINE STATS
     const wrapUpStats = useMemo(() => {
         const allWrapUps: { date: string; wrapUp: WrapUpData }[] = [];
@@ -813,64 +828,26 @@ export default function AnalyticsPage() {
                         {activeTab === 'overview' && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
                                 
-                                {/* DISCIPLINE INDEX & PERFORMANCE OVERVIEW GRID */}
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
-                                    
-                                    {/* Discipline Score Dial */}
-                                    <div className="block-card" style={{ padding: '2.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.02)', position: 'relative', overflow: 'hidden' }}>
-                                        <div style={{ width: '160px', height: '160px', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '1rem' }}>
-                                            <svg width="100%" height="100%" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
-                                                <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="6" />
-                                                <circle 
-                                                    cx="50" 
-                                                    cy="50" 
-                                                    r="42" 
-                                                    fill="none" 
-                                                    stroke="url(#goldGradient)" 
-                                                    strokeWidth="6.5" 
-                                                    strokeDasharray="264"
-                                                    strokeDashoffset={264 - (264 * rangeStats.disciplineIndex) / 100}
-                                                    strokeLinecap="round"
-                                                    style={{ transition: 'stroke-dashoffset 1s ease-out' }}
-                                                />
-                                                <defs>
-                                                    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                                        <stop offset="0%" stopColor="#d4a017" />
-                                                        <stop offset="100%" stopColor="#10b981" />
-                                                    </linearGradient>
-                                                </defs>
-                                            </svg>
-                                            <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                                <span style={{ fontSize: '2.2rem', fontWeight: '950', color: 'white', lineHeight: 1 }}>{rangeStats.disciplineIndex}</span>
-                                                <span style={{ fontSize: '0.55rem', fontWeight: '900', color: '#d4a017', opacity: 0.8, letterSpacing: '0.05em', marginTop: '4px' }}>DISCIPLINE INDEX</span>
-                                            </div>
-                                        </div>
-                                        <p style={{ fontSize: '0.7rem', opacity: 0.4, textAlign: 'center', marginTop: '1.5rem', maxWidth: '85%' }}>
-                                            Weighted indicator matching Dailies completed (40%), To-dos finished (30%), and Focus time (30%).
-                                        </p>
+                                {/* PERFORMANCE OVERVIEW GRID */}
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+                                    <div className="stat-card-deep" style={{ borderLeft: '4px solid #10b981', padding: '1.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '16px' }}>
+                                        <p style={{ fontSize: '0.65rem', fontWeight: '900', color: '#10b981', opacity: 0.8, letterSpacing: '0.05em' }}>DAILIES</p>
+                                        <h2 style={{ fontSize: '2.5rem', fontWeight: '900', color: 'white', margin: '4px 0' }}>{rangeStats.dailySuccessRate}%</h2>
+                                        <p style={{ fontSize: '0.65rem', opacity: 0.4 }}>{rangeStats.totalDailiesCompleted} of {rangeStats.totalDailiesAssigned} synced</p>
                                     </div>
 
-                                    {/* Stats Grid */}
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                                        <div className="stat-card-deep" style={{ borderLeft: '4px solid #10b981' }}>
-                                            <p style={{ fontSize: '0.65rem', fontWeight: '900', color: '#10b981', opacity: 0.8, letterSpacing: '0.05em' }}>DAILIES</p>
-                                            <h2 style={{ fontSize: '2.5rem', fontWeight: '900', color: 'white', margin: '4px 0' }}>{rangeStats.dailySuccessRate}%</h2>
-                                            <p style={{ fontSize: '0.65rem', opacity: 0.4 }}>{rangeStats.totalDailiesCompleted} of {rangeStats.totalDailiesAssigned} synced</p>
-                                        </div>
+                                    <div className="stat-card-deep" style={{ borderLeft: '4px solid #8b5cf6', padding: '1.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '16px' }}>
+                                        <p style={{ fontSize: '0.65rem', fontWeight: '900', color: '#8b5cf6', opacity: 0.8, letterSpacing: '0.05em' }}>TASKS CLEARED</p>
+                                        <h2 style={{ fontSize: '2.5rem', fontWeight: '900', color: 'white', margin: '4px 0' }}>{rangeStats.totalTodosCompleted}</h2>
+                                        <p style={{ fontSize: '0.65rem', opacity: 0.4 }}>One-offs ticked off</p>
+                                    </div>
 
-                                        <div className="stat-card-deep" style={{ borderLeft: '4px solid #8b5cf6' }}>
-                                            <p style={{ fontSize: '0.65rem', fontWeight: '900', color: '#8b5cf6', opacity: 0.8, letterSpacing: '0.05em' }}>TASKS CLEARED</p>
-                                            <h2 style={{ fontSize: '2.5rem', fontWeight: '900', color: 'white', margin: '4px 0' }}>{rangeStats.totalTodosCompleted}</h2>
-                                            <p style={{ fontSize: '0.65rem', opacity: 0.4 }}>One-offs ticked off</p>
-                                        </div>
-
-                                        <div className="stat-card-deep" style={{ borderLeft: '4px solid #d4a017', gridColumn: 'span 2' }}>
-                                            <p style={{ fontSize: '0.65rem', fontWeight: '900', color: '#d4a017', opacity: 0.8, letterSpacing: '0.05em' }}>FOCUSED SESSION TIME</p>
-                                            <h2 style={{ fontSize: '2.5rem', fontWeight: '900', color: 'white', margin: '4px 0' }}>
-                                                {formatTime(rangeStats.totalFocusTimeMs, false)}
-                                            </h2>
-                                            <p style={{ fontSize: '0.65rem', opacity: 0.4 }}>Accumulated over {rangeStats.totalActiveMissions} live focus slots</p>
-                                        </div>
+                                    <div className="stat-card-deep" style={{ borderLeft: '4px solid #d4a017', padding: '1.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '16px' }}>
+                                        <p style={{ fontSize: '0.65rem', fontWeight: '900', color: '#d4a017', opacity: 0.8, letterSpacing: '0.05em' }}>FOCUSED SESSION TIME</p>
+                                        <h2 style={{ fontSize: '2.5rem', fontWeight: '900', color: 'white', margin: '4px 0' }}>
+                                            {formatTime(rangeStats.totalFocusTimeMs, false)}
+                                        </h2>
+                                        <p style={{ fontSize: '0.65rem', opacity: 0.4 }}>Accumulated over {rangeStats.totalActiveMissions} live focus slots</p>
                                     </div>
                                 </div>
 
@@ -1674,18 +1651,50 @@ export default function AnalyticsPage() {
                         {/* --- TAB 3: MISSION LOG --- */}
                         {activeTab === 'history' && (
                             <div className="block-card" style={{ padding: '3rem', marginTop: '1rem' }}>
-                                <div style={{ marginBottom: '2.5rem' }}>
-                                    <h3 style={{ fontSize: '1rem', fontWeight: '900', letterSpacing: '0.1em' }}>MISSION LOG (HISTORY)</h3>
-                                    <p style={{ fontSize: '0.75rem', opacity: 0.4, marginTop: '2px' }}>Detailed unique execution history across all goals</p>
+                                <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+                                    <div>
+                                        <h3 style={{ fontSize: '1rem', fontWeight: '900', letterSpacing: '0.1em' }}>MISSION LOG (HISTORY)</h3>
+                                        <p style={{ fontSize: '0.75rem', opacity: 0.4, marginTop: '2px' }}>Detailed unique execution history across all goals</p>
+                                    </div>
+                                    
+                                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                        {([
+                                            { id: 'all', label: 'ALL' },
+                                            { id: 'todo', label: '📋 TO-DOS' },
+                                            { id: 'daily', label: '🔄 DAILIES' },
+                                            { id: 'stopwatch', label: '⏱️ STOPWATCH' },
+                                            { id: 'pomodoro', label: '⏳ POMODORO' }
+                                        ] as const).map(f => (
+                                            <button
+                                                key={f.id}
+                                                type="button"
+                                                onClick={() => setHistoryFilter(f.id)}
+                                                style={{
+                                                    background: historyFilter === f.id ? '#d4a017' : 'rgba(255, 255, 255, 0.03)',
+                                                    border: historyFilter === f.id ? '1px solid #d4a017' : '1px solid rgba(255, 255, 255, 0.08)',
+                                                    color: historyFilter === f.id ? 'black' : 'rgba(255, 255, 255, 0.6)',
+                                                    padding: '6px 12px',
+                                                    borderRadius: '8px',
+                                                    cursor: 'pointer',
+                                                    fontSize: '0.62rem',
+                                                    fontWeight: '900',
+                                                    letterSpacing: '0.03em',
+                                                    transition: 'all 0.25s ease'
+                                                }}
+                                            >
+                                                {f.label}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                    {fullTodoHistory.length === 0 ? (
-                                        <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.3, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '16px' }}>
-                                            No historical logs available yet. Complete some missions to begin data logging.
+                                    {filteredHistory.length === 0 ? (
+                                        <div style={{ padding: '3rem 2rem', textAlign: 'center', opacity: 0.3, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '16px', fontSize: '0.78rem' }}>
+                                            No matching history entries found. Complete some missions to populate this log.
                                         </div>
                                     ) : (
-                                        fullTodoHistory.map((entry, idx) => (
+                                        filteredHistory.map((entry, idx) => (
                                             <div key={entry.id || idx} className="history-entry" style={{
                                                 padding: '1.25rem',
                                                 background: 'rgba(255,255,255,0.02)',
