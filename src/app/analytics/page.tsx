@@ -238,7 +238,7 @@ export default function AnalyticsPage() {
 
             return {
                 date,
-                displayDate: date.split('-').slice(1).join('/'), // MM/DD
+                displayDate: (() => { const p = date.split('-'); return `${p[2]}/${p[1]}`; })(), // DD/MM
                 dailies: dailiesCompleted,
                 todos: todosCompleted,
                 focusHours: Math.min(24.0, parseFloat(focusHours.toFixed(1)))
@@ -852,9 +852,6 @@ export default function AnalyticsPage() {
                                     
                                     {/* Discipline Score Dial */}
                                     <div className="block-card" style={{ padding: '2.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.02)', position: 'relative', overflow: 'hidden' }}>
-                                        <div style={{ position: 'absolute', top: '1rem', left: '1.5rem' }}>
-                                            <span style={{ fontSize: '0.65rem', fontWeight: '900', letterSpacing: '0.15em', opacity: 0.3 }}>RELIABILITY RATIO</span>
-                                        </div>
                                         <div style={{ width: '160px', height: '160px', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '1rem' }}>
                                             <svg width="100%" height="100%" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
                                                 <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="6" />
@@ -1789,6 +1786,7 @@ export default function AnalyticsPage() {
                                         ))
                                     )}
                                 </div>
+                            </div>
                         )}
 
                         {/* --- TAB 4: HEALTH & SLEEP --- */}

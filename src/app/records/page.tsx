@@ -646,7 +646,7 @@ export default function RecordsPage() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                             {allDates.map(date => (
                                 <button key={date} onClick={() => setSelectedDate(date)} style={{ padding: '10px 12px', borderRadius: '8px', background: selectedDate === date ? '#d4a017' : 'transparent', border: selectedDate === date ? 'none' : '1px solid transparent', color: selectedDate === date ? 'black' : 'white', textAlign: 'left', fontSize: '0.82rem', fontWeight: selectedDate === date ? '900' : '500', cursor: 'pointer', transition: 'all 0.2s', boxShadow: selectedDate === date ? '0 0 12px rgba(212,160,23,0.3)' : 'none' }}>
-                                    {date}{date === storage.getCurrentDate() && <span style={{ fontSize: '0.6rem', marginLeft: '6px', opacity: 0.7 }}>TODAY</span>}
+                                    {(() => { const [y, m, d] = date.split('-'); return `${d}/${m}/${y}`; })()}{date === storage.getCurrentDate() && <span style={{ fontSize: '0.6rem', marginLeft: '6px', opacity: 0.7 }}>TODAY</span>}
                                 </button>
                             ))}
                         </div>

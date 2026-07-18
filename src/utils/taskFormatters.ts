@@ -38,7 +38,7 @@ export function formatDueDate(date: string): string {
     if (diff === 0) return 'Today';
     if (diff === 1) return 'Tomorrow';
     if (diff < 7) return `${diff}d left`;
-    return format(d, 'MMM d');
+    return format(d, 'd MMM');
 }
 
 export function formatHour(time: string): string {
