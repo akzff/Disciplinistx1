@@ -295,13 +295,13 @@ export default function AnalyticsPage() {
             if (chat.sleep) {
                 totalSleepHours += chat.sleep.hours;
                 sleepHoursCount++;
-                totalSleepQuality += chat.sleep.quality;
+                totalSleepQuality += chat.sleep.rating;
                 sleepQualityCount++;
 
-                if (chat.sleep.quality >= 4) {
+                if (chat.sleep.rating >= 4) {
                     highSleepQualityFocusHrsTotal += dailyFocusHours;
                     highSleepQualityCount++;
-                } else if (chat.sleep.quality <= 2) {
+                } else if (chat.sleep.rating <= 2) {
                     lowSleepQualityFocusHrsTotal += dailyFocusHours;
                     lowSleepQualityCount++;
                 }
@@ -1972,7 +1972,7 @@ export default function AnalyticsPage() {
                                                     <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
                                                         <span style={{ fontSize: '0.75rem', fontWeight: '900', color: 'white' }}>{date}</span>
                                                         <span style={{ fontSize: '0.75rem', opacity: 0.5 }}>
-                                                            Sleep: <strong style={{ color: '#06b6d4' }}>{chat.sleep ? `${chat.sleep.hours}h (${chat.sleep.quality}★)` : 'N/A'}</strong>
+                                                            Sleep: <strong style={{ color: '#06b6d4' }}>{chat.sleep ? `${chat.sleep.hours}h (${chat.sleep.rating}★)` : 'N/A'}</strong>
                                                         </span>
                                                         <span style={{ fontSize: '0.75rem', opacity: 0.5 }}>
                                                             Energy: <strong style={{ color: '#10b981' }}>{chat.physical ? `${chat.physical.energy}/5` : 'N/A'}</strong>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, type CSSProperties } from 'react';
-import { storage, Message, DailyChat, ActiveTask, formatTime, TaskNote, PersonaId, TodoHistoryEntry, SleepData, PhysicalData } from '@/lib/storage';
+import { storage, Message, DailyChat, ActiveTask, formatTime, TaskNote, PersonaId, TodoHistoryEntry, SleepData, PhysicalData, WrapUpData } from '@/lib/storage';
 import Image from 'next/image';
 import MissionsBoard from '@/components/MissionsBoard';
 import MissionChecklist from '@/components/MissionChecklist';
@@ -1370,6 +1370,7 @@ OPERATIONAL TAGS:
                   time_slot_time: '',
                   notes: '',
                   tags: []
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 } as any;
                 setDailies(prev => {
                   const updated = [...prev, newDaily];
@@ -1403,6 +1404,7 @@ OPERATIONAL TAGS:
                   notes: '',
                   snoozed_until: '',
                   last_completed: ''
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 } as any;
                 setTodos(prev => {
                   const updated = [newTodo, ...prev];

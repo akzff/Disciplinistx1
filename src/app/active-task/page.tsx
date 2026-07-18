@@ -396,6 +396,9 @@ export default function ActiveTaskPage() {
     }, [pomoSettings.ambientSound, pomoSettings.soundVolume, stopAmbientSound]);
 
     // Setup form state
+    const [setupTab, setSetupTab] = useState<'todo' | 'daily' | 'stopwatch' | 'pomodoro'>('todo');
+    const [selectedTodoId, setSelectedTodoId] = useState<string | null>(null);
+    const [selectedDailyId, setSelectedDailyId] = useState<string | null>(null);
     const [goalName, setGoalName] = useState('');
     const [taskName, setTaskName] = useState('');
     const [durationMins, setDurationMins] = useState(25);
@@ -1830,254 +1833,290 @@ export default function ActiveTaskPage() {
                                     </div>
                                 )}
 
-                                <div className="active-task-form-group">
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <label className="active-task-form-label">Goal / Category</label>
-                                        {filteredGoals.length > 0 && (
-                                            <button 
-                                                type="button" 
-                                                className="suggestion-toggle-btn"
-                                                onClick={() => setExpandGoals(!expandGoals)}
-                                            >
-                                                {expandGoals ? 'Show Less' : `See All (${filteredGoals.length})`}
-                                            </button>
-                                        )}
-                                    </div>
-                                    <input 
-                                        type="text" 
-                                        className="active-task-form-input" 
-                                        placeholder="e.g. Workout, Deep Work, Coding"
-                                        value={goalName}
-                                        onChange={(e) => setGoalName(e.target.value)}
-                                        required
-                                    />
-                                    {/* Goal suggestions */}
-                                    <div className="suggestion-section">
-                                        <div 
-                                            ref={goalsContainerRef}
-                                            className={`suggestion-container${expandGoals ? ' suggestion-container--expanded' : ''}`}
+                                          {/* Tab switcher */}
+                                <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', padding: '4px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '1.5rem', gap: '4px' }}>
+                                    {[
+                                        { id: 'todo', label: '📋 TO DO TASK' },
+                                        { id: 'daily', label: '🔄 DAILIES' },
+                                        { id: 'stopwatch', label: '⏱️ STOPWATCH' },
+                                        { id: 'pomodoro', label: '⏳ POMODORO' }
+                                    ].map(t => (
+                                        <button
+                                            key={t.id}
+                                            type="button"
+                                            onClick={() => {
+                                                setSetupTab(t.id as 'todo' | 'daily' | 'stopwatch' | 'pomodoro');
+                                                setSelectedTodoId(null);
+                                                setSelectedDailyId(null);
+                                                setGoalName('');
+                                                setTaskName('');
+                                                if (t.id === 'stopwatch') {
+                                                    setTimerMode('stopwatch');
+                                                } else if (t.id === 'pomodoro') {
+                                                    setTimerMode('pomodoro');
+                                                }
+                                            }}
+                                            style={{
+                                                flex: 1,
+                                                padding: '10px 4px',
+                                                borderRadius: '10px',
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                fontSize: '0.62rem',
+                                                fontWeight: '900',
+                                                letterSpacing: '0.03em',
+                                                background: setupTab === t.id ? '#d4a017' : 'transparent',
+                                                color: setupTab === t.id ? 'black' : 'rgba(255,255,255,0.5)',
+                                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                                            }}
                                         >
-                                            {filteredGoals.map(g => {
-                                                const isEditing = editingId === `goal-${g}`;
-                                                const isActive = goalName.toLowerCase() === g.toLowerCase();
-                                                return (
-                                                    <div 
-                                                        key={g}
-                                                        className={`suggestion-pill${isActive ? ' suggestion-pill--active' : ''}`}
-                                                        onClick={() => setGoalName(g)}
-                                                    >
-                                                        {isEditing ? (
-                                                            <>
-                                                                <input 
-                                                                    type="text"
-                                                                    className="suggestion-inline-input"
-                                                                    value={editInputValue}
-                                                                    onChange={(e) => setEditInputValue(e.target.value)}
-                                                                    onClick={(e) => e.stopPropagation()}
-                                                                    onKeyDown={(e) => {
-                                                                        if (e.key === 'Enter') handleSaveGoalEdit(g, editInputValue);
-                                                                        else if (e.key === 'Escape') setEditingId(null);
-                                                                    }}
-                                                                    autoFocus
-                                                                />
-                                                                <button 
-                                                                    type="button"
-                                                                    className="suggestion-inline-save-btn"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        handleSaveGoalEdit(g, editInputValue);
-                                                                    }}
-                                                                >
-                                                                    ✓
-                                                                </button>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <span>{g}</span>
-                                                                <div className="suggestion-pill-actions">
-                                                                    <button 
-                                                                        type="button"
-                                                                        className="suggestion-pill-btn"
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            setEditingId(`goal-${g}`);
-                                                                            setEditInputValue(g);
-                                                                        }}
-                                                                        title="Edit"
-                                                                    >
-                                                                        ✎
-                                                                    </button>
-                                                                    <button 
-                                                                        type="button"
-                                                                        className="suggestion-pill-btn delete"
-                                                                        onClick={(e) => handleDeleteGoal(g, e)}
-                                                                        title="Delete"
-                                                                    >
-                                                                        ×
-                                                                    </button>
-                                                                </div>
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
+                                            {t.label}
+                                        </button>
+                                    ))}
                                 </div>
 
-                                <div className="active-task-form-group">
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <label className="active-task-form-label">Specific Task</label>
-                                        {filteredTasks.length > 0 && (
-                                            <button 
-                                                type="button" 
-                                                className="suggestion-toggle-btn"
-                                                onClick={() => setExpandTasks(!expandTasks)}
-                                            >
-                                                {expandTasks ? 'Show Less' : `See All (${filteredTasks.length})`}
-                                            </button>
-                                        )}
-                                    </div>
-                                    <input 
-                                        type="text" 
-                                        className="active-task-form-input" 
-                                        placeholder="e.g. Back day, Write API, Refactor CSS"
-                                        value={taskName}
-                                        onChange={(e) => setTaskName(e.target.value)}
-                                        required
-                                    />
-                                    {/* Task suggestions mapped to selected Goal */}
-                                    <div className="suggestion-section">
-                                        <div 
-                                            ref={tasksContainerRef}
-                                            className={`suggestion-container${expandTasks ? ' suggestion-container--expanded' : ''}`}
-                                        >
-                                            {filteredTasks.map(s => {
-                                                const isEditing = editingId === s.id;
-                                                const isActive = taskName.toLowerCase() === s.task.toLowerCase();
+                                {setupTab === 'todo' && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '1.5rem' }}>
+                                        <label className="active-task-form-label">Select Active To-Do Task</label>
+                                        {(() => {
+                                            const incomplete = todayChat?.todos?.filter(t => !t.completed) || [];
+                                            if (incomplete.length === 0) {
                                                 return (
-                                                    <div 
-                                                        key={s.id}
-                                                        className={`suggestion-pill${isActive ? ' suggestion-pill--active' : ''}`}
-                                                        onClick={() => setTaskName(s.task)}
-                                                    >
-                                                        {isEditing ? (
-                                                            <>
-                                                                <input 
-                                                                    type="text"
-                                                                    className="suggestion-inline-input"
-                                                                    value={editInputValue}
-                                                                    onChange={(e) => setEditInputValue(e.target.value)}
-                                                                    onClick={(e) => e.stopPropagation()}
-                                                                    onKeyDown={(e) => {
-                                                                        if (e.key === 'Enter') handleSaveTaskEdit(s.id, editInputValue);
-                                                                        else if (e.key === 'Escape') setEditingId(null);
-                                                                    }}
-                                                                    autoFocus
-                                                                />
-                                                                <button 
-                                                                    type="button"
-                                                                    className="suggestion-inline-save-btn"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        handleSaveTaskEdit(s.id, editInputValue);
-                                                                    }}
-                                                                >
-                                                                    ✓
-                                                                </button>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <span>{s.task}</span>
-                                                                <div className="suggestion-pill-actions">
-                                                                    <button 
-                                                                        type="button"
-                                                                        className="suggestion-pill-btn"
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            setEditingId(s.id);
-                                                                            setEditInputValue(s.task);
-                                                                        }}
-                                                                        title="Edit"
-                                                                    >
-                                                                        ✎
-                                                                    </button>
-                                                                    <button 
-                                                                        type="button"
-                                                                        className="suggestion-pill-btn delete"
-                                                                        onClick={(e) => handleDeleteTask(s.id, e)}
-                                                                        title="Delete"
-                                                                    >
-                                                                        ×
-                                                                    </button>
-                                                                </div>
-                                                            </>
-                                                        )}
+                                                    <div style={{ padding: '2rem 1.5rem', textAlign: 'center', opacity: 0.4, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '16px', fontSize: '0.75rem' }}>
+                                                        All to-do tasks completed! Banish complacency.
                                                     </div>
                                                 );
-                                            })}
-                                            {suggestions.filter(s => s.goal.toLowerCase() === goalName.toLowerCase()).length === 0 && goalName.trim() !== '' && (
-                                                <span className="suggestion-hint">No mapped tasks. Save your session to auto-add suggestions.</span>
-                                            )}
-                                            {suggestions.filter(s => s.goal.toLowerCase() === goalName.toLowerCase()).length > 0 && filteredTasks.length === 0 && taskName.trim() !== '' && (
-                                                <span className="suggestion-hint">No matching registered tasks.</span>
-                                            )}
-                                            {goalName.trim() === '' && (
-                                                <span className="suggestion-hint">Select a Goal to display associated tasks.</span>
-                                            )}
+                                            }
+                                            return (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px' }}>
+                                                    {incomplete.map(todo => {
+                                                        const active = selectedTodoId === todo.id;
+                                                        return (
+                                                            <div
+                                                                key={todo.id}
+                                                                onClick={() => {
+                                                                    setSelectedTodoId(todo.id);
+                                                                    setTaskName(todo.text);
+                                                                    setGoalName('To-Do Task');
+                                                                }}
+                                                                style={{
+                                                                    padding: '12px 16px',
+                                                                    borderRadius: '12px',
+                                                                    background: active ? 'rgba(212, 160, 23, 0.08)' : 'rgba(255,255,255,0.02)',
+                                                                    border: active ? '1px solid #d4a017' : '1px solid rgba(255,255,255,0.06)',
+                                                                    color: active ? '#d4a017' : 'white',
+                                                                    cursor: 'pointer',
+                                                                    fontSize: '0.78rem',
+                                                                    fontWeight: active ? '800' : '500',
+                                                                    transition: 'all 0.25s ease',
+                                                                    boxShadow: active ? '0 0 10px rgba(212, 160, 23, 0.15)' : 'none'
+                                                                }}
+                                                            >
+                                                                {todo.text}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            );
+                                        })()}
+                                        
+                                        {selectedTodoId && (
+                                            <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                                <div>
+                                                    <label className="active-task-form-label">Tracking Mode</label>
+                                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                                        {[
+                                                            { id: 'stopwatch', label: '⏱️ STOPWATCH' },
+                                                            { id: 'pomodoro', label: '⏳ POMODORO' }
+                                                        ].map(m => (
+                                                            <button
+                                                                key={m.id}
+                                                                type="button"
+                                                                onClick={() => setTimerMode(m.id as 'stopwatch' | 'pomodoro')}
+                                                                style={{
+                                                                    flex: 1, padding: '10px', borderRadius: '10px',
+                                                                    border: timerMode === m.id ? '1px solid #d4a017' : '1px solid rgba(255,255,255,0.1)',
+                                                                    background: timerMode === m.id ? 'rgba(212,160,23,0.1)' : 'transparent',
+                                                                    color: timerMode === m.id ? '#d4a017' : 'rgba(255,255,255,0.5)',
+                                                                    fontSize: '0.7rem', fontWeight: '900', cursor: 'pointer'
+                                                                }}
+                                                            >
+                                                                {m.label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                {timerMode === 'pomodoro' && (
+                                                     <div>
+                                                         <label className="active-task-form-label">Duration (Minutes)</label>
+                                                         <input 
+                                                             type="number" min="1" max="480"
+                                                             className="active-task-form-input" 
+                                                             value={durationMins}
+                                                             onChange={(e) => {
+                                                                 const val = parseInt(e.target.value) || 25;
+                                                                 setDurationMins(val);
+                                                             }}
+                                                         />
+                                                     </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {setupTab === 'daily' && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '1.5rem' }}>
+                                        <label className="active-task-form-label">Select Active Daily Habit</label>
+                                        {(() => {
+                                            const incomplete = todayChat?.dailies?.filter(d => !d.completed) || [];
+                                            if (incomplete.length === 0) {
+                                                return (
+                                                    <div style={{ padding: '2rem 1.5rem', textAlign: 'center', opacity: 0.4, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '16px', fontSize: '0.75rem' }}>
+                                                        All daily habits completed! Excellent work.
+                                                    </div>
+                                                );
+                                            }
+                                            return (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px' }}>
+                                                    {incomplete.map(daily => {
+                                                        const active = selectedDailyId === daily.id;
+                                                        return (
+                                                            <div
+                                                                key={daily.id}
+                                                                onClick={() => {
+                                                                    setSelectedDailyId(daily.id);
+                                                                    setTaskName(daily.text);
+                                                                    setGoalName('Daily Habit');
+                                                                }}
+                                                                style={{
+                                                                    padding: '12px 16px',
+                                                                    borderRadius: '12px',
+                                                                    background: active ? 'rgba(212, 160, 23, 0.08)' : 'rgba(255,255,255,0.02)',
+                                                                    border: active ? '1px solid #d4a017' : '1px solid rgba(255,255,255,0.06)',
+                                                                    color: active ? '#d4a017' : 'white',
+                                                                    cursor: 'pointer',
+                                                                    fontSize: '0.78rem',
+                                                                    fontWeight: active ? '800' : '500',
+                                                                    transition: 'all 0.25s ease',
+                                                                    boxShadow: active ? '0 0 10px rgba(212, 160, 23, 0.15)' : 'none'
+                                                                }}
+                                                            >
+                                                                {daily.text}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            );
+                                        })()}
+                                        
+                                        {selectedDailyId && (
+                                            <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                                <div>
+                                                    <label className="active-task-form-label">Tracking Mode</label>
+                                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                                        {[
+                                                            { id: 'stopwatch', label: '⏱️ STOPWATCH' },
+                                                            { id: 'pomodoro', label: '⏳ POMODORO' }
+                                                        ].map(m => (
+                                                            <button
+                                                                key={m.id}
+                                                                type="button"
+                                                                onClick={() => setTimerMode(m.id as 'stopwatch' | 'pomodoro')}
+                                                                style={{
+                                                                    flex: 1, padding: '10px', borderRadius: '10px',
+                                                                    border: timerMode === m.id ? '1px solid #d4a017' : '1px solid rgba(255,255,255,0.1)',
+                                                                    background: timerMode === m.id ? 'rgba(212,160,23,0.1)' : 'transparent',
+                                                                    color: timerMode === m.id ? '#d4a017' : 'rgba(255,255,255,0.5)',
+                                                                    fontSize: '0.7rem', fontWeight: '900', cursor: 'pointer'
+                                                                }}
+                                                            >
+                                                                {m.label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                {timerMode === 'pomodoro' && (
+                                                     <div>
+                                                         <label className="active-task-form-label">Duration (Minutes)</label>
+                                                         <input 
+                                                             type="number" min="1" max="480"
+                                                             className="active-task-form-input" 
+                                                             value={durationMins}
+                                                             onChange={(e) => {
+                                                                 const val = parseInt(e.target.value) || 25;
+                                                                 setDurationMins(val);
+                                                             }}
+                                                         />
+                                                     </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {setupTab === 'stopwatch' && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '1.5rem' }}>
+                                        <div>
+                                            <label className="active-task-form-label">Mission Goal / Category</label>
+                                            <input 
+                                                type="text" className="active-task-form-input" 
+                                                placeholder="e.g. Coding, Work, Fitness"
+                                                value={goalName}
+                                                onChange={(e) => setGoalName(e.target.value)}
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="active-task-form-label">Specific Task</label>
+                                            <input 
+                                                type="text" className="active-task-form-input" 
+                                                placeholder="e.g. Write clean code, Refactor layouts"
+                                                value={taskName}
+                                                onChange={(e) => setTaskName(e.target.value)}
+                                                required
+                                            />
                                         </div>
                                     </div>
-                                </div>
+                                )}
 
-                                <div className="active-task-form-group">
-                                    <label className="active-task-form-label">Mission Tracking Mode</label>
-                                    <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
-                                        {[
-                                            { id: 'pomodoro', label: '⏳ POMODORO (TIMER)' },
-                                            { id: 'stopwatch', label: '⏱️ STOPWATCH (COUNT UP)' }
-                                        ].map((m) => (
-                                            <button
-                                                key={m.id}
-                                                type="button"
-                                                onClick={() => setTimerMode(m.id as 'pomodoro' | 'stopwatch')}
-                                                style={{
-                                                    flex: 1, padding: '12px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer',
-                                                    background: timerMode === m.id ? '#d4a017' : 'rgba(255,255,255,0.05)',
-                                                    color: timerMode === m.id ? 'black' : 'rgba(255,255,255,0.6)',
-                                                    fontWeight: '950', fontSize: '0.75rem', transition: '0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                                    letterSpacing: '0.02em'
+                                {setupTab === 'pomodoro' && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '1.5rem' }}>
+                                        <div>
+                                            <label className="active-task-form-label">Mission Goal / Category</label>
+                                            <input 
+                                                type="text" className="active-task-form-input" 
+                                                placeholder="e.g. Coding, Work, Fitness"
+                                                value={goalName}
+                                                onChange={(e) => setGoalName(e.target.value)}
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="active-task-form-label">Specific Task</label>
+                                            <input 
+                                                type="text" className="active-task-form-input" 
+                                                placeholder="e.g. Pomodoro task name"
+                                                value={taskName}
+                                                onChange={(e) => setTaskName(e.target.value)}
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="active-task-form-label">Duration (Minutes)</label>
+                                            <input 
+                                                type="number" min="1" max="480"
+                                                className="active-task-form-input" 
+                                                value={durationMins}
+                                                onChange={(e) => {
+                                                    const val = parseInt(e.target.value) || 25;
+                                                    setDurationMins(val);
                                                 }}
-                                            >
-                                                {m.label}
-                                            </button>
-                                        ))}
+                                                required
+                                            />
+                                        </div>
                                     </div>
-                                </div>
-
-                                {timerMode === 'pomodoro' && (
-                                     <div className="active-task-form-group">
-                                         <label className="active-task-form-label">Duration (Minutes)</label>
-                                         <input 
-                                             type="number" 
-                                             min="1"
-                                             max="480"
-                                             className="active-task-form-input" 
-                                             placeholder="25"
-                                             value={durationMins}
-                                             onChange={(e) => {
-                                                 const val = parseInt(e.target.value) || 25;
-                                                 setDurationMins(val);
-                                                 updatePreferences({
-                                                     pomodoroSettings: {
-                                                         ...pomoSettings,
-                                                         focusMins: val,
-                                                         activeBlueprint: 'custom'
-                                                     }
-                                                 });
-                                             }}
-                                         />
-                                     </div>
-                                 )}
+                                )}
 
                                 <button 
                                                                     type="submit"

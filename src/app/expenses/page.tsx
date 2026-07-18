@@ -334,6 +334,7 @@ export default function ExpensesPage() {
                                             placeholder="0.00"
                                             value={expenseAmount}
                                             onChange={e => setExpenseAmount(e.target.value)}
+                                            onKeyDown={e => e.key === 'Enter' && handleAddExpense()}
                                             className="settings-input"
                                             style={{ minHeight: 'auto', padding: '12px', fontSize: '1.2rem', fontWeight: '900' }}
                                         />
