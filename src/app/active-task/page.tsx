@@ -396,7 +396,7 @@ export default function ActiveTaskPage() {
     }, [pomoSettings.ambientSound, pomoSettings.soundVolume, stopAmbientSound]);
 
     // Setup form state
-    const [setupTab, setSetupTab] = useState<'todo' | 'daily' | 'stopwatch' | 'pomodoro'>('todo');
+    const [setupTab, setSetupTab] = useState<'stopwatch' | 'pomodoro'>('stopwatch');
     const [selectedTodoId, setSelectedTodoId] = useState<string | null>(null);
     const [selectedDailyId, setSelectedDailyId] = useState<string | null>(null);
     const [goalName, setGoalName] = useState('');
@@ -1842,8 +1842,6 @@ export default function ActiveTaskPage() {
                                           {/* Tab switcher */}
                                 <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', padding: '4px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '1.5rem', gap: '4px' }}>
                                     {[
-                                        { id: 'todo', label: '📋 TO DO TASK' },
-                                        { id: 'daily', label: '🔄 DAILIES' },
                                         { id: 'stopwatch', label: '⏱️ STOPWATCH' },
                                         { id: 'pomodoro', label: '⏳ POMODORO' }
                                     ].map(t => (
@@ -1851,9 +1849,7 @@ export default function ActiveTaskPage() {
                                             key={t.id}
                                             type="button"
                                             onClick={() => {
-                                                setSetupTab(t.id as 'todo' | 'daily' | 'stopwatch' | 'pomodoro');
-                                                setSelectedTodoId(null);
-                                                setSelectedDailyId(null);
+                                                setSetupTab(t.id as 'stopwatch' | 'pomodoro');
                                                 setGoalName('');
                                                 setTaskName('');
                                                 if (t.id === 'stopwatch') {
@@ -1868,7 +1864,7 @@ export default function ActiveTaskPage() {
                                                 borderRadius: '10px',
                                                 border: 'none',
                                                 cursor: 'pointer',
-                                                fontSize: '0.62rem',
+                                                fontSize: '0.7rem',
                                                 fontWeight: '900',
                                                 letterSpacing: '0.03em',
                                                 background: setupTab === t.id ? '#d4a017' : 'transparent',
@@ -1881,185 +1877,7 @@ export default function ActiveTaskPage() {
                                     ))}
                                 </div>
 
-                                {setupTab === 'todo' && (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '1.5rem' }}>
-                                        <label className="active-task-form-label">Select Active To-Do Task</label>
-                                        {(() => {
-                                            const incomplete = todayChat?.todos?.filter(t => !t.completed) || [];
-                                            if (incomplete.length === 0) {
-                                                return (
-                                                    <div style={{ padding: '2rem 1.5rem', textAlign: 'center', opacity: 0.4, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '16px', fontSize: '0.75rem' }}>
-                                                        All to-do tasks completed! Banish complacency.
-                                                    </div>
-                                                );
-                                            }
-                                            return (
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px' }}>
-                                                    {incomplete.map(todo => {
-                                                        const active = selectedTodoId === todo.id;
-                                                        return (
-                                                            <div
-                                                                key={todo.id}
-                                                                onClick={() => {
-                                                                    setSelectedTodoId(todo.id);
-                                                                    setTaskName(todo.text);
-                                                                    setGoalName('To-Do Task');
-                                                                }}
-                                                                style={{
-                                                                    padding: '12px 16px',
-                                                                    borderRadius: '12px',
-                                                                    background: active ? 'rgba(212, 160, 23, 0.08)' : 'rgba(255,255,255,0.02)',
-                                                                    border: active ? '1px solid #d4a017' : '1px solid rgba(255,255,255,0.06)',
-                                                                    color: active ? '#d4a017' : 'white',
-                                                                    cursor: 'pointer',
-                                                                    fontSize: '0.78rem',
-                                                                    fontWeight: active ? '800' : '500',
-                                                                    transition: 'all 0.25s ease',
-                                                                    boxShadow: active ? '0 0 10px rgba(212, 160, 23, 0.15)' : 'none'
-                                                                }}
-                                                            >
-                                                                {todo.text}
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            );
-                                        })()}
-                                        
-                                        {selectedTodoId && (
-                                            <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                                <div>
-                                                    <label className="active-task-form-label">Tracking Mode</label>
-                                                    <div style={{ display: 'flex', gap: '10px' }}>
-                                                        {[
-                                                            { id: 'stopwatch', label: '⏱️ STOPWATCH' },
-                                                            { id: 'pomodoro', label: '⏳ POMODORO' }
-                                                        ].map(m => (
-                                                            <button
-                                                                key={m.id}
-                                                                type="button"
-                                                                onClick={() => setTimerMode(m.id as 'stopwatch' | 'pomodoro')}
-                                                                style={{
-                                                                    flex: 1, padding: '10px', borderRadius: '10px',
-                                                                    border: timerMode === m.id ? '1px solid #d4a017' : '1px solid rgba(255,255,255,0.1)',
-                                                                    background: timerMode === m.id ? 'rgba(212,160,23,0.1)' : 'transparent',
-                                                                    color: timerMode === m.id ? '#d4a017' : 'rgba(255,255,255,0.5)',
-                                                                    fontSize: '0.7rem', fontWeight: '900', cursor: 'pointer'
-                                                                }}
-                                                            >
-                                                                {m.label}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                                {timerMode === 'pomodoro' && (
-                                                     <div>
-                                                         <label className="active-task-form-label">Duration (Minutes)</label>
-                                                         <input 
-                                                             type="number" min="1" max="480"
-                                                             className="active-task-form-input" 
-                                                             value={durationMins}
-                                                             onChange={(e) => {
-                                                                 const val = parseInt(e.target.value) || 25;
-                                                                 setDurationMins(val);
-                                                             }}
-                                                         />
-                                                     </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
 
-                                {setupTab === 'daily' && (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '1.5rem' }}>
-                                        <label className="active-task-form-label">Select Active Daily Habit</label>
-                                        {(() => {
-                                            const incomplete = todayChat?.dailies?.filter(d => !d.completed) || [];
-                                            if (incomplete.length === 0) {
-                                                return (
-                                                    <div style={{ padding: '2rem 1.5rem', textAlign: 'center', opacity: 0.4, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '16px', fontSize: '0.75rem' }}>
-                                                        All daily habits completed! Excellent work.
-                                                    </div>
-                                                );
-                                            }
-                                            return (
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px' }}>
-                                                    {incomplete.map(daily => {
-                                                        const active = selectedDailyId === daily.id;
-                                                        return (
-                                                            <div
-                                                                key={daily.id}
-                                                                onClick={() => {
-                                                                    setSelectedDailyId(daily.id);
-                                                                    setTaskName(daily.text);
-                                                                    setGoalName('Daily Habit');
-                                                                }}
-                                                                style={{
-                                                                    padding: '12px 16px',
-                                                                    borderRadius: '12px',
-                                                                    background: active ? 'rgba(212, 160, 23, 0.08)' : 'rgba(255,255,255,0.02)',
-                                                                    border: active ? '1px solid #d4a017' : '1px solid rgba(255,255,255,0.06)',
-                                                                    color: active ? '#d4a017' : 'white',
-                                                                    cursor: 'pointer',
-                                                                    fontSize: '0.78rem',
-                                                                    fontWeight: active ? '800' : '500',
-                                                                    transition: 'all 0.25s ease',
-                                                                    boxShadow: active ? '0 0 10px rgba(212, 160, 23, 0.15)' : 'none'
-                                                                }}
-                                                            >
-                                                                {daily.text}
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            );
-                                        })()}
-                                        
-                                        {selectedDailyId && (
-                                            <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                                <div>
-                                                    <label className="active-task-form-label">Tracking Mode</label>
-                                                    <div style={{ display: 'flex', gap: '10px' }}>
-                                                        {[
-                                                            { id: 'stopwatch', label: '⏱️ STOPWATCH' },
-                                                            { id: 'pomodoro', label: '⏳ POMODORO' }
-                                                        ].map(m => (
-                                                            <button
-                                                                key={m.id}
-                                                                type="button"
-                                                                onClick={() => setTimerMode(m.id as 'stopwatch' | 'pomodoro')}
-                                                                style={{
-                                                                    flex: 1, padding: '10px', borderRadius: '10px',
-                                                                    border: timerMode === m.id ? '1px solid #d4a017' : '1px solid rgba(255,255,255,0.1)',
-                                                                    background: timerMode === m.id ? 'rgba(212,160,23,0.1)' : 'transparent',
-                                                                    color: timerMode === m.id ? '#d4a017' : 'rgba(255,255,255,0.5)',
-                                                                    fontSize: '0.7rem', fontWeight: '900', cursor: 'pointer'
-                                                                }}
-                                                            >
-                                                                {m.label}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                                {timerMode === 'pomodoro' && (
-                                                     <div>
-                                                         <label className="active-task-form-label">Duration (Minutes)</label>
-                                                         <input 
-                                                             type="number" min="1" max="480"
-                                                             className="active-task-form-input" 
-                                                             value={durationMins}
-                                                             onChange={(e) => {
-                                                                 const val = parseInt(e.target.value) || 25;
-                                                                 setDurationMins(val);
-                                                             }}
-                                                         />
-                                                     </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
 
                                 {setupTab === 'stopwatch' && (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '1.5rem' }}>
@@ -2072,6 +1890,25 @@ export default function ActiveTaskPage() {
                                                 onChange={(e) => setGoalName(e.target.value)}
                                                 required
                                             />
+                                            {filteredGoals.length > 0 && (
+                                                <div ref={goalsContainerRef} style={{ display: 'flex', gap: '6px', marginTop: '8px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }}>
+                                                    {filteredGoals.map(g => (
+                                                        <button
+                                                            key={g}
+                                                            type="button"
+                                                            onClick={() => setGoalName(g)}
+                                                            style={{
+                                                                flexShrink: 0, padding: '4px 12px', borderRadius: '100px',
+                                                                border: goalName.toLowerCase() === g.toLowerCase() ? '1px solid #d4a017' : '1px solid rgba(255,255,255,0.1)',
+                                                                background: goalName.toLowerCase() === g.toLowerCase() ? 'rgba(212,160,23,0.12)' : 'rgba(255,255,255,0.03)',
+                                                                color: goalName.toLowerCase() === g.toLowerCase() ? '#d4a017' : 'rgba(255,255,255,0.55)',
+                                                                fontSize: '0.65rem', fontWeight: '800', cursor: 'pointer', whiteSpace: 'nowrap',
+                                                                transition: 'all 0.2s ease'
+                                                            }}
+                                                        >{g}</button>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                         <div>
                                             <label className="active-task-form-label">Specific Task</label>
@@ -2082,6 +1919,25 @@ export default function ActiveTaskPage() {
                                                 onChange={(e) => setTaskName(e.target.value)}
                                                 required
                                             />
+                                            {filteredTasks.length > 0 && (
+                                                <div ref={tasksContainerRef} style={{ display: 'flex', gap: '6px', marginTop: '8px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }}>
+                                                    {filteredTasks.map(s => (
+                                                        <button
+                                                            key={s.id}
+                                                            type="button"
+                                                            onClick={() => setTaskName(s.task)}
+                                                            style={{
+                                                                flexShrink: 0, padding: '4px 12px', borderRadius: '100px',
+                                                                border: taskName.toLowerCase() === s.task.toLowerCase() ? '1px solid #d4a017' : '1px solid rgba(255,255,255,0.1)',
+                                                                background: taskName.toLowerCase() === s.task.toLowerCase() ? 'rgba(212,160,23,0.12)' : 'rgba(255,255,255,0.03)',
+                                                                color: taskName.toLowerCase() === s.task.toLowerCase() ? '#d4a017' : 'rgba(255,255,255,0.55)',
+                                                                fontSize: '0.65rem', fontWeight: '800', cursor: 'pointer', whiteSpace: 'nowrap',
+                                                                transition: 'all 0.2s ease'
+                                                            }}
+                                                        >{s.task}</button>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 )}
@@ -2097,6 +1953,25 @@ export default function ActiveTaskPage() {
                                                 onChange={(e) => setGoalName(e.target.value)}
                                                 required
                                             />
+                                            {filteredGoals.length > 0 && (
+                                                <div ref={goalsContainerRef} style={{ display: 'flex', gap: '6px', marginTop: '8px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }}>
+                                                    {filteredGoals.map(g => (
+                                                        <button
+                                                            key={g}
+                                                            type="button"
+                                                            onClick={() => setGoalName(g)}
+                                                            style={{
+                                                                flexShrink: 0, padding: '4px 12px', borderRadius: '100px',
+                                                                border: goalName.toLowerCase() === g.toLowerCase() ? '1px solid #d4a017' : '1px solid rgba(255,255,255,0.1)',
+                                                                background: goalName.toLowerCase() === g.toLowerCase() ? 'rgba(212,160,23,0.12)' : 'rgba(255,255,255,0.03)',
+                                                                color: goalName.toLowerCase() === g.toLowerCase() ? '#d4a017' : 'rgba(255,255,255,0.55)',
+                                                                fontSize: '0.65rem', fontWeight: '800', cursor: 'pointer', whiteSpace: 'nowrap',
+                                                                transition: 'all 0.2s ease'
+                                                            }}
+                                                        >{g}</button>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                         <div>
                                             <label className="active-task-form-label">Specific Task</label>
@@ -2107,6 +1982,25 @@ export default function ActiveTaskPage() {
                                                 onChange={(e) => setTaskName(e.target.value)}
                                                 required
                                             />
+                                            {filteredTasks.length > 0 && (
+                                                <div ref={tasksContainerRef} style={{ display: 'flex', gap: '6px', marginTop: '8px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }}>
+                                                    {filteredTasks.map(s => (
+                                                        <button
+                                                            key={s.id}
+                                                            type="button"
+                                                            onClick={() => setTaskName(s.task)}
+                                                            style={{
+                                                                flexShrink: 0, padding: '4px 12px', borderRadius: '100px',
+                                                                border: taskName.toLowerCase() === s.task.toLowerCase() ? '1px solid #d4a017' : '1px solid rgba(255,255,255,0.1)',
+                                                                background: taskName.toLowerCase() === s.task.toLowerCase() ? 'rgba(212,160,23,0.12)' : 'rgba(255,255,255,0.03)',
+                                                                color: taskName.toLowerCase() === s.task.toLowerCase() ? '#d4a017' : 'rgba(255,255,255,0.55)',
+                                                                fontSize: '0.65rem', fontWeight: '800', cursor: 'pointer', whiteSpace: 'nowrap',
+                                                                transition: 'all 0.2s ease'
+                                                            }}
+                                                        >{s.task}</button>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                         <div>
                                             <label className="active-task-form-label">Duration (Minutes)</label>
