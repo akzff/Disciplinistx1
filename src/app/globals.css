@@ -2864,6 +2864,159 @@ input {
   border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
+/* Live Focus Intelligence Dock */
+.active-running-focus-dock {
+  width: 100%;
+  max-width: 480px;
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.focus-dock-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: 100%;
+}
+
+.focus-dock-metric-card {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.focus-dock-metric-label {
+  font-size: 0.6rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.45);
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.focus-dock-metric-val {
+  font-size: 1rem;
+  font-weight: 950;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+
+.focus-dock-metric-val--green {
+  color: #10b981;
+}
+
+.focus-dock-metric-val--gold {
+  color: #d4a017;
+}
+
+.focus-dock-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 14px;
+  padding: 8px 12px;
+  width: 100%;
+}
+
+.focus-dock-sound-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.focus-dock-sound-chip {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.68rem;
+  font-weight: 750;
+  padding: 4px 10px;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.focus-dock-sound-chip:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+}
+
+.focus-dock-sound-chip--active {
+  background: rgba(212, 160, 23, 0.15) !important;
+  border-color: rgba(212, 160, 23, 0.4) !important;
+  color: #d4a017 !important;
+  font-weight: 900 !important;
+}
+
+.focus-dock-extend-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.68rem;
+  font-weight: 850;
+  padding: 4px 12px;
+  border-radius: 100px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.focus-dock-extend-btn:hover {
+  background: rgba(212, 160, 23, 0.15);
+  border-color: #d4a017;
+  color: #d4a017;
+}
+
+.focus-dock-todos {
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 14px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.focus-dock-todos-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.62rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
+}
+
+.focus-dock-todo-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.focus-dock-todo-item:hover {
+  color: #10b981;
+}
+
 .break-on-deck-card {
   transition: all 0.3s ease;
 }
@@ -4025,28 +4178,28 @@ input {
     color: rgba(255, 255, 255, 0.4) !important;
   }
 
-  /* Looping Visual Card: Scaled to fit single view perfectly */
+  /* Looping Visual Card: Prominent hero centerpiece */
   .visual-loop-card {
-    width: min(175px, 42vw) !important;
-    height: min(175px, 42vw) !important;
-    max-width: 175px !important;
-    max-height: 175px !important;
+    width: min(230px, 58vw) !important;
+    height: min(230px, 58vw) !important;
+    max-width: 230px !important;
+    max-height: 230px !important;
     aspect-ratio: 1 / 1 !important;
-    border-radius: 22px !important;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
-    margin: 0 auto !important;
+    border-radius: 26px !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6) !important;
+    margin: 0.25rem auto !important;
   }
 
   .visual-loop-canvas-placeholder video {
-    border-radius: 22px !important;
+    border-radius: 26px !important;
   }
 
   /* Timer & Progress Block */
   .timer-progress-block {
-    gap: 0.3rem !important;
+    gap: 0.35rem !important;
     width: 100% !important;
-    max-width: 310px !important;
-    margin: 0.15rem auto 0 auto !important;
+    max-width: 340px !important;
+    margin: 0.25rem auto 0 auto !important;
   }
 
   .timer-loading-bar-bg {
@@ -4071,7 +4224,7 @@ input {
   }
 
   .timer-elapsed {
-    font-size: 2.15rem !important;
+    font-size: 2.5rem !important;
     line-height: 1 !important;
   }
 
@@ -4099,22 +4252,83 @@ input {
   /* Action Buttons */
   .timer-controls-row {
     width: 100% !important;
-    max-width: 310px !important;
-    gap: 8px !important;
-    margin-top: 0.35rem !important;
+    max-width: 340px !important;
+    gap: 12px !important;
+    margin-top: 0.45rem !important;
     justify-content: center !important;
   }
 
   .timer-btn-pause,
   .timer-btn-finish {
     flex: 1 !important;
-    padding: 0.65rem 0.75rem !important;
-    font-size: 0.75rem !important;
-    gap: 6px !important;
+    padding: 0.8rem 1rem !important;
+    font-size: 0.82rem !important;
+    gap: 8px !important;
     justify-content: center !important;
     letter-spacing: 0.08em !important;
     border-radius: 100px !important;
-    min-height: 42px !important;
+    min-height: 46px !important;
+  }
+
+  .timer-btn-pause svg,
+  .timer-btn-finish svg {
+    width: 13px !important;
+    height: 13px !important;
+  }
+
+  /* Live Focus Intelligence Dock Mobile Rules */
+  .active-running-focus-dock {
+    max-width: 340px !important;
+    margin: 0.75rem auto 0 auto !important;
+    gap: 0.5rem !important;
+  }
+
+  .focus-dock-metrics {
+    gap: 6px !important;
+  }
+
+  .focus-dock-metric-card {
+    padding: 8px 4px !important;
+    border-radius: 12px !important;
+  }
+
+  .focus-dock-metric-label {
+    font-size: 0.54rem !important;
+  }
+
+  .focus-dock-metric-val {
+    font-size: 0.95rem !important;
+  }
+
+  .focus-dock-controls-row {
+    padding: 6px 10px !important;
+    border-radius: 12px !important;
+  }
+
+  .focus-dock-sound-chip {
+    font-size: 0.62rem !important;
+    padding: 3px 8px !important;
+  }
+
+  .focus-dock-extend-btn {
+    font-size: 0.62rem !important;
+    padding: 4px 10px !important;
+  }
+
+  .focus-dock-todos {
+    padding: 8px 10px !important;
+    border-radius: 12px !important;
+    gap: 5px !important;
+  }
+
+  .focus-dock-todos-header {
+    font-size: 0.58rem !important;
+  }
+
+  .focus-dock-todo-item {
+    font-size: 0.72rem !important;
+    gap: 6px !important;
+  }
   }
 
   .timer-btn-pause svg,

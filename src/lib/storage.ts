@@ -202,6 +202,13 @@ export interface PomodoroSettings {
     activeBlueprint: 'classic' | 'monk' | 'ultra' | 'custom';
 }
 
+export interface GoalTaskSuggestion {
+    id: string;
+    goal: string;
+    task: string;
+    usageCount?: number;
+}
+
 export interface UserPreferences {
     name: string;
     bio: string;
@@ -215,6 +222,7 @@ export interface UserPreferences {
     habitNotes: HabitIssue[];
     selectedModel: string;
     pomodoroSettings?: PomodoroSettings;
+    goalSuggestions?: GoalTaskSuggestion[];
 }
 
 const getChatsKey = (userId?: string) => userId ? `disciplinist_chats_${userId}` : 'disciplinist_chats';

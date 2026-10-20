@@ -4,18 +4,12 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useData } from '@/lib/DataContext';
 import { useAuthContext } from '@/lib/AuthContext';
 import { useUser } from '@clerk/nextjs';
-import { storage, ActiveTask, formatTime } from '@/lib/storage';
+import { storage, ActiveTask, formatTime, GoalTaskSuggestion } from '@/lib/storage';
 import { cloudStorage } from '@/lib/cloudStorage';
 import { NavigationBar } from '@/components/NavigationBar';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import Image from 'next/image';
 
-interface GoalTaskSuggestion {
-    id: string;
-    goal: string;
-    task: string;
-    usageCount?: number;
-}
 
 const DEFAULT_SUGGESTIONS: GoalTaskSuggestion[] = [
     { id: '1', goal: 'Workout', task: 'Back day' },
@@ -433,24 +427,43 @@ export default function ActiveTaskPage() {
     const goalsContainerRef = useRef<HTMLDivElement>(null);
     const tasksContainerRef = useRef<HTMLDivElement>(null);
 
-    // Load suggestions on mount
+    // Load suggestions — prefer cloud-synced preferences, fall back to localStorage
     useEffect(() => {
+        if (!isCloudSynced) return; // wait until cloud data is ready
+
+        // Cloud preferences are the source of truth once synced
+        if (preferences?.goalSuggestions && preferences.goalSuggestions.length > 0) {
+            setSuggestions(preferences.goalSuggestions);
+            return;
+        }
+
+        // One-time migration: lift any existing localStorage suggestions into preferences
         const stored = localStorage.getItem('disciplinist_goal_task_suggestions');
         if (stored) {
             try {
-                setSuggestions(JSON.parse(stored));
+                const parsed: GoalTaskSuggestion[] = JSON.parse(stored);
+                if (parsed.length > 0) {
+                    setSuggestions(parsed);
+                    // Push them up to cloud so other devices get them
+                    updatePreferences({ goalSuggestions: parsed });
+                    localStorage.removeItem('disciplinist_goal_task_suggestions');
+                    return;
+                }
             } catch {
-                setSuggestions(DEFAULT_SUGGESTIONS);
+                // ignore parse errors
             }
-        } else {
-            setSuggestions(DEFAULT_SUGGESTIONS);
-            localStorage.setItem('disciplinist_goal_task_suggestions', JSON.stringify(DEFAULT_SUGGESTIONS));
         }
-    }, []);
+
+        // Nothing stored anywhere — use defaults
+        setSuggestions(DEFAULT_SUGGESTIONS);
+        updatePreferences({ goalSuggestions: DEFAULT_SUGGESTIONS });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isCloudSynced]);
 
     const saveSuggestions = (list: GoalTaskSuggestion[]) => {
         setSuggestions(list);
-        localStorage.setItem('disciplinist_goal_task_suggestions', JSON.stringify(list));
+        // Persist locally (instant) then sync to cloud via preferences
+        updatePreferences({ goalSuggestions: list });
     };
 
     const handleSaveGoalEdit = (oldGoalName: string, newGoalName: string) => {
@@ -1534,6 +1547,23 @@ export default function ActiveTaskPage() {
                                         >
                                             SKIP BREAK (BACK TO WORK)
                                         </button>
+                                    </div>
+
+                                    <div className="active-running-focus-dock">
+                                        <div className="focus-dock-metrics">
+                                            <div className="focus-dock-metric-card">
+                                                <span className="focus-dock-metric-label">Focus Today</span>
+                                                <span className="focus-dock-metric-val">{formatTime(todayStats.totalFocusMs, false)}</span>
+                                            </div>
+                                            <div className="focus-dock-metric-card">
+                                                <span className="focus-dock-metric-label">Intensity</span>
+                                                <span className="focus-dock-metric-val focus-dock-metric-val--green">{todayStats.focusConsistency}%</span>
+                                            </div>
+                                            <div className="focus-dock-metric-card">
+                                                <span className="focus-dock-metric-label">Completed</span>
+                                                <span className="focus-dock-metric-val focus-dock-metric-val--gold">{todayTotalCycles} Cycle{todayTotalCycles !== 1 ? 's' : ''}</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -2625,6 +2655,78 @@ export default function ActiveTaskPage() {
                                             FINISH
                                         </button>
                                      </div>
+
+                                    {/* Live Focus Intelligence Dock (Fills vacant mobile space with current tools & stats) */}
+                                    <div className="active-running-focus-dock">
+                                        <div className="focus-dock-metrics">
+                                            <div className="focus-dock-metric-card">
+                                                <span className="focus-dock-metric-label">Focus Today</span>
+                                                <span className="focus-dock-metric-val">{formatTime(todayStats.totalFocusMs, false)}</span>
+                                            </div>
+                                            <div className="focus-dock-metric-card">
+                                                <span className="focus-dock-metric-label">Intensity</span>
+                                                <span className="focus-dock-metric-val focus-dock-metric-val--green">{todayStats.focusConsistency}%</span>
+                                            </div>
+                                            <div className="focus-dock-metric-card">
+                                                <span className="focus-dock-metric-label">Completed</span>
+                                                <span className="focus-dock-metric-val focus-dock-metric-val--gold">{todayTotalCycles} Cycle{todayTotalCycles !== 1 ? 's' : ''}</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="focus-dock-controls-row">
+                                            <div className="focus-dock-sound-chips">
+                                                <span style={{ fontSize: '0.62rem', fontWeight: '800', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Audio</span>
+                                                {[
+                                                    { id: 'none', label: 'Off' },
+                                                    { id: 'pink_noise', label: 'Pink' },
+                                                    { id: 'binaural_beats', label: 'Alpha' }
+                                                ].map(snd => (
+                                                    <button
+                                                        key={snd.id}
+                                                        type="button"
+                                                        onClick={() => updatePreferences({ pomodoroSettings: { ...pomoSettings, ambientSound: snd.id as typeof pomoSettings.ambientSound } })}
+                                                        className={`focus-dock-sound-chip${pomoSettings.ambientSound === snd.id ? ' focus-dock-sound-chip--active' : ''}`}
+                                                    >
+                                                        {snd.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => handleExtendSession(5)}
+                                                className="focus-dock-extend-btn"
+                                                title="Add 5 minutes to current focus session"
+                                            >
+                                                +5m Focus
+                                            </button>
+                                        </div>
+
+                                        {todayChat?.todos && todayChat.todos.filter(t => !t.completed).length > 0 && (
+                                            <div className="focus-dock-todos">
+                                                <div className="focus-dock-todos-header">
+                                                    <span>Today&apos;s Missions</span>
+                                                    <span>{todayChat.todos.filter(t => t.completed).length}/{todayChat.todos.length} Done</span>
+                                                </div>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                                                    {todayChat.todos.filter(t => !t.completed).slice(0, 2).map(todo => (
+                                                        <div 
+                                                            key={todo.id} 
+                                                            className="focus-dock-todo-item"
+                                                            onClick={() => {
+                                                                const updated = (todayChat.todos || []).map(t => t.id === todo.id ? { ...t, completed: true } : t);
+                                                                setLocalChat(activeDay, { todos: updated });
+                                                                cloudStorage.saveChat(activeDay, { todos: updated }, user?.id || undefined, true).catch(console.warn);
+                                                            }}
+                                                        >
+                                                            <div style={{ width: '13px', height: '13px', borderRadius: '4px', border: '1.5px solid rgba(255,255,255,0.3)', flexShrink: 0 }} />
+                                                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{todo.text}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
 
 
                                  </div>
