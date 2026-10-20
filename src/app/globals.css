@@ -2864,159 +2864,6 @@ input {
   border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
-/* Live Focus Intelligence Dock */
-.active-running-focus-dock {
-  width: 100%;
-  max-width: 480px;
-  margin-top: 1.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.focus-dock-metrics {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  width: 100%;
-}
-
-.focus-dock-metric-card {
-  background: rgba(255, 255, 255, 0.025);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 16px;
-  padding: 10px 8px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-}
-
-.focus-dock-metric-label {
-  font-size: 0.6rem;
-  font-weight: 850;
-  letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.45);
-  text-transform: uppercase;
-  margin-bottom: 2px;
-}
-
-.focus-dock-metric-val {
-  font-size: 1rem;
-  font-weight: 950;
-  color: #fff;
-  letter-spacing: -0.01em;
-}
-
-.focus-dock-metric-val--green {
-  color: #10b981;
-}
-
-.focus-dock-metric-val--gold {
-  color: #d4a017;
-}
-
-.focus-dock-controls-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 14px;
-  padding: 8px 12px;
-  width: 100%;
-}
-
-.focus-dock-sound-chips {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.focus-dock-sound-chip {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.68rem;
-  font-weight: 750;
-  padding: 4px 10px;
-  border-radius: 100px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-
-.focus-dock-sound-chip:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: white;
-}
-
-.focus-dock-sound-chip--active {
-  background: rgba(212, 160, 23, 0.15) !important;
-  border-color: rgba(212, 160, 23, 0.4) !important;
-  color: #d4a017 !important;
-  font-weight: 900 !important;
-}
-
-.focus-dock-extend-btn {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.85);
-  font-size: 0.68rem;
-  font-weight: 850;
-  padding: 4px 12px;
-  border-radius: 100px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.2s ease;
-}
-
-.focus-dock-extend-btn:hover {
-  background: rgba(212, 160, 23, 0.15);
-  border-color: #d4a017;
-  color: #d4a017;
-}
-
-.focus-dock-todos {
-  background: rgba(255, 255, 255, 0.015);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 14px;
-  padding: 10px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  width: 100%;
-}
-
-.focus-dock-todos-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 0.62rem;
-  font-weight: 850;
-  letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.4);
-  text-transform: uppercase;
-}
-
-.focus-dock-todo-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.85);
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.focus-dock-todo-item:hover {
-  color: #10b981;
-}
-
 .break-on-deck-card {
   transition: all 0.3s ease;
 }
@@ -4057,12 +3904,16 @@ input {
 
   /* Active task scroll container: Fits full page in single view without overflow */
   .active-task-main-scroll {
-    padding: 0.4rem 0.75rem calc(4.2rem + env(safe-area-inset-bottom, 0px)) 0.75rem !important;
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 0.5rem 1rem calc(4.6rem + env(safe-area-inset-bottom, 0px)) 1rem !important;
     overflow-x: hidden !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
     scrollbar-width: none !important;
     -ms-overflow-style: none !important;
+    box-sizing: border-box !important;
   }
 
   .active-task-main-scroll::-webkit-scrollbar {
@@ -4072,27 +3923,33 @@ input {
   }
 
   .active-task-page-container {
-    padding: 0.25rem 0.25rem 0.5rem !important;
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 !important;
     width: 100% !important;
     max-width: 100% !important;
-    min-height: auto !important;
-    justify-content: flex-start !important;
+    min-height: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    justify-content: space-between !important;
   }
 
   /* Today's Progress Badge: Sleek, compact, single-line chip */
   .active-today-progress-wrapper {
     margin-bottom: 0.4rem !important;
     width: 100% !important;
+    display: flex !important;
     justify-content: center !important;
+    flex-shrink: 0 !important;
   }
 
   .active-today-progress-pill {
-    padding: 4px 12px !important;
-    gap: 6px !important;
+    padding: 5px 14px !important;
+    gap: 7px !important;
     border-radius: 999px !important;
     background: rgba(212, 160, 23, 0.08) !important;
-    border: 1px solid rgba(212, 160, 23, 0.22) !important;
-    box-shadow: none !important;
+    border: 1px solid rgba(212, 160, 23, 0.24) !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25) !important;
     max-width: 95vw !important;
   }
 
@@ -4101,15 +3958,16 @@ input {
   }
 
   .active-today-progress-label {
-    font-size: 0.64rem !important;
-    letter-spacing: 0.04em !important;
+    font-size: 0.65rem !important;
+    letter-spacing: 0.06em !important;
     color: rgba(255, 255, 255, 0.75) !important;
     white-space: nowrap !important;
   }
 
   .active-today-progress-badge {
-    font-size: 0.66rem !important;
-    padding: 1px 7px !important;
+    font-size: 0.68rem !important;
+    font-weight: 900 !important;
+    padding: 2px 8px !important;
     background: rgba(212, 160, 23, 0.16) !important;
     border: 1px solid rgba(212, 160, 23, 0.3) !important;
     color: #d4a017 !important;
@@ -4117,42 +3975,60 @@ input {
     white-space: nowrap !important;
   }
 
-  /* Active Running Dashboard */
+  /* Active Running Dashboard: Covers full viewport height gracefully */
   .active-running-dashboard {
-    gap: 0.35rem !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    flex: 1 !important;
     width: 100% !important;
-    max-width: 100% !important;
+    height: 100% !important;
+    min-height: 100% !important;
+    gap: 0.5rem !important;
   }
 
   .active-running-title-block {
-    margin-bottom: 0.15rem !important;
+    margin: 0 !important;
     padding: 0 0.5rem !important;
+    text-align: center !important;
+    flex-shrink: 0 !important;
   }
 
   .active-running-goal {
-    font-size: 0.58rem !important;
-    letter-spacing: 0.15em !important;
+    font-size: 0.65rem !important;
+    font-weight: 900 !important;
+    letter-spacing: 0.2em !important;
     margin-bottom: 2px !important;
+    color: #10b981 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
   }
 
   .active-running-task {
-    font-size: 1.25rem !important;
-    letter-spacing: -0.01em !important;
+    font-size: clamp(1.35rem, 4.5vw, 1.7rem) !important;
+    font-weight: 900 !important;
+    letter-spacing: -0.02em !important;
     line-height: 1.2 !important;
     word-break: break-word !important;
-    max-width: 88vw !important;
+    max-width: 90vw !important;
     margin: 0 auto !important;
   }
 
   /* Single Inspiring Quote above the loop card */
   .active-running-quotes-row {
+    display: flex !important;
     flex-direction: column !important;
-    gap: 0.35rem !important;
-    padding: 0 !important;
+    align-items: center !important;
+    justify-content: center !important;
     width: 100% !important;
     max-width: 100% !important;
-    align-items: center !important;
-    margin: 0.15rem 0 !important;
+    gap: 0.5rem !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    flex: 1 1 auto !important;
   }
 
   .quote-flank.right {
@@ -4164,47 +4040,59 @@ input {
     text-align: center !important;
     margin: 0 auto !important;
     gap: 2px !important;
+    flex-shrink: 0 !important;
   }
 
   .quote-flank-text {
-    font-size: 0.75rem !important;
-    line-height: 1.3 !important;
+    font-size: 0.78rem !important;
+    line-height: 1.35 !important;
     color: rgba(255, 255, 255, 0.8) !important;
+    font-style: italic !important;
   }
 
   .quote-flank-author {
     font-size: 0.6rem !important;
     margin-top: 2px !important;
     color: rgba(255, 255, 255, 0.4) !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.05em !important;
+    text-transform: uppercase !important;
   }
 
-  /* Looping Visual Card: Prominent hero centerpiece */
+  /* Looping Visual Card: Prominent hero centerpiece sized to fill screen */
   .visual-loop-card {
-    width: min(230px, 58vw) !important;
-    height: min(230px, 58vw) !important;
-    max-width: 230px !important;
-    max-height: 230px !important;
+    width: min(280px, 76vw) !important;
+    height: min(280px, 76vw, 34vh) !important;
+    max-width: 290px !important;
+    max-height: 290px !important;
     aspect-ratio: 1 / 1 !important;
-    border-radius: 26px !important;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6) !important;
+    border-radius: 28px !important;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.65), 0 0 24px rgba(16, 185, 129, 0.12) !important;
     margin: 0.25rem auto !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    flex-shrink: 0 !important;
   }
 
   .visual-loop-canvas-placeholder video {
-    border-radius: 26px !important;
+    border-radius: 28px !important;
   }
 
   /* Timer & Progress Block */
   .timer-progress-block {
-    gap: 0.35rem !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
     width: 100% !important;
-    max-width: 340px !important;
-    margin: 0.25rem auto 0 auto !important;
+    max-width: 360px !important;
+    gap: 0.5rem !important;
+    margin: 0 auto !important;
+    flex-shrink: 0 !important;
   }
 
   .timer-loading-bar-bg {
     height: 6px !important;
     width: 100% !important;
+    border-radius: 100px !important;
   }
 
   .timer-loading-bar-fill::after {
@@ -4214,18 +4102,24 @@ input {
   }
 
   .timer-numbers {
+    display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 3px !important;
-    margin: 2px 0 !important;
+    gap: 4px !important;
+    margin: 2px 0 4px 0 !important;
     padding: 0 !important;
     width: 100% !important;
   }
 
   .timer-elapsed {
-    font-size: 2.5rem !important;
+    font-size: clamp(2.8rem, 10vw, 3.5rem) !important;
+    font-weight: 950 !important;
+    font-family: monospace !important;
+    letter-spacing: -0.02em !important;
     line-height: 1 !important;
+    color: white !important;
+    text-shadow: 0 2px 16px rgba(0, 0, 0, 0.4) !important;
   }
 
   .timer-sub-details {
@@ -4233,18 +4127,25 @@ input {
     flex-direction: row !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 8px !important;
+    gap: 10px !important;
     width: 100% !important;
   }
 
   .timer-total {
-    font-size: 0.65rem !important;
-    letter-spacing: 0.05em !important;
+    font-size: 0.68rem !important;
+    font-weight: 900 !important;
+    letter-spacing: 0.08em !important;
+    color: #d4a017 !important;
+    opacity: 0.85 !important;
   }
 
   .timer-cycles-pill {
-    font-size: 0.62rem !important;
-    padding: 2px 7px !important;
+    font-size: 0.64rem !important;
+    font-weight: 800 !important;
+    color: #10b981 !important;
+    background: rgba(16, 185, 129, 0.12) !important;
+    border: 1px solid rgba(16, 185, 129, 0.25) !important;
+    padding: 2px 8px !important;
     letter-spacing: 0.04em !important;
     border-radius: 99px !important;
   }
@@ -4252,105 +4153,56 @@ input {
   /* Action Buttons */
   .timer-controls-row {
     width: 100% !important;
-    max-width: 340px !important;
-    gap: 12px !important;
-    margin-top: 0.45rem !important;
+    max-width: 360px !important;
+    display: flex !important;
+    gap: 14px !important;
+    margin-top: 0.25rem !important;
     justify-content: center !important;
+    flex-shrink: 0 !important;
   }
 
   .timer-btn-pause,
   .timer-btn-finish {
     flex: 1 !important;
-    padding: 0.8rem 1rem !important;
-    font-size: 0.82rem !important;
+    padding: 0.85rem 1rem !important;
+    font-size: 0.88rem !important;
+    font-weight: 900 !important;
     gap: 8px !important;
     justify-content: center !important;
     letter-spacing: 0.08em !important;
     border-radius: 100px !important;
-    min-height: 46px !important;
+    min-height: 48px !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35) !important;
   }
 
   .timer-btn-pause svg,
   .timer-btn-finish svg {
-    width: 13px !important;
-    height: 13px !important;
+    width: 14px !important;
+    height: 14px !important;
   }
 
-  /* Live Focus Intelligence Dock Mobile Rules */
-  .active-running-focus-dock {
-    max-width: 340px !important;
-    margin: 0.75rem auto 0 auto !important;
-    gap: 0.5rem !important;
+  /* Break Mode responsive overrides */
+  .active-running-dashboard--break {
+    justify-content: space-between !important;
   }
 
-  .focus-dock-metrics {
-    gap: 6px !important;
-  }
-
-  .focus-dock-metric-card {
-    padding: 8px 4px !important;
-    border-radius: 12px !important;
-  }
-
-  .focus-dock-metric-label {
-    font-size: 0.54rem !important;
-  }
-
-  .focus-dock-metric-val {
-    font-size: 0.95rem !important;
-  }
-
-  .focus-dock-controls-row {
-    padding: 6px 10px !important;
-    border-radius: 12px !important;
-  }
-
-  .focus-dock-sound-chip {
-    font-size: 0.62rem !important;
-    padding: 3px 8px !important;
-  }
-
-  .focus-dock-extend-btn {
-    font-size: 0.62rem !important;
-    padding: 4px 10px !important;
-  }
-
-  .focus-dock-todos {
-    padding: 8px 10px !important;
-    border-radius: 12px !important;
-    gap: 5px !important;
-  }
-
-  .focus-dock-todos-header {
-    font-size: 0.58rem !important;
-  }
-
-  .focus-dock-todo-item {
-    font-size: 0.72rem !important;
-    gap: 6px !important;
-  }
-
-  .timer-btn-pause svg,
-  .timer-btn-finish svg {
-    width: 12px !important;
-    height: 12px !important;
-  }
-
-  /* Break Mode compact styling */
   .active-running-dashboard--break .active-running-quotes-row {
     margin: 0.5rem 0 !important;
     min-height: auto !important;
   }
 
   .active-running-dashboard--break .quote-flank-text {
-    font-size: 0.8rem !important;
+    font-size: 0.82rem !important;
   }
 
   .break-on-deck-card {
     margin-top: 0.5rem !important;
-    padding: 8px 14px !important;
+    padding: 10px 14px !important;
     border-radius: 14px !important;
-    gap: 6px !important;
+    gap: 8px !important;
+    width: 100% !important;
+    max-width: 360px !important;
+    box-sizing: border-box !important;
   }
 
   /* Setup Form Mobile Styling */

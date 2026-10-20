@@ -1548,23 +1548,6 @@ export default function ActiveTaskPage() {
                                             SKIP BREAK (BACK TO WORK)
                                         </button>
                                     </div>
-
-                                    <div className="active-running-focus-dock">
-                                        <div className="focus-dock-metrics">
-                                            <div className="focus-dock-metric-card">
-                                                <span className="focus-dock-metric-label">Focus Today</span>
-                                                <span className="focus-dock-metric-val">{formatTime(todayStats.totalFocusMs, false)}</span>
-                                            </div>
-                                            <div className="focus-dock-metric-card">
-                                                <span className="focus-dock-metric-label">Intensity</span>
-                                                <span className="focus-dock-metric-val focus-dock-metric-val--green">{todayStats.focusConsistency}%</span>
-                                            </div>
-                                            <div className="focus-dock-metric-card">
-                                                <span className="focus-dock-metric-label">Completed</span>
-                                                <span className="focus-dock-metric-val focus-dock-metric-val--gold">{todayTotalCycles} Cycle{todayTotalCycles !== 1 ? 's' : ''}</span>
-                                            </div>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         ) : !currentActiveTask ? (
@@ -2656,77 +2639,7 @@ export default function ActiveTaskPage() {
                                         </button>
                                      </div>
 
-                                    {/* Live Focus Intelligence Dock (Fills vacant mobile space with current tools & stats) */}
-                                    <div className="active-running-focus-dock">
-                                        <div className="focus-dock-metrics">
-                                            <div className="focus-dock-metric-card">
-                                                <span className="focus-dock-metric-label">Focus Today</span>
-                                                <span className="focus-dock-metric-val">{formatTime(todayStats.totalFocusMs, false)}</span>
-                                            </div>
-                                            <div className="focus-dock-metric-card">
-                                                <span className="focus-dock-metric-label">Intensity</span>
-                                                <span className="focus-dock-metric-val focus-dock-metric-val--green">{todayStats.focusConsistency}%</span>
-                                            </div>
-                                            <div className="focus-dock-metric-card">
-                                                <span className="focus-dock-metric-label">Completed</span>
-                                                <span className="focus-dock-metric-val focus-dock-metric-val--gold">{todayTotalCycles} Cycle{todayTotalCycles !== 1 ? 's' : ''}</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="focus-dock-controls-row">
-                                            <div className="focus-dock-sound-chips">
-                                                <span style={{ fontSize: '0.62rem', fontWeight: '800', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Audio</span>
-                                                {[
-                                                    { id: 'none', label: 'Off' },
-                                                    { id: 'pink_noise', label: 'Pink' },
-                                                    { id: 'binaural_beats', label: 'Alpha' }
-                                                ].map(snd => (
-                                                    <button
-                                                        key={snd.id}
-                                                        type="button"
-                                                        onClick={() => updatePreferences({ pomodoroSettings: { ...pomoSettings, ambientSound: snd.id as typeof pomoSettings.ambientSound } })}
-                                                        className={`focus-dock-sound-chip${pomoSettings.ambientSound === snd.id ? ' focus-dock-sound-chip--active' : ''}`}
-                                                    >
-                                                        {snd.label}
-                                                    </button>
-                                                ))}
-                                            </div>
-
-                                            <button
-                                                type="button"
-                                                onClick={() => handleExtendSession(5)}
-                                                className="focus-dock-extend-btn"
-                                                title="Add 5 minutes to current focus session"
-                                            >
-                                                +5m Focus
-                                            </button>
-                                        </div>
-
-                                        {todayChat?.todos && todayChat.todos.filter(t => !t.completed).length > 0 && (
-                                            <div className="focus-dock-todos">
-                                                <div className="focus-dock-todos-header">
-                                                    <span>Today&apos;s Missions</span>
-                                                    <span>{todayChat.todos.filter(t => t.completed).length}/{todayChat.todos.length} Done</span>
-                                                </div>
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                                                    {todayChat.todos.filter(t => !t.completed).slice(0, 2).map(todo => (
-                                                        <div 
-                                                            key={todo.id} 
-                                                            className="focus-dock-todo-item"
-                                                            onClick={() => {
-                                                                const updated = (todayChat.todos || []).map(t => t.id === todo.id ? { ...t, completed: true } : t);
-                                                                setLocalChat(activeDay, { todos: updated });
-                                                                cloudStorage.saveChat(activeDay, { todos: updated }, user?.id || undefined, true).catch(console.warn);
-                                                            }}
-                                                        >
-                                                            <div style={{ width: '13px', height: '13px', borderRadius: '4px', border: '1.5px solid rgba(255,255,255,0.3)', flexShrink: 0 }} />
-                                                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{todo.text}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
+                                    
 
 
                                  </div>
