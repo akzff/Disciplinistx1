@@ -14,6 +14,7 @@ interface GoalTaskSuggestion {
     id: string;
     goal: string;
     task: string;
+    usageCount?: number;
 }
 
 const DEFAULT_SUGGESTIONS: GoalTaskSuggestion[] = [
@@ -402,7 +403,7 @@ export default function ActiveTaskPage() {
     const [goalName, setGoalName] = useState('');
     const [taskName, setTaskName] = useState('');
     const [durationMins, setDurationMins] = useState(25);
-    const [timerMode, setTimerMode] = useState<'pomodoro' | 'stopwatch'>('pomodoro');
+    const [timerMode, setTimerMode] = useState<'pomodoro' | 'stopwatch'>('stopwatch');
     const [now, setNow] = useState(Date.now());
     
     // Video Ref
@@ -494,9 +495,14 @@ export default function ActiveTaskPage() {
         setTaskName('');
     };
 
-    // Calculate unique goals for the suggestions bar
+    // Calculate unique goals for the suggestions bar, sorted by total usage frequency
     const uniqueGoals = useMemo(() => {
-        return Array.from(new Set(suggestions.map(s => s.goal)));
+        const goalUsage: Record<string, number> = {};
+        suggestions.forEach(s => {
+            goalUsage[s.goal] = (goalUsage[s.goal] || 0) + (s.usageCount || 0);
+        });
+        return Array.from(new Set(suggestions.map(s => s.goal)))
+            .sort((a, b) => (goalUsage[b] || 0) - (goalUsage[a] || 0));
     }, [suggestions]);
 
     // Recommend closest related registered goals based on typed letters
@@ -524,7 +530,8 @@ export default function ActiveTaskPage() {
     const filteredTasks = useMemo(() => {
         const query = taskName.trim().toLowerCase();
         const tasksForGoal = suggestions.filter(s => s.goal.toLowerCase() === goalName.toLowerCase());
-        if (!query) return tasksForGoal;
+        // No query — sort by usage frequency descending
+        if (!query) return [...tasksForGoal].sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0));
         
         return tasksForGoal
             .filter(s => s.task.toLowerCase().includes(query))
@@ -537,6 +544,9 @@ export default function ActiveTaskPage() {
                 // Starts-with next
                 if (aLow.startsWith(query) && !bLow.startsWith(query)) return -1;
                 if (bLow.startsWith(query) && !aLow.startsWith(query)) return 1;
+                // Usage frequency next
+                const usageDiff = (b.usageCount || 0) - (a.usageCount || 0);
+                if (usageDiff !== 0) return usageDiff;
                 // Alphabetical fallback
                 return aLow.localeCompare(bLow);
             });
@@ -781,19 +791,25 @@ export default function ActiveTaskPage() {
     const handleStartTask = async () => {
         if (!goalName.trim() || !taskName.trim()) return;
         
-        // Auto-save new suggestions
-        const exists = suggestions.some(s => s.goal.toLowerCase() === goalName.trim().toLowerCase() && s.task.toLowerCase() === taskName.trim().toLowerCase());
-        if (!exists) {
-            const newSug = {
+        // Auto-save new suggestions and increment usage count
+        const matchIndex = suggestions.findIndex(s => s.goal.toLowerCase() === goalName.trim().toLowerCase() && s.task.toLowerCase() === taskName.trim().toLowerCase());
+        if (matchIndex === -1) {
+            const newSug: GoalTaskSuggestion = {
                 id: Date.now().toString(),
                 goal: goalName.trim(),
-                task: taskName.trim()
+                task: taskName.trim(),
+                usageCount: 1
             };
             saveSuggestions([newSug, ...suggestions]);
+        } else {
+            const updated = suggestions.map((s, i) =>
+                i === matchIndex ? { ...s, usageCount: (s.usageCount || 0) + 1 } : s
+            );
+            saveSuggestions(updated);
         }
 
         const name = `${goalName.trim()} - ${taskName.trim()}`;
-        const targetDurationMs = timerMode === 'pomodoro' ? durationMins * 60 * 1000 : 0;
+        const targetDurationMs = setupTab === 'pomodoro' ? durationMins * 60 * 1000 : 0;
 
         const newTask: ActiveTask = {
             id: Date.now().toString(),
@@ -1406,27 +1422,16 @@ export default function ActiveTaskPage() {
                     </div>
                 </header>
 
-                <div style={{ flex: 1, padding: '2.5rem', overflowY: 'auto', position: 'relative' }}>
+                <div className="active-task-main-scroll">
                     <div className="active-task-page-container">
                         {/* Premium Stats Indicator Bar */}
-                        <div style={{
-                            display: 'flex', justifyContent: 'center', marginBottom: '2.5rem',
-                            animation: 'fadeIn 0.6s ease-out'
-                        }}>
-                            <div style={{
-                                display: 'flex', alignItems: 'center', gap: '14px',
-                                padding: '10px 24px', borderRadius: '100px',
-                                background: 'rgba(212, 160, 23, 0.04)',
-                                border: '1px solid rgba(212, 160, 23, 0.15)',
-                                backdropFilter: 'blur(12px)',
-                                boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.25)',
-                                transition: 'all 0.3s ease'
-                            }}>
-                                <span style={{ fontSize: '1.2rem', filter: 'drop-shadow(0 0 6px rgba(212,160,23,0.6))' }}>⚡</span>
-                                <span style={{ fontSize: '0.75rem', fontWeight: '850', color: 'rgba(255, 255, 255, 0.75)', letterSpacing: '0.08em' }}>
+                        <div className="active-today-progress-wrapper">
+                            <div className="active-today-progress-pill">
+                                <span className="active-today-progress-icon">⚡</span>
+                                <span className="active-today-progress-label">
                                     TODAY&apos;S PROGRESS:
                                 </span>
-                                <span style={{ fontSize: '0.85rem', fontWeight: '950', color: '#d4a017', background: 'rgba(212, 160, 23, 0.14)', padding: '3px 12px', borderRadius: '100px', border: '1px solid rgba(212, 160, 23, 0.25)', textShadow: '0 0 8px rgba(212,160,23,0.3)' }}>
+                                <span className="active-today-progress-badge">
                                     {todayTotalCycles} Focus Cycle{todayTotalCycles !== 1 ? 's' : ''} Completed
                                 </span>
                             </div>
@@ -1494,7 +1499,7 @@ export default function ActiveTaskPage() {
 
                                     {/* Mission detail on break page */}
                                     {currentActiveTask && (
-                                        <div style={{
+                                        <div className="break-on-deck-card" style={{
                                             marginTop: '1.25rem', padding: '14px 20px', borderRadius: '18px',
                                             background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.06)',
                                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', flexWrap: 'wrap',
@@ -2515,8 +2520,6 @@ export default function ActiveTaskPage() {
                                         className={`visual-loop-card${currentActiveTask.status !== 'RUNNING' ? ' visual-loop-card--paused' : ''}`} 
                                         onClick={handleToggleTask}
                                         style={{
-                                            width: preferences?.persona === 'disciplinist' ? '440px' : '480px',
-                                            height: '480px',
                                             background: preferences?.persona === 'disciplinist' ? 'transparent' : undefined,
                                             border: preferences?.persona === 'disciplinist' ? 'none' : undefined,
                                             boxShadow: preferences?.persona === 'disciplinist' ? 'none' : undefined,
@@ -2575,12 +2578,12 @@ export default function ActiveTaskPage() {
                                         <span className="timer-elapsed" style={{ fontSize: '3rem', fontWeight: '950', fontFamily: 'monospace', letterSpacing: '-0.02em', color: 'white' }}>
                                             {timerStats?.mainTimerString}
                                         </span>
-                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                                        <div className="timer-sub-details" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
                                             <span className="timer-total" style={{ fontSize: '0.7rem', fontWeight: '900', color: '#d4a017', letterSpacing: '0.1em', opacity: 0.8 }}>
                                                 {timerStats?.subtitleString}
                                             </span>
                                             {currentActiveTask.completedCycles !== undefined && (
-                                                <span style={{ fontSize: '0.65rem', fontWeight: '800', color: '#10b981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: '100px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                                                <span className="timer-cycles-pill" style={{ fontSize: '0.65rem', fontWeight: '800', color: '#10b981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: '100px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
                                                     CYCLES COMPLETED: {currentActiveTask.completedCycles}
                                                 </span>
                                             )}

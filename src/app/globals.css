@@ -1030,15 +1030,22 @@ textarea::placeholder {
   }
 
   .chat-header {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.6rem 0.8rem;
-    gap: 0.4rem;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 0.6rem 1rem !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .chat-header__left {
-    gap: 0.5rem !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.6rem !important;
+    flex: 0 1 auto !important;
+    min-width: 0 !important;
   }
 
   .app-title__brand {
@@ -1055,7 +1062,11 @@ textarea::placeholder {
   }
 
   .chat-header .header-controls {
-    width: auto;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    margin-left: auto !important;
+    width: auto !important;
     gap: 0.5rem;
     padding-bottom: 0;
   }
@@ -2783,6 +2794,80 @@ input {
    DEDICATED ACTIVE TASK SECTION & RUNNING timer
    ══════════════════════════════════════════════════════════ */
 
+.active-task-main-scroll {
+  flex: 1;
+  padding: 2.5rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.active-today-progress-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+  animation: fadeIn 0.6s ease-out;
+  width: 100%;
+}
+
+.active-today-progress-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 22px;
+  border-radius: 100px;
+  background: rgba(212, 160, 23, 0.05);
+  border: 1px solid rgba(212, 160, 23, 0.16);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+  transition: all 0.3s ease;
+}
+
+.active-today-progress-icon {
+  font-size: 1.15rem;
+  filter: drop-shadow(0 0 6px rgba(212,160,23,0.6));
+}
+
+.active-today-progress-label {
+  font-size: 0.72rem;
+  font-weight: 850;
+  color: rgba(255, 255, 255, 0.75);
+  letter-spacing: 0.08em;
+}
+
+.active-today-progress-badge {
+  font-size: 0.82rem;
+  font-weight: 950;
+  color: #d4a017;
+  background: rgba(212, 160, 23, 0.14);
+  padding: 3px 12px;
+  border-radius: 100px;
+  border: 1px solid rgba(212, 160, 23, 0.25);
+  text-shadow: 0 0 8px rgba(212,160,23,0.3);
+}
+
+.timer-sub-details {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.timer-cycles-pill {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 2px 8px;
+  border-radius: 100px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.break-on-deck-card {
+  transition: all 0.3s ease;
+}
+
 .active-task-page-container {
   display: flex;
   flex-direction: column;
@@ -3737,7 +3822,10 @@ input {
   border-top: 1px solid rgba(255, 255, 255, 0.04);
 }
 
-/* Active running quotes & video layout alignment and responsiveness */
+/* ═══════════════════════════════════════════════════════════
+   ACTIVE TASK RESPONSIVE & MOBILE SINGLE-VIEW OPTIMIZATION
+   ══════════════════════════════════════════════════════════ */
+
 @media (max-width: 1200px) {
   .active-running-quotes-row {
     gap: 2.5rem !important;
@@ -3749,39 +3837,326 @@ input {
 }
 
 @media (max-width: 900px) {
-  .active-running-quotes-row {
-    flex-direction: column !important;
-    gap: 2rem !important;
-    padding: 0 !important;
-  }
-  .quote-flank {
-    max-width: 100% !important;
-    text-align: center !important;
-  }
-  .quote-flank.left, .quote-flank.right {
-    text-align: center !important;
-  }
   .visual-loop-card {
     border-radius: 28px !important;
   }
   .active-running-task {
-    font-size: 1.8rem !important;
+    font-size: 1.6rem !important;
   }
 }
 
-@media (max-width: 500px) {
+@media (max-width: 768px) {
+  /* Prevent horizontal scrolling and yellow scrollbar on mobile */
+  html, body {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+  }
+
+  .chat-page {
+    position: fixed;
+    inset: 0;
+    width: 100vw !important;
+    height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  .chat-container {
+    width: 100% !important;
+    max-width: 100vw !important;
+    height: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Header Alignment: Logo on left, Profile Badge & Exit on far right */
+  .chat-header {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 0.65rem 1rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    gap: 0.5rem !important;
+    min-height: 52px !important;
+  }
+
+  .chat-header__left {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.6rem !important;
+    flex: 0 1 auto !important;
+    min-width: 0 !important;
+  }
+
+  .chat-header .header-controls {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    flex: 0 0 auto !important;
+    margin-left: auto !important;
+  }
+
+  .profile-badge {
+    padding: 4px 8px !important;
+    gap: 6px !important;
+    border-radius: 100px !important;
+  }
+
+  /* Active task scroll container: Fits full page in single view without overflow */
+  .active-task-main-scroll {
+    padding: 0.4rem 0.75rem calc(4.2rem + env(safe-area-inset-bottom, 0px)) 0.75rem !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+
+  .active-task-main-scroll::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
   .active-task-page-container {
-    padding: 0.5rem 1rem 2rem !important;
+    padding: 0.25rem 0.25rem 0.5rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: auto !important;
+    justify-content: flex-start !important;
   }
-  .timer-elapsed {
-    font-size: 2.2rem !important;
+
+  /* Today's Progress Badge: Sleek, compact, single-line chip */
+  .active-today-progress-wrapper {
+    margin-bottom: 0.4rem !important;
+    width: 100% !important;
+    justify-content: center !important;
   }
+
+  .active-today-progress-pill {
+    padding: 4px 12px !important;
+    gap: 6px !important;
+    border-radius: 999px !important;
+    background: rgba(212, 160, 23, 0.08) !important;
+    border: 1px solid rgba(212, 160, 23, 0.22) !important;
+    box-shadow: none !important;
+    max-width: 95vw !important;
+  }
+
+  .active-today-progress-icon {
+    font-size: 0.85rem !important;
+  }
+
+  .active-today-progress-label {
+    font-size: 0.64rem !important;
+    letter-spacing: 0.04em !important;
+    color: rgba(255, 255, 255, 0.75) !important;
+    white-space: nowrap !important;
+  }
+
+  .active-today-progress-badge {
+    font-size: 0.66rem !important;
+    padding: 1px 7px !important;
+    background: rgba(212, 160, 23, 0.16) !important;
+    border: 1px solid rgba(212, 160, 23, 0.3) !important;
+    color: #d4a017 !important;
+    text-shadow: none !important;
+    white-space: nowrap !important;
+  }
+
+  /* Active Running Dashboard */
+  .active-running-dashboard {
+    gap: 0.35rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .active-running-title-block {
+    margin-bottom: 0.15rem !important;
+    padding: 0 0.5rem !important;
+  }
+
+  .active-running-goal {
+    font-size: 0.58rem !important;
+    letter-spacing: 0.15em !important;
+    margin-bottom: 2px !important;
+  }
+
+  .active-running-task {
+    font-size: 1.25rem !important;
+    letter-spacing: -0.01em !important;
+    line-height: 1.2 !important;
+    word-break: break-word !important;
+    max-width: 88vw !important;
+    margin: 0 auto !important;
+  }
+
+  /* Single Inspiring Quote above the loop card */
+  .active-running-quotes-row {
+    flex-direction: column !important;
+    gap: 0.35rem !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    align-items: center !important;
+    margin: 0.15rem 0 !important;
+  }
+
+  .quote-flank.right {
+    display: none !important;
+  }
+
+  .quote-flank.left {
+    max-width: 88% !important;
+    text-align: center !important;
+    margin: 0 auto !important;
+    gap: 2px !important;
+  }
+
+  .quote-flank-text {
+    font-size: 0.75rem !important;
+    line-height: 1.3 !important;
+    color: rgba(255, 255, 255, 0.8) !important;
+  }
+
+  .quote-flank-author {
+    font-size: 0.6rem !important;
+    margin-top: 2px !important;
+    color: rgba(255, 255, 255, 0.4) !important;
+  }
+
+  /* Looping Visual Card: Scaled to fit single view perfectly */
+  .visual-loop-card {
+    width: min(175px, 42vw) !important;
+    height: min(175px, 42vw) !important;
+    max-width: 175px !important;
+    max-height: 175px !important;
+    aspect-ratio: 1 / 1 !important;
+    border-radius: 22px !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+    margin: 0 auto !important;
+  }
+
+  .visual-loop-canvas-placeholder video {
+    border-radius: 22px !important;
+  }
+
+  /* Timer & Progress Block */
+  .timer-progress-block {
+    gap: 0.3rem !important;
+    width: 100% !important;
+    max-width: 310px !important;
+    margin: 0.15rem auto 0 auto !important;
+  }
+
+  .timer-loading-bar-bg {
+    height: 6px !important;
+    width: 100% !important;
+  }
+
+  .timer-loading-bar-fill::after {
+    width: 10px !important;
+    height: 10px !important;
+    right: -2px !important;
+  }
+
   .timer-numbers {
-    flex-direction: column;
+    flex-direction: column !important;
     align-items: center !important;
-    gap: 8px;
+    justify-content: center !important;
+    gap: 3px !important;
+    margin: 2px 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
   }
-  .timer-numbers div {
+
+  .timer-elapsed {
+    font-size: 2.15rem !important;
+    line-height: 1 !important;
+  }
+
+  .timer-sub-details {
+    display: flex !important;
+    flex-direction: row !important;
     align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .timer-total {
+    font-size: 0.65rem !important;
+    letter-spacing: 0.05em !important;
+  }
+
+  .timer-cycles-pill {
+    font-size: 0.62rem !important;
+    padding: 2px 7px !important;
+    letter-spacing: 0.04em !important;
+    border-radius: 99px !important;
+  }
+
+  /* Action Buttons */
+  .timer-controls-row {
+    width: 100% !important;
+    max-width: 310px !important;
+    gap: 8px !important;
+    margin-top: 0.35rem !important;
+    justify-content: center !important;
+  }
+
+  .timer-btn-pause,
+  .timer-btn-finish {
+    flex: 1 !important;
+    padding: 0.65rem 0.75rem !important;
+    font-size: 0.75rem !important;
+    gap: 6px !important;
+    justify-content: center !important;
+    letter-spacing: 0.08em !important;
+    border-radius: 100px !important;
+    min-height: 42px !important;
+  }
+
+  .timer-btn-pause svg,
+  .timer-btn-finish svg {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  /* Break Mode compact styling */
+  .active-running-dashboard--break .active-running-quotes-row {
+    margin: 0.5rem 0 !important;
+    min-height: auto !important;
+  }
+
+  .active-running-dashboard--break .quote-flank-text {
+    font-size: 0.8rem !important;
+  }
+
+  .break-on-deck-card {
+    margin-top: 0.5rem !important;
+    padding: 8px 14px !important;
+    border-radius: 14px !important;
+    gap: 6px !important;
+  }
+
+  /* Setup Form Mobile Styling */
+  .active-task-setup-card {
+    padding: 1.25rem 1rem !important;
+    border-radius: 20px !important;
+  }
+
+  .active-task-form-group {
+    margin-bottom: 1.25rem !important;
+  }
+
+  .active-task-start-btn {
+    padding: 1rem !important;
+    font-size: 0.9rem !important;
+  }
+
+  .active-task-analysis-card {
+    padding: 1.25rem 1rem !important;
+    border-radius: 20px !important;
   }
 }
